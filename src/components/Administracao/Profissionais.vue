@@ -131,7 +131,7 @@ export default {
     async getNomeDb(){
       //pegar os nomes dos pacientes para autocomplete
       // é necessário rever esse método
-      const getProfissionais = this.connDbFunc.httpsCallable('getProfissionais')
+      const getProfissionais = this.connDbFunc().httpsCallable('getProfissionais')
       await getProfissionais().then(result => {
         for (let dados of result.data){
           this.dadosPro.push(dados)
@@ -147,7 +147,6 @@ export default {
         this.$refs['modal-err'].show()
       }else {
         this.loading = true
-
         if (this.submitBtn === 'Atualizar') {
           // aviso para usar a troca de senha com o botão de troca de senha
           if (this.form.senha !== '' || this.form.senha2 !== ''){
@@ -159,8 +158,8 @@ export default {
             this.form.nome = this.nome
             //envia o uid do user logado para verificar se é admin
             this.form.admUid = this.$store.getters.user.data.uid
-            this.form.funcao = this.funcao
-            const atualizaProfissional = this.connDbFunc.httpsCallable('atualizaProfissional')
+            this.form.funcao = this.role
+            const atualizaProfissional = this.connDbFunc().httpsCallable('atualizaProfissional')
             await atualizaProfissional (this.form)
                 .then((retorno) => {
                   //retorno do backend sobre atualização do usuário (permissão)
@@ -175,7 +174,7 @@ export default {
                 })
           }
         }else {
-          const criaProfissional = this.connDbFunc.httpsCallable('criarProfissional')
+          const criaProfissional = this.connDbFunc().httpsCallable('criarProfissional')
           this.form.nome = this.nome
           this.form.admUid = this.$store.getters.user.data.uid
           this.form.funcao = this.role

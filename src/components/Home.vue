@@ -44,9 +44,11 @@
 
 <script>
 import {mapGetters} from "vuex";
-import firebase from "firebase/app";
+import { connDb } from "@/store/connDb";
+
 export default {
-name: "Home",
+  name: "Home",
+  mixins:[connDb],
   data(){
     return {
 
@@ -54,10 +56,7 @@ name: "Home",
   },
   methods:{
     signOut() {
-      //emulador local
-      firebase.auth().useEmulator('http://localhost:9099/');
-      firebase
-          .auth()
+      this.connDbAuth()
           .signOut()
           .then(() => {
               this.$router.replace({
@@ -77,10 +76,8 @@ name: "Home",
         name: "Login"
       });
     }else {
-      //emulador local
-      firebase.auth().useEmulator('http://localhost:9099/');
       //pegar qual o papel - função - do login
-      firebase.auth().currentUser.getIdTokenResult()
+      this.connDbAuth().currentUser.getIdTokenResult()
           .then((idTokenResult) => {
             this.$store.commit('setFuncao',idTokenResult.claims.funcao)
           })

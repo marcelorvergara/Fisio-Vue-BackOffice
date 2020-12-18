@@ -78,7 +78,7 @@ export default {
     },
     async getProcedimentosDB(){
       //pegar os nomes dos procedimentos para o autocomplete
-      const getPaciente = this.connDbFunc.httpsCallable('getProcedimentos')
+      const getPaciente = this.connDbFunc().httpsCallable('getProcedimentos')
       await getPaciente().then(result => {
         for (let dados of result.data){
           this.dadosProcedimentos.push(dados)
@@ -90,7 +90,7 @@ export default {
       event.preventDefault()
       this.loading = true
 
-      const cadProcedimento = this.connDbFunc.httpsCallable('cadastroProcedimentos')
+      const cadProcedimento = this.connDbFunc().httpsCallable('cadastroProcedimentos')
       this.form.nomeProcedimento = this.nomeProcedimento
       //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {

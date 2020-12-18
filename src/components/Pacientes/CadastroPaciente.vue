@@ -101,7 +101,7 @@ export default {
     },
     async getNomeDb(){
       //pegar os nomes dos pacientes para autocomplete
-      const getPaciente = this.connDbFunc.httpsCallable('getPacientes')
+      const getPaciente = this.connDbFunc().httpsCallable('getPacientes')
       await getPaciente().then(result => {
         for (let dados of result.data){
           this.dadosPac.push(dados)
@@ -112,7 +112,7 @@ export default {
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
-      const cadPaciente = this.connDbFunc.httpsCallable('cadastroPaciente')
+      const cadPaciente = this.connDbFunc().httpsCallable('cadastroPaciente')
       this.form.nome = this.nome
       //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {

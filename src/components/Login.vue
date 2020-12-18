@@ -66,9 +66,11 @@
 </template>
 
 <script>
-import firebase from "firebase/app";
+import { connDb } from "@/store/connDb";
+
 export default {
   name: "Home",
+  mixins:[connDb],
   data(){
     return{
       loadingRS:false,
@@ -86,10 +88,8 @@ export default {
       this.error = ''
       this.sucesso = ''
       this.loadingRS = true;
-      var auth = firebase.auth();
+      const auth = this.connDbAuth();
 
-      //emulador local
-      auth.useEmulator('http://localhost:9099/');
       auth.sendPasswordResetEmail(this.form.email).then(() => {
         this.sucesso = `E-mail enviado para ${this.form.email} para procedimento de reset de senha!`
         this.loadingRS = false;
@@ -106,10 +106,9 @@ export default {
     logar() {
       this.error = ''
       this.loading = true
-      //emulador local
-      firebase.auth().useEmulator('http://localhost:9099/');
+      const auth = this.connDbAuth();
 
-      firebase.auth().signInWithEmailAndPassword(this.form.email, this.form.senha)
+      auth.signInWithEmailAndPassword(this.form.email, this.form.senha)
           .then((user) => {
             const token = user.user.refreshToken
             this.loading = false;
