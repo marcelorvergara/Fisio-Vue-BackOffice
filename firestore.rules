@@ -6,6 +6,9 @@ service cloud.firestore {
       match /profissionais {
         allow read, write: if request.auth.token.funcao == 'Admin'
       }
+      match /procedimentos {
+        allow read, write: if request.auth.token.funcao == 'Admin'
+      }
     }
   }
 }

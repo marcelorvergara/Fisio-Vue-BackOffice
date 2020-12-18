@@ -22,7 +22,7 @@ export const routes = [
             { path:'', component: HomeMain },
             { path:'CadastroPaciente', component: CadastroPaciente },
             { path:'Agendamentos', component: Agendamentos },
-            { path:'Prodecimentos', component: Procedimentos },
+            { path:'Procedimentos', component: Procedimentos },
             { path:'Profissionais', component: Profissionais }
         ]
     }

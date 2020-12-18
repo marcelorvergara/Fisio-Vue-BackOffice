@@ -33,7 +33,9 @@
 
           <div class="text-right mt-3">
           <b-button type="reset" variant="outline-danger">Resetar</b-button>
-          <b-button type="submit" variant="outline-success" class="ml-2">{{ submitBtn}}</b-button>
+          <b-button type="submit" variant="outline-success" class="ml-2">
+            <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+            {{ submitBtn}}</b-button>
           </div>
         </b-form>
         </b-card>
@@ -45,7 +47,7 @@
   <b-modal ref="modal-err" ok-only>
     <template #modal-title>
       <b-icon icon="x-circle" scale="2" variant="danger"></b-icon>
-      <span class="m-3">Novo Profissional</span>
+      <span class="m-3">Pacientes</span>
     </template>
     <p v-html="mensagem"></p>
   </b-modal>
@@ -53,7 +55,7 @@
   <b-modal ref="modal-ok" ok-only>
     <template #modal-title>
       <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
-      <span class="m-3">Novo Profissional</span>
+      <span class="m-3">Pacientes</span>
     </template>
     <p v-html="mensagem"></p>
   </b-modal>
@@ -61,13 +63,14 @@
 </template>
 
 <script>
-import firebase from "firebase/app";
-import 'firebase/functions'
+import { connDb } from '@/store/connDb'
 
 export default {
   name: "CadastroPaciente",
+  mixins:[connDb],
   data(){
     return {
+      loading: false,
       uuid:null,
       submitBtn: 'Cadastrar',
       dadosPac:[],
@@ -98,9 +101,7 @@ export default {
     },
     async getNomeDb(){
       //pegar os nomes dos pacientes para autocomplete
-      // é necessário rever esse método
-      firebase.functions().useEmulator("localhost",5001)
-      const getPaciente = firebase.functions().httpsCallable('getPacientes')
+      const getPaciente = this.connDbFunc.httpsCallable('getPacientes')
       await getPaciente().then(result => {
         for (let dados of result.data){
           this.dadosPac.push(dados)
@@ -109,12 +110,11 @@ export default {
       })
     },
     async cadastrar(event){
-      //vamos testar se é para cadastrar ou atualizar
       event.preventDefault()
-      // usando ambiente do emulador local
-      firebase.functions().useEmulator("localhost",5001)
-      const cadPaciente = firebase.functions().httpsCallable('cadastroPaciente')
+      this.loading = true
+      const cadPaciente = this.connDbFunc.httpsCallable('cadastroPaciente')
       this.form.nome = this.nome
+      //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {
         this.form.uuid = this.uuid
       }
@@ -126,8 +126,8 @@ export default {
           })
           .catch(error => {
             this.mensagem = error
-            this.$refs['modal-err'].show()
             this.loading = false
+            this.$refs['modal-err'].show()
           })
 
     },

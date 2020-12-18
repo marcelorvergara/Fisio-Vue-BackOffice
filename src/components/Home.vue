@@ -12,7 +12,7 @@
         <b-navbar-nav class="mr-auto">
 
           <b-nav-item-dropdown text="Pacientes" right v-if="$store.getters.getFuncao === 'Profissional' || $store.getters.getFuncao === 'Admin'">
-            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/CadastroPaciente`}" replace>Cadastrar</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/CadastroPaciente`}" replace>Cadastrar/Atualizar</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Agendamentos`}" replace>Agendar</b-dropdown-item>
             <b-dropdown-item href="#">Confirmar Presença</b-dropdown-item>
             <b-dropdown-item href="#">Relatório</b-dropdown-item>
@@ -20,13 +20,13 @@
 
         <b-nav-item-dropdown text="Financeiro" right v-if="$store.getters.getFuncao === 'Financeiro' || $store.getters.getFuncao === 'Admin'">
             <b-dropdown-item href="#">Fluxo de Caixa</b-dropdown-item>
-            <b-dropdown-item href="#">Rateio</b-dropdown-item>
+            <b-dropdown-item href="#">Comissões</b-dropdown-item>
             <b-dropdown-item href="#">Relatório</b-dropdown-item>
           </b-nav-item-dropdown>
 
           <b-nav-item-dropdown text="Administração" right v-if="$store.getters.getFuncao === 'Admin'">
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Profissionais`}" replace>Profissionais</b-dropdown-item>
-            <b-dropdown-item href="#">Procedimentos</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Procedimentos`}" replace>Procedimentos</b-dropdown-item>
             <b-dropdown-item href="#">Presença</b-dropdown-item>
             <b-dropdown-item href="#">Relatório</b-dropdown-item>
           </b-nav-item-dropdown>
