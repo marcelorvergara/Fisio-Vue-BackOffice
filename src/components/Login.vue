@@ -89,7 +89,6 @@ export default {
       this.sucesso = ''
       this.loadingRS = true;
       const auth = this.connDbAuth();
-
       auth.sendPasswordResetEmail(this.form.email).then(() => {
         this.sucesso = `E-mail enviado para ${this.form.email} para procedimento de reset de senha!`
         this.loadingRS = false;
@@ -97,9 +96,13 @@ export default {
         this.loadingRS = false;
         console.log(error.message)
         if (error.message === 'There is no user record corresponding to this identifier. The user may have been deleted.'){
-          this.error = 'Email ou login não encontrado!'
+          this.error = 'Email ou login não encontrado.'
         } else if (error.message === 'The email address is badly formatted.'){
-          this.error = 'Email inválido!'
+          this.error = 'Email inválido.'
+        } else if (error.message === 'The user account has been disabled by an administrator.'){
+          this.error = 'Login desabilitado pelo administrador.'
+        } else {
+          this.error = error.message
         }
       });
     },
@@ -118,11 +121,15 @@ export default {
             this.loadingRS = false;
             console.log(error.message)
             if (error.message === 'There is no user record corresponding to this identifier. The user may have been deleted.'){
-              this.error = 'Email ou login não encontrado!'
+              this.error = 'Email ou login não encontrado.'
             } else if (error.message === 'The email address is badly formatted.'){
               this.error = 'Email inválido!'
             } else if (error.message === 'The password is invalid or the user does not have a password.'){
-              this.error = 'Email e/ou senha inválidos!'
+              this.error = 'Email e/ou senha inválidos.'
+            }  else if (error.message === 'The user account has been disabled by an administrator.'){
+              this.error = 'Login desabilitado pelo administrador.'
+            } else {
+              this.error = error.message
             }
             this.loading = false;
           });

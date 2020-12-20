@@ -27,7 +27,7 @@
           <b-nav-item-dropdown text="Administração" right v-if="$store.getters.getFuncao === 'Admin'">
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Profissionais`}" replace>Profissionais</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Procedimentos`}" replace>Procedimentos</b-dropdown-item>
-            <b-dropdown-item href="#">Presença</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Salas`}" replace>Salas</b-dropdown-item>
             <b-dropdown-item href="#">Relatório</b-dropdown-item>
           </b-nav-item-dropdown>
 

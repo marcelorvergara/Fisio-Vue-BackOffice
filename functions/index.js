@@ -3,6 +3,48 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+exports.getSalas = functions.https.onCall(() =>{
+    var listSalas = []
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('salas')
+            .get()
+            .then(function(querySnapshot){
+                querySnapshot.forEach(function(doc) {
+                    listSalas.push(doc.data())
+                });
+                resolve(listSalas)
+            })
+            .catch(function(error) {
+                reject("Erro para baixar pacientes: ", error);
+            });
+    })
+})
+
+exports.cadastroSalas = functions.https.onCall((data) =>{
+    var msg = 'atualizada';
+    return new Promise((resolve, reject) =>{
+        //vamos testar se é para cadastro ou atualização
+        if (data.uuid === undefined){
+            const { v4: uuidv4 } = require('uuid');
+            const uuid = uuidv4()
+            data.uuid = uuid
+            msg = 'cadastrada'
+        }
+        const db = admin.firestore()
+        db.collection('salas')
+            .doc(data.uuid)
+            .set(
+                data
+            ).then(() => {
+            resolve(`Sala ${data.nomeSala} ${msg} com sucesso.`)
+        })
+            .catch((error) => {
+                reject(error)
+            })
+    })
+})
+
 exports.getProcedimentos = functions.https.onCall(() =>{
     var listProcedimentos = []
     return new Promise((resolve,reject) => {
@@ -87,6 +129,41 @@ exports.cadastroPaciente = functions.https.onCall((data) =>{
     })
 })
 
+exports.statusProfissional = functions.https.onCall((data) =>{
+    return new Promise((resolve,reject) => {
+        console.log(data)
+        admin
+            .auth()
+            .getUser(data.admUid)
+            .then((adminRec) => {
+                //checa se é administrador
+                if (adminRec.customClaims.funcao === 'Admin') {
+                    admin
+                        .auth()
+                        .getUserByEmail(data.email)
+                        .then((userRecord) => {
+                            console.log(userRecord)
+                            // See the UserRecord reference doc for the contents of userRecord.
+                            admin.auth().updateUser(userRecord.uid, data.status)
+                                .then(() => {
+                                    const db = admin.firestore()
+                                    data.atualizado = new Date()
+                                    db.collection('profissionais')
+                                        .doc(data.uuid)
+                                        .set(data.status, { merge: true }).then(() =>{
+                                        resolve(`Status do login ${data.email} atualizado com sucesso.`)
+                                    })
+                                })
+                        })
+                        .catch((error) => {
+                            reject('Erro pegando os dados do usuário:', error);
+                        });
+
+                }
+            })
+    })
+})
+
 exports.getProfissionais = functions.https.onCall(() =>{
     var listProfissionais = []
     return new Promise((resolve,reject) => {
@@ -106,7 +183,6 @@ exports.getProfissionais = functions.https.onCall(() =>{
 });
 
 exports.atualizaProfissional = functions.https.onCall((data) => {
-    console.log(data)
     return new Promise((resolve, reject) => {
         admin
             .auth()

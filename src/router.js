@@ -6,6 +6,7 @@ import HomeMain from "@/components/HomeMain";
 import Agendamentos from "@/components/Pacientes/Agendamentos";
 import Profissionais from "@/components/Administracao/Profissionais";
 import Procedimentos from "@/components/Administracao/Procedimentos";
+import Salas from "@/components/Administracao/Salas";
 
 export const routes = [
     {
@@ -23,6 +24,7 @@ export const routes = [
             { path:'CadastroPaciente', component: CadastroPaciente },
             { path:'Agendamentos', component: Agendamentos },
             { path:'Procedimentos', component: Procedimentos },
+            { path:'Salas', component: Salas },
             { path:'Profissionais', component: Profissionais }
         ]
     }
