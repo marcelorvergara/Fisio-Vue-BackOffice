@@ -87,6 +87,10 @@
 <script>
 import { connDb } from '@/store/connDb'
 import {Compact} from "vue-color";
+import firebase from "firebase/app";
+import 'firebase/auth'
+
+
 export default {
   name: "Profissionais",
   mixins:[connDb],
@@ -96,7 +100,7 @@ export default {
       styleObj:{
         color: ''
       },
-      colors: '#FF7435',
+      colors: '#00753A',
       colorsPalette:[
         '#00753A',
         '#009E47',
@@ -145,8 +149,22 @@ export default {
       this.styleObj.color = this.colors.hex
       this.form.corProf = `cor`+this.colorsPalette.indexOf(this.colors.hex)
     },
-    trocaSenha(){
-
+    async trocaSenha(){
+      const dados = this.dadosPro.find( f => f.nome === this.nome)
+      firebase
+          .auth()
+          .sendPasswordResetEmail(dados.email)
+          .then(() => {
+              //retorno do backend sobre o envio de senha para o usuário
+              this.mensagem = `E-mail enviado para ${dados.email} com o link para a troca de senha`
+              this.loading = false
+              this.$refs['modal-ok'].show()
+            })
+          .catch(() => {
+            this.mensagem = 'Algum erro ocorreu no envio do email para reset de senha.'
+            this.loading = false
+            this.$refs['modal-err'].show()
+            })
     },
     async statusLogin(){
       const dados = this.dadosPro.find( f => f.nome === this.nome)
@@ -207,7 +225,6 @@ export default {
       const getProfissionais = this.connDbFunc().httpsCallable('getProfissionais')
       await getProfissionais().then(result => {
         for (let dados of result.data){
-          console.log(dados)
           this.dadosPro.push(dados)
           this.nomes.push(dados.nome)
         }

@@ -129,7 +129,7 @@ exports.cadastroPaciente = functions.https.onCall((data) =>{
     })
 })
 
-exports.statusProfissional = functions.https.onCall((data) =>{
+exports.statusProfissional = functions.https.onCall((data) => {
     return new Promise((resolve,reject) => {
         console.log(data)
         admin
