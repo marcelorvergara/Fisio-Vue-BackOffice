@@ -7,6 +7,7 @@ import { store } from './store/index'
 import { initBackend } from "@/initBackend";
 import { connDb } from "@/store/connDb";
 import VueBootstrapTypeahead from 'vue-bootstrap-typeahead'
+import 'material-design-icons-iconfont/dist/material-design-icons.css'
 
 Vue.use(BootstrapVue)
 Vue.use(IconsPlugin)
