@@ -3,6 +3,9 @@ sudo apt-get install openjdk-8-jre
 export FIRESTORE_EMULATOR_HOST="localhost:8090"
 export GOOGLE_APPLICATION_CREDENTIALS=
 
+firebase emulators:export <export-directory>
+firebase emulators:start --import <export-directory>
+
 functions
     //emulador local
     admin.initializeApp({ projectId: "fisiovue" });

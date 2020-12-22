@@ -30,8 +30,10 @@
         <b-row align-h="center">
           <b-col>
             <div style="display: inline-block;" class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
-              <b-form-group id="grp-nome" label="Nome do Paciente:" label-for="nome">
+              <b-form-group id="grp-nome" label="Selecione o Paciente:" label-for="nome">
                 <vue-bootstrap-typeahead
+                    text-variant="success"
+                    :minMatchingChars="0"
                     id="nome"
                     v-model="nome"
                     required
@@ -40,6 +42,7 @@
               </b-form-group>
               <b-form-group id="grp-profissional" label="Profissional:" label-for="profissional">
                 <vue-bootstrap-typeahead
+                    :minMatchingChars="0"
                     id="profissional"
                     v-model="profissional"
                     required
@@ -48,6 +51,7 @@
               </b-form-group>
               <b-form-group id="grp-sala" label="Sala:" label-for="sala">
                 <vue-bootstrap-typeahead
+                    :minMatchingChars="0"
                     id="sala"
                     v-model="sala"
                     required
@@ -56,6 +60,7 @@
               </b-form-group>
               <b-form-group id="grp-proc" label="Procedimento:" label-for="proc">
                 <vue-bootstrap-typeahead
+                    :minMatchingChars="0"
                     id="proc"
                     v-model="procedimento"
                     required
@@ -81,9 +86,9 @@
                 <b-form-group label-for="fim" label="Hora de Término:">
                   <b-form-input id="fim" type="time" v-model="horaFim"></b-form-input>
                 </b-form-group>
-                <b-card>
+                <b-card header="Recorrência:">
                   <b-card-text>
-                    <b-form-group label="Repetir diariamente:" v-slot="{ ariaDescribedby }">
+                    <b-form-group label="Diária" v-slot="{ ariaDescribedby }">
                       <b-form-radio-group
                           @change="mudarSemanalmente"
                           size="sm"
@@ -94,7 +99,7 @@
                           name="diariamente"
                       ></b-form-radio-group>
                     </b-form-group>
-                    <b-form-group label="Repetir semanalmente:" v-slot="{ ariaDescribedby }">
+                    <b-form-group label="Semanal" v-slot="{ ariaDescribedby }">
                       <b-form-radio-group
                           @change="mudarDiariamente"
                           size="sm"
@@ -119,6 +124,7 @@
         </b-button>
         <b-button variant="outline-success" @click="agendar()">
           Agendar
+          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
         </b-button>
       </template>
     </b-modal>
@@ -158,16 +164,35 @@
         </b-button>
       </div>
     </b-modal>
+<!--    modal para ok ok -->
+    <b-modal ref="modal-ok" ok-only>
+      <template #modal-title>
+        <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
+        <span class="m-3">Agendamento</span>
+      </template>
+      <p v-html="mensagem"></p>
+    </b-modal>
+<!--    modal para ERRO-->
+    <!--    modal para alerta erro-->
+    <b-modal ref="modal-err" ok-only>
+      <template #modal-title>
+        <b-icon icon="x-circle" scale="2" variant="danger"></b-icon>
+        <span class="m-3">Agendamento</span>
+      </template>
+      <p v-html="mensagemErro"></p>
+    </b-modal>
   </div>
 </template>
 
 <script>
+import { connDb } from '@/store/connDb'
 import VueCal from 'vue-cal'
 import 'vue-cal/dist/i18n/pt-br.js'
 import 'vue-cal/dist/vuecal.css'
 
 export default {
   name: "Agendamentos",
+  mixins:[connDb],
   components:{
     VueCal
   },
@@ -175,6 +200,7 @@ export default {
     return{
       selectedEvent: {},
       mensagem:'',
+      mensagemErro:'',
       holder:'',
       diariamente:'1',
       diriamenteOpt:[
@@ -200,19 +226,23 @@ export default {
       profissional:'',
       sala:'',
       procedimento:'',
-      nomes:['marcelo','antonio'],
-      profissionais:['araujo','diego alves', 'rodrigo caio'],
-      salas:['sala 1', 'sala 2', 'sala 3'],
+      nomes:[],
+      profissionais:[],
+      salas:[],
       procedimentos:[],
-      loading: false
+      loading: false,
+      dadosPac:[],
+      dadosPro:[],
+      dadosSalas:[],
+      dadosProcedimentos:[]
     }
   },
   methods:{
     mudarDiariamente(){
-      this.diariamente = 1
+      this.diariamente = '1'
     },
     mudarSemanalmente(){
-      this.semanalmente = 1
+      this.semanalmente = '1'
     },
     ok(){
       this.$refs['info-modal'].hide()
@@ -227,6 +257,7 @@ export default {
 
     },
     criarSessao(sessao){
+      //trata o evento de clicar no calendário
       this.$refs['modal-ag'].show()
       //arrendondando para cima 10 minutos
       const arrendonda = roundTo => x => Math.ceil(x / roundTo) * roundTo;
@@ -239,65 +270,218 @@ export default {
       this.horaFim = this.sessaoArr.addHours(1).toLocaleString().split(' ')[1]
     },
     agendar(){
-      var date = new Date(this.dataSessao)
-      var dates = [];
-      if ((this.diariamente === '1') && (this.semanalmente === '1')){
-        //agendamento único
-        this.dataSessao = date.toISOString().substr(0, 10)
-        const dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
-        const dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-        this.events.push({
-          start: dtHoraIni,
-          end: dtHoraFim,
-          class: 'cor0',
-          title: 'Paciente X - Sala Y',
-          content: 'Test teste teste teste',
-          contentFull:'teste teste teste teste teste teste teste '
-        })
-      } else if (this.diariamente !== '1' && this.semanalmente === '1' ) {
-        // agendamento com repetição de dias
-        while(dates.length < this.diariamente) {
-          if(date.getDay() !== 0 && date.getDay() !== 6) {
-            dates.push(date);
-            this.dataSessao = date.toISOString().substr(0, 10)
-            const dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
-            const dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-            this.events.push({
-              start: dtHoraIni,
-              end: dtHoraFim,
-              class: 'cor5',
-              title: 'Paciente X - Sala Y',
-              content: 'Test teste teste teste',
-              contentFull:'teste teste teste teste teste teste teste '
-            })
-          }
-          date = date.addDays(1)
-        }
+      // testar os inputs
+      if (this.nome === '' || this.nomes.indexOf(this.nome) === -1){
+        this.mensagemErro = 'Nome do paciente não cadastrado'
+        this.$refs['modal-err'].show()
+      } else if (this.profissional === '' || this.profissionais.indexOf(this.profissional) === -1){
+        this.mensagemErro = 'Nome do profissional não cadastrado'
+        this.$refs['modal-err'].show()
+      }if (this.sala === '' || this.salas.indexOf(this.sala) === -1){
+        this.mensagemErro = 'Nome da sala não cadastrada'
+        this.$refs['modal-err'].show()
+      } if (this.procedimento === '' || this.procedimentos.indexOf(this.procedimento) === -1){
+        this.mensagemErro = 'Nome do procedimento não cadastrado'
+        this.$refs['modal-err'].show()
       } else {
-        //agendamento com repetição de semana
-        while(dates.length < this.semanalmente) {
-          if(date.getDay() !== 0 && date.getDay() !== 6) {
-            dates.push(date);
-            this.dataSessao = date.toISOString().substr(0, 10)
-            const dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
-            const dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-            this.events.push({
-              start: dtHoraIni,
-              end: dtHoraFim,
-              class: 'cor5',
-              title: 'Paciente X - Sala Y',
-              content: 'Test teste teste teste',
-              contentFull:'teste teste teste teste teste teste teste '
-            })
+        //ação de Agendar as sessões. Gravar no DB
+        var date = new Date(this.dataSessao)
+        var dates = [];
+        var dtHoraIni
+        var dtHoraFim
+        const cor = this.dadosPro.find(f => f.nome === this.profissional)
+        const corProf = cor.corProf
+        if ((this.diariamente === '1') && (this.semanalmente === '1')){
+          //agendamento único
+          this.dataSessao = date.toISOString().substr(0, 10)
+          dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
+          dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
+          this.events.push({
+            start: dtHoraIni,
+            end: dtHoraFim,
+            class: corProf,
+            title: `${this.nome} - ${this.sala}`,
+            content: this.profissional,
+            contentFull:''
+          });
+          //gravar - montar o objeto
+          const cor = this.dadosPro.find(f => f.nome === this.profissional)
+          const sessao = {
+            paciente: this.nome,
+            profissional: this.profissional,
+            sala: this.sala,
+            procediment: this.procedimento,
+            observacao: this.observacao,
+            data: this.dataSessao,
+            horaInicio: dtHoraIni,
+            horaFim: dtHoraFim,
+            recorrenciaDiaria: this.diariamente,
+            recorrenciaSemanal:this.semanalmente,
+            uuid: this.uuidv4(),
+            class: cor.corProf
           }
-          date = date.addDays(7)
+          this.gravarDB(sessao)
+        } else if (this.diariamente !== '1' && this.semanalmente === '1' ) {
+          // agendamento com repetição de dias
+          while(dates.length < this.diariamente) {
+            if(date.getDay() !== 0 && date.getDay() !== 6) {
+              dates.push(date);
+              this.dataSessao = date.toISOString().substr(0, 10)
+              dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
+              dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
+              this.events.push({
+                start: dtHoraIni,
+                end: dtHoraFim,
+                class: corProf,
+                title: `${this.nome} - ${this.sala}`,
+                content: this.profissional,
+                contentFull:''
+              });
+              //gravar - montar o objeto
+              const sessao = {
+                paciente: this.nome,
+                profissional: this.profissional,
+                sala: this.sala,
+                procediment: this.procedimento,
+                observacao: this.observacao,
+                data: this.dataSessao,
+                horaInicio: dtHoraIni,
+                horaFim: dtHoraFim,
+                recorrenciaDiaria: this.diariamente,
+                recorrenciaSemanal:this.semanalmente,
+                uuid: this.uuidv4(),
+                class: cor.corProf
+              }
+              this.gravarDB(sessao)
+            }
+            date = date.addDays(1)
+          }
+        } else {
+          //agendamento com repetição de semana
+          while(dates.length < this.semanalmente) {
+            if(date.getDay() !== 0 && date.getDay() !== 6) {
+              dates.push(date);
+              this.dataSessao = date.toISOString().substr(0, 10)
+              dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
+              dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
+              this.events.push({
+                start: dtHoraIni,
+                end: dtHoraFim,
+                class: corProf,
+                title: `${this.nome} - ${this.sala}`,
+                content: this.profissional,
+                contentFull:''
+              });
+              //gravar - montar o objeto
+              const sessao = {
+                paciente: this.nome,
+                profissional: this.profissional,
+                sala: this.sala,
+                procediment: this.procedimento,
+                observacao: this.observacao,
+                data: this.dataSessao,
+                horaInicio: dtHoraIni,
+                horaFim: dtHoraFim,
+                recorrenciaDiaria: this.diariamente,
+                recorrenciaSemanal:this.semanalmente,
+                uuid: this.uuidv4(),
+                class: cor.corProf
+              }
+              this.gravarDB(sessao)
+            }
+            date = date.addDays(7)
+          }
         }
       }
       this.$refs['modal-ag'].hide()
     },
+    async gravarDB(sessao){
+      this.loading = true
+      const setSessao = this.connDbFunc().httpsCallable('setSessao')
+      await setSessao(sessao)
+          .then((retorno) => {
+            this.mensagem = retorno.data
+            this.loading = false
+            this.$refs['modal-ok'].show()
+          })
+          .catch((error) => {
+            this.mensagem = error
+            this.loading = false
+            this.$refs['modal-err'].show()
+          })
+    },
     resetar(){
 
-    }
+    },
+    async getPacientesDb(){
+      //pegar os nomes dos pacientes para autocomplete
+      const getPaciente = this.connDbFunc().httpsCallable('getPacientes')
+      await getPaciente().then(result => {
+        for (let dados of result.data){
+          this.dadosPac.push(dados)
+          this.nomes.push(dados.nome)
+        }
+      })
+    },
+    async getProfissionaisDb(){
+      //pegar os nomes dos pacientes para autocomplete
+      // é necessário rever esse método
+      const getProfissionais = this.connDbFunc().httpsCallable('getProfissionais')
+      await getProfissionais().then(result => {
+        for (let dados of result.data){
+          this.dadosPro.push(dados)
+          this.profissionais.push(dados.nome)
+        }
+      })
+    },
+    async getSalasDB(){
+      //pegar os nomes dos procedimentos para o autocomplete
+      const getSala = this.connDbFunc().httpsCallable('getSalas')
+      await getSala().then(result => {
+        for (let dados of result.data){
+          this.dadosSalas.push(dados)
+          this.salas.push(dados.nomeSala)
+        }
+      })
+    },
+    async getProcedimentosDB(){
+      //pegar os nomes dos procedimentos para o autocomplete
+      const getPaciente = this.connDbFunc().httpsCallable('getProcedimentos')
+      await getPaciente().then(result => {
+        for (let dados of result.data){
+          this.dadosProcedimentos.push(dados)
+          this.procedimentos.push(dados.nomeProcedimento)
+        }
+      })
+    },
+    async getSessoes(){
+      //pegar os nomes dos procedimentos para o autocomplete
+      const getSessoes = this.connDbFunc().httpsCallable('getSessoes')
+      await getSessoes().then(result => {
+        for (let dados of result.data){
+          this.events.push({
+            start: dados.horaInicio,
+            end: dados.horaFim,
+            class: dados.class,
+            title: `${dados.paciente} - ${dados.sala}`,
+            content: `${dados.profissional}`,
+            contentFull:''
+          });
+        }
+      })
+    },
+    uuidv4() {
+        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+  );
+}
+  },
+  created() {
+    this.getSessoes()
+    this.getPacientesDb()
+    this.getProfissionaisDb()
+    this.getSalasDB()
+    this.getProcedimentosDB()
   }
 }
 </script>

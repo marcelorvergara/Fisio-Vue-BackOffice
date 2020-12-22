@@ -259,6 +259,7 @@ export default {
                   this.$refs['modal-ok'].show()
                 })
                 .catch( error => {
+                  console.log(error)
                   this.mensagem = error
                   this.loading = false
                   this.$refs['modal-err'].show()
@@ -285,6 +286,7 @@ export default {
       }
     },
     resetar(event){
+      console.log(this.colors)
       event.preventDefault()
       this.nome = ''
       this.form.email = ''

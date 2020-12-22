@@ -1,0 +1,42 @@
+{"users": [
+{
+  "localId": "8MaKuN4kMfV3TUXopBXTIggFNew2",
+  "email": "asd@asd.com",
+  "emailVerified": false,
+  "passwordHash": "zocy1Ffiaq8VvWqN0itSSWBKGKHIoOFhzR7iFVsdbNQOOpQeNW6mgh8TpRerXXj5CVWknZj/VHW7cI+mRo0lgw==",
+  "salt": "gEWje01tjcaxIg==",
+  "createdAt": "1608082942357",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "cDCsjN5iAXY2IWrXdTIUc4miB3j1",
+  "email": "profissional@profissional.com",
+  "emailVerified": false,
+  "passwordHash": "m6T2tDV/HI9KvVFLh08Leuc4fFEzgr3h07U1MS3Z9XDP/4QQb+0LKxwZivBuAqZwMSN7qW0/3zNtAzsn+8hNpw==",
+  "salt": "72TqwOEGNWmg3w==",
+  "createdAt": "1608082897781",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "sLHC7EdQknV0e8Q0IaQTiMrzB0y1",
+  "email": "marcelo@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "kDM+XnkR3zQ594/eSo/IwAnMRt7p6asFdAjys+aPRl9ckj4MEqcAT0GdPn4wcrygrIF8GH7HcIor39RBX45Eqw==",
+  "salt": "AS+rbAqCz5k26Q==",
+  "lastSignedInAt": "1608116377592",
+  "createdAt": "1608037462174",
+  "disabled": false,
+  "providerUserInfo": []
+},
+{
+  "localId": "zDB2pVG7rpTeaLoGi3aP5z0QRg63",
+  "email": "marcelorv@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "4kN6hyLhCItBh0AzA+WNSv4JZtUEgpWZc+5LPMVA5Tm76Hh33aAFPQpUb4chJpubZbjB8jPrnrFV9TI6pBU7dw==",
+  "salt": "5u6P5AniLw86qA==",
+  "createdAt": "1608081076977",
+  "disabled": false,
+  "providerUserInfo": []
+}]}

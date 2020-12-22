@@ -78,7 +78,7 @@ export default {
     },
     async getSalasDB(){
       //pegar os nomes dos procedimentos para o autocomplete
-      const getSala = this.connDbFunc().httpsCallable('getSala')
+      const getSala = this.connDbFunc().httpsCallable('getSalas')
       await getSala().then(result => {
         for (let dados of result.data){
           this.dadosSalas.push(dados)

@@ -3,6 +3,36 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+exports.getSessoes = functions.https.onCall(() =>{
+    var listSessoes = []
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('sessoes')
+            .get()
+            .then(function(querySnapshot){
+                querySnapshot.forEach(function(doc) {
+                    listSessoes.push(doc.data())
+                });
+                resolve(listSessoes)
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
+exports.setSessao = functions.https.onCall((data)=>{
+    return new Promise((resolve,reject)=>{
+        const db = admin.firestore()
+        db.collection('sessoes')
+            .doc(data.uuid)
+            .set(
+                data
+            ).then(() => {
+                resolve(`Sessa(oes) gravada(s) com sucesso.`)
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
 exports.getSalas = functions.https.onCall(() =>{
     var listSalas = []
     return new Promise((resolve,reject) => {
@@ -15,9 +45,7 @@ exports.getSalas = functions.https.onCall(() =>{
                 });
                 resolve(listSalas)
             })
-            .catch(function(error) {
-                reject("Erro para baixar pacientes: ", error);
-            });
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
@@ -39,9 +67,7 @@ exports.cadastroSalas = functions.https.onCall((data) =>{
             ).then(() => {
             resolve(`Sala ${data.nomeSala} ${msg} com sucesso.`)
         })
-            .catch((error) => {
-                reject(error)
-            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
@@ -57,9 +83,7 @@ exports.getProcedimentos = functions.https.onCall(() =>{
                 });
                 resolve(listProcedimentos)
             })
-            .catch(function(error) {
-                reject("Erro para baixar pacientes: ", error);
-            });
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
@@ -81,9 +105,7 @@ exports.cadastroProcedimentos = functions.https.onCall((data) =>{
             ).then(() => {
             resolve(`Procedimento ${data.nomeProcedimento} ${msg} com sucesso.`)
         })
-            .catch((error) => {
-                reject(error)
-            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
@@ -99,9 +121,7 @@ exports.getPacientes = functions.https.onCall(() =>{
                 });
                 resolve(listPacientes)
             })
-            .catch(function(error) {
-                reject("Erro para baixar pacientes: ", error);
-            });
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 });
 
@@ -123,9 +143,7 @@ exports.cadastroPaciente = functions.https.onCall((data) =>{
             ).then(() => {
                 resolve(`Paciente ${data.nome} ${msg} com sucesso.`)
         })
-            .catch((error) => {
-                reject(error)
-            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
@@ -155,9 +173,7 @@ exports.statusProfissional = functions.https.onCall((data) => {
                                     })
                                 })
                         })
-                        .catch((error) => {
-                            reject('Erro pegando os dados do usuário:', error);
-                        });
+                        .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
 
                 }
             })
@@ -176,13 +192,12 @@ exports.getProfissionais = functions.https.onCall(() =>{
                 });
                 resolve(listProfissionais)
             })
-            .catch(function(error) {
-                reject("Erro para baixar profissionais: ", error);
-            });
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 });
 
 exports.atualizaProfissional = functions.https.onCall((data) => {
+
     return new Promise((resolve, reject) => {
         admin
             .auth()
@@ -206,9 +221,7 @@ exports.atualizaProfissional = functions.https.onCall((data) => {
                                     })
                                 })
                         })
-                        .catch((error) => {
-                            reject('Erro pegando os dados do usuário:', error);
-                        });
+                        .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
 
                 }
             })
