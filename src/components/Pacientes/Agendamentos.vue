@@ -70,6 +70,7 @@
               <b-form-group label-for="obs" label="Observação:">
                 <b-form-textarea
                     id="obs"
+                    v-model="observacao"
                     size="sm"
                     placeholder=""
                 ></b-form-textarea>
@@ -147,12 +148,11 @@
       <b-card>
         <b-card-text>
           <ul>
-            <li><p v-html="selectedEvent.content"></p></li>
+            <li>Profissional: {{ selectedEvent.content }}</li>
             <li>Início: {{ selectedEvent.start && selectedEvent.start.formatTime() }}</li>
             <li>Fim: {{ selectedEvent.end && selectedEvent.end.formatTime() }}</li>
           </ul>
-          <strong v-if="selectedEvent.contentFull">Observação:</strong>
-          <p v-html="selectedEvent.contentFull"/>
+          <p v-if="selectedEvent.contentFull" v-html="selectedEvent.contentFull"/>
         </b-card-text>
       </b-card>
       <div class="text-right mt-3">
@@ -226,6 +226,7 @@ export default {
       profissional:'',
       sala:'',
       procedimento:'',
+      observacao:'',
       nomes:[],
       profissionais:[],
       salas:[],
@@ -252,12 +253,13 @@ export default {
       alert('teste')
     },
     sessaoInfo(event){
+      //mostra o modal da sessão selecionada
       this.selectedEvent = event
       this.$refs['info-modal'].show()
 
     },
     criarSessao(sessao){
-      //trata o evento de clicar no calendário
+      //trata o evento de clicar no calendário fora de uma sessão
       this.$refs['modal-ag'].show()
       //arrendondando para cima 10 minutos
       const arrendonda = roundTo => x => Math.ceil(x / roundTo) * roundTo;
@@ -289,8 +291,11 @@ export default {
         var dates = [];
         var dtHoraIni
         var dtHoraFim
-        const cor = this.dadosPro.find(f => f.nome === this.profissional)
-        const corProf = cor.corProf
+        const pac = this.dadosPac.find(f => f.nome === this.nome)
+        const prof = this.dadosPro.find(f => f.nome === this.profissional)
+        const sala = this.dadosSalas.find(f => f.nomeSala === this.sala)
+        const proc = this.dadosProcedimentos.find(f => f.nomeProcedimento === this.procedimento)
+
         if ((this.diariamente === '1') && (this.semanalmente === '1')){
           //agendamento único
           this.dataSessao = date.toISOString().substr(0, 10)
@@ -299,18 +304,18 @@ export default {
           this.events.push({
             start: dtHoraIni,
             end: dtHoraFim,
-            class: corProf,
+            class: prof.corProf,
             title: `${this.nome} - ${this.sala}`,
             content: this.profissional,
-            contentFull:''
+            contentFull: this.observacao
           });
           //gravar - montar o objeto
-          const cor = this.dadosPro.find(f => f.nome === this.profissional)
+          //passando uuid para no banco gerar referencias
           const sessao = {
-            paciente: this.nome,
-            profissional: this.profissional,
-            sala: this.sala,
-            procediment: this.procedimento,
+            paciente: pac.uuid,
+            profissional: prof.uuid,
+            sala: sala.uuid,
+            procedimento: proc.uuid,
             observacao: this.observacao,
             data: this.dataSessao,
             horaInicio: dtHoraIni,
@@ -318,7 +323,7 @@ export default {
             recorrenciaDiaria: this.diariamente,
             recorrenciaSemanal:this.semanalmente,
             uuid: this.uuidv4(),
-            class: cor.corProf
+            class: prof.corProf
           }
           this.gravarDB(sessao)
         } else if (this.diariamente !== '1' && this.semanalmente === '1' ) {
@@ -332,17 +337,17 @@ export default {
               this.events.push({
                 start: dtHoraIni,
                 end: dtHoraFim,
-                class: corProf,
+                class: prof.corProf,
                 title: `${this.nome} - ${this.sala}`,
                 content: this.profissional,
-                contentFull:''
+                contentFull: this.observacao
               });
               //gravar - montar o objeto
               const sessao = {
-                paciente: this.nome,
-                profissional: this.profissional,
-                sala: this.sala,
-                procediment: this.procedimento,
+                paciente: pac.uuid,
+                profissional: prof.uuid,
+                sala: sala.uuid,
+                procedimento: proc.uuid,
                 observacao: this.observacao,
                 data: this.dataSessao,
                 horaInicio: dtHoraIni,
@@ -350,7 +355,7 @@ export default {
                 recorrenciaDiaria: this.diariamente,
                 recorrenciaSemanal:this.semanalmente,
                 uuid: this.uuidv4(),
-                class: cor.corProf
+                class: prof.corProf
               }
               this.gravarDB(sessao)
             }
@@ -367,17 +372,17 @@ export default {
               this.events.push({
                 start: dtHoraIni,
                 end: dtHoraFim,
-                class: corProf,
+                class: prof.corProf,
                 title: `${this.nome} - ${this.sala}`,
                 content: this.profissional,
-                contentFull:''
+                contentFull: this.observacao
               });
               //gravar - montar o objeto
               const sessao = {
-                paciente: this.nome,
-                profissional: this.profissional,
-                sala: this.sala,
-                procediment: this.procedimento,
+                paciente: pac.uuid,
+                profissional: prof.uuid,
+                sala: sala.uuid,
+                procedimento: proc.uuid,
                 observacao: this.observacao,
                 data: this.dataSessao,
                 horaInicio: dtHoraIni,
@@ -385,7 +390,7 @@ export default {
                 recorrenciaDiaria: this.diariamente,
                 recorrenciaSemanal:this.semanalmente,
                 uuid: this.uuidv4(),
-                class: cor.corProf
+                class: prof.corProf
               }
               this.gravarDB(sessao)
             }
@@ -458,16 +463,19 @@ export default {
       //pegar os nomes dos procedimentos para o autocomplete
       const getSessoes = this.connDbFunc().httpsCallable('getSessoes')
       await getSessoes().then(result => {
+        console.log(result)
         for (let dados of result.data){
           this.events.push({
             start: dados.horaInicio,
             end: dados.horaFim,
-            class: dados.class,
-            title: `${dados.paciente} - ${dados.sala}`,
-            content: `${dados.profissional}`,
-            contentFull:''
+            class: dados.profissional.corProf,
+            title: `${dados.paciente.nome} - ${dados.sala.nomeSala}`,
+            content: dados.profissional.nome,
+            contentFull: dados.observacao
           });
         }
+
+
       })
     },
     uuidv4() {
@@ -477,11 +485,11 @@ export default {
 }
   },
   created() {
-    this.getSessoes()
     this.getPacientesDb()
     this.getProfissionaisDb()
     this.getSalasDB()
     this.getProcedimentosDB()
+    this.getSessoes()
   }
 }
 </script>
@@ -546,7 +554,7 @@ export default {
   color: var(--cor8);}
 .vuecal__event.cor9 {
   background-color: rgba(196, 193, 193, 0.5);
-  border: 3px solid var(--cor9)5;
+  border: 3px solid var(--cor9);
   color: var(--cor9);}
 .vuecal__event.cor10 {
   background-color: rgba(196, 193, 193, 0.5);

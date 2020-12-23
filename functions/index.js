@@ -3,25 +3,62 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
-exports.getSessoes = functions.https.onCall(() =>{
+exports.getSessoes = functions.https.onCall(async() => {
+    //async na chamada da função por causa dos documentos que são referenciados nos valores das sessões
+    //a atualização de uma sessão ocorrerá se o dado de algum objeto mudar(paciente, profissional,
+    //sala e procedimento)
     var listSessoes = []
+    var paciente
+    var profissional
+    var procedimento
+    var sala
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('sessoes')
             .get()
-            .then(function(querySnapshot){
-                querySnapshot.forEach(function(doc) {
-                    listSessoes.push(doc.data())
-                });
-                resolve(listSessoes)
+            .then((querySnapshot) =>{
+                querySnapshot.forEach(async function(doc) {
+                    //começã a buscar os 'collection' de outras 'collections'
+                    let sessao = doc.data()
+                    paciente =  doc.get('paciente').get().then((res)=>{
+                        sessao.paciente = res.data()
+                    })
+                    profissional =  doc.get('profissional').get().then((res)=>{
+                        sessao.profissional = res.data()
+                    })
+                    procedimento =  doc.get('procedimento').get().then((res)=>{
+                        sessao.procedimento = res.data()
+                    })
+                    sala =  doc.get('sala').get().then((res)=>{
+                        sessao.sala = res.data()
+                    })
+                    .then(()=>{
+                        listSessoes.push(sessao)
+                    })
+
+                })
+                Promise.all([paciente, profissional, procedimento,sala,listSessoes])
+                    .then(() => {
+                        resolve(listSessoes)
+            })
+
             })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
+
 exports.setSessao = functions.https.onCall((data)=>{
     return new Promise((resolve,reject)=>{
         const db = admin.firestore()
+        const uuid = data.paciente
+        data.paciente = db.doc('pacientes/' + uuid)
+        const uuidProf = data.profissional
+        data.profissional = db.doc('profissionais/'+ uuidProf)
+        const uuidSala = data.sala
+        data.sala = db.doc('salas/'+ uuidSala)
+        const uuidProc = data.procedimento
+        data.procedimento = db.doc('procedimentos/'+ uuidProc)
         db.collection('sessoes')
             .doc(data.uuid)
             .set(
@@ -55,8 +92,7 @@ exports.cadastroSalas = functions.https.onCall((data) =>{
         //vamos testar se é para cadastro ou atualização
         if (data.uuid === undefined){
             const { v4: uuidv4 } = require('uuid');
-            const uuid = uuidv4()
-            data.uuid = uuid
+            data.uuid = uuidv4()
             msg = 'cadastrada'
         }
         const db = admin.firestore()
@@ -149,7 +185,6 @@ exports.cadastroPaciente = functions.https.onCall((data) =>{
 
 exports.statusProfissional = functions.https.onCall((data) => {
     return new Promise((resolve,reject) => {
-        console.log(data)
         admin
             .auth()
             .getUser(data.admUid)
@@ -160,7 +195,6 @@ exports.statusProfissional = functions.https.onCall((data) => {
                         .auth()
                         .getUserByEmail(data.email)
                         .then((userRecord) => {
-                            console.log(userRecord)
                             // See the UserRecord reference doc for the contents of userRecord.
                             admin.auth().updateUser(userRecord.uid, data.status)
                                 .then(() => {
@@ -197,7 +231,6 @@ exports.getProfissionais = functions.https.onCall(() =>{
 });
 
 exports.atualizaProfissional = functions.https.onCall((data) => {
-
     return new Promise((resolve, reject) => {
         admin
             .auth()
@@ -225,6 +258,7 @@ exports.atualizaProfissional = functions.https.onCall((data) => {
 
                 }
             })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
@@ -260,8 +294,6 @@ exports.criarProfissional = functions.https.onCall((data) => {
                     resolve ('Usuário não possui permissão para a operação.')
                 }
             })
-            .catch((error) => {
-                reject(new functions.https.HttpsError('internal', error))
-            });
+            .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 });
