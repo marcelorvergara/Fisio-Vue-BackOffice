@@ -3,18 +3,29 @@
     <b-container class="mt-3">
       <b-row>
         <b-col style="">
-          <vue-cal style="height: 600px;background-color: #ecfce7; color: darkslategrey " locale="pt-br"
+          <vue-cal v-if="$store.getters.getEvents !== 0"
+                   style="height: 600px;background-color: #ecfce7; color: darkslategrey " locale="pt-br"
                    class="vuecal--green-theme mb-5"
                    ref="vuecal"
-                   :time-from="7 * 60" :time-to="22 * 60" :time-step="60" hide-weekends
+                   :time-from="7 * 60" :time-to="22 * 60" :time-step="60"
+                   :hide-weekdays="[7]"
                    events-on-month-view="true"
                    show-all-day-events="true"
-                   :events="events"
+                   :events="$store.getters.getEvents"
                    :disable-views="['years', 'year']"
                    :editable-events="{ title: false, drag: false, resize: false, delete: false, create: true }"
                    :drag-to-create-event="false"
                    @cell-click="criarSessao($event)"
-                   :on-event-click="sessaoInfo">
+                   :on-event-click="sessaoInfo"
+                   active-view="month"
+                   today-button>
+
+                <template v-slot:activator="{ on }">
+                  <b-button v-on="on">
+                    <b-icon icon="vinyl">my_location</b-icon>
+                  </b-button>
+                  <span>Go to Today's date</span>
+                </template>
           </vue-cal>
         </b-col>
       </b-row>
@@ -153,10 +164,12 @@
             <li>Fim: {{ selectedEvent.end && selectedEvent.end.formatTime() }}</li>
           </ul>
           <p v-if="selectedEvent.contentFull" v-html="selectedEvent.contentFull"/>
+          <p v-show="false"> {{ selectedEvent.uuid }}</p>
         </b-card-text>
       </b-card>
       <div class="text-right mt-3">
-        <b-button variant="outline-danger" @click="cancel('teste')">
+        <!--  //cancelar sessão pelo uuid da sessão-->
+        <b-button variant="outline-danger" @click="cancel(selectedEvent.uuid)">
           Desmarcar
         </b-button>
         <b-button class="ml-2" variant="outline-success" @click="ok()">
@@ -221,7 +234,6 @@ export default {
       sessaoArr:'',
       horaIni:'',
       horaFim:'',
-      events:[],
       nome:'',
       profissional:'',
       sala:'',
@@ -248,9 +260,9 @@ export default {
     ok(){
       this.$refs['info-modal'].hide()
     },
-    cancel(teste){
-      console.log(teste)
-      alert('teste')
+    cancel(uuid){
+      console.log(this.$store.getters.getEvents)
+      console.log(uuid)
     },
     sessaoInfo(event){
       //mostra o modal da sessão selecionada
@@ -291,6 +303,7 @@ export default {
         var dates = [];
         var dtHoraIni
         var dtHoraFim
+        //pegando os dados carregados cretare() para enviar informações para o DB
         const pac = this.dadosPac.find(f => f.nome === this.nome)
         const prof = this.dadosPro.find(f => f.nome === this.profissional)
         const sala = this.dadosSalas.find(f => f.nomeSala === this.sala)
@@ -301,14 +314,14 @@ export default {
           this.dataSessao = date.toISOString().substr(0, 10)
           dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
           dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-          this.events.push({
+          this.$store.commit('setEvents',{
             start: dtHoraIni,
             end: dtHoraFim,
             class: prof.corProf,
             title: `${this.nome} - ${this.sala}`,
             content: this.profissional,
             contentFull: this.observacao
-          });
+          })
           //gravar - montar o objeto
           //passando uuid para no banco gerar referencias
           const sessao = {
@@ -334,14 +347,14 @@ export default {
               this.dataSessao = date.toISOString().substr(0, 10)
               dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
               dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-              this.events.push({
+              this.$store.commit('setEvents',{
                 start: dtHoraIni,
                 end: dtHoraFim,
                 class: prof.corProf,
                 title: `${this.nome} - ${this.sala}`,
                 content: this.profissional,
                 contentFull: this.observacao
-              });
+              })
               //gravar - montar o objeto
               const sessao = {
                 paciente: pac.uuid,
@@ -369,14 +382,14 @@ export default {
               this.dataSessao = date.toISOString().substr(0, 10)
               dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
               dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-              this.events.push({
+              this.$store.commit('setEvents',{
                 start: dtHoraIni,
                 end: dtHoraFim,
                 class: prof.corProf,
                 title: `${this.nome} - ${this.sala}`,
                 content: this.profissional,
                 contentFull: this.observacao
-              });
+              })
               //gravar - montar o objeto
               const sessao = {
                 paciente: pac.uuid,
@@ -415,9 +428,6 @@ export default {
             this.$refs['modal-err'].show()
           })
     },
-    resetar(){
-
-    },
     async getPacientesDb(){
       //pegar os nomes dos pacientes para autocomplete
       const getPaciente = this.connDbFunc().httpsCallable('getPacientes')
@@ -428,54 +438,26 @@ export default {
         }
       })
     },
-    async getProfissionaisDb(){
-      //pegar os nomes dos pacientes para autocomplete
-      // é necessário rever esse método
-      const getProfissionais = this.connDbFunc().httpsCallable('getProfissionais')
-      await getProfissionais().then(result => {
-        for (let dados of result.data){
-          this.dadosPro.push(dados)
-          this.profissionais.push(dados.nome)
-        }
-      })
-    },
-    async getSalasDB(){
-      //pegar os nomes dos procedimentos para o autocomplete
-      const getSala = this.connDbFunc().httpsCallable('getSalas')
-      await getSala().then(result => {
-        for (let dados of result.data){
-          this.dadosSalas.push(dados)
-          this.salas.push(dados.nomeSala)
-        }
-      })
-    },
-    async getProcedimentosDB(){
-      //pegar os nomes dos procedimentos para o autocomplete
-      const getPaciente = this.connDbFunc().httpsCallable('getProcedimentos')
-      await getPaciente().then(result => {
-        for (let dados of result.data){
-          this.dadosProcedimentos.push(dados)
-          this.procedimentos.push(dados.nomeProcedimento)
-        }
-      })
-    },
-    async getSessoes(){
-      //pegar os nomes dos procedimentos para o autocomplete
-      const getSessoes = this.connDbFunc().httpsCallable('getSessoes')
-      await getSessoes().then(result => {
-        console.log(result)
-        for (let dados of result.data){
-          this.events.push({
-            start: dados.horaInicio,
-            end: dados.horaFim,
-            class: dados.profissional.corProf,
-            title: `${dados.paciente.nome} - ${dados.sala.nomeSala}`,
-            content: dados.profissional.nome,
-            contentFull: dados.observacao
-          });
-        }
-
-
+    async getSessaoDB(){
+      const getSessao = this.connDbFunc().httpsCallable('getSessoes')
+      await getSessao().then(result => {
+        this.$store.commit('resetEvents')
+            for (let dados of result.data){
+              const dadosProf = this.$store.getters.getProfissionais.find(f => f.uuid === dados.profissional)
+              const dadosPac = this.$store.getters.getPacientes.find(f => f.uuid === dados.paciente)
+              const dadosSala = this.$store.getters.getSalas.find(f =>f.uuid === dados.sala)
+              const dadosProc = this.$store.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
+              const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
+              const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${dados.observacao}`
+              this.$store.commit('setEvents',
+                  {start: dados.horaInicio,
+                          end: dados.horaFim,
+                          class: dadosProf.corProf,
+                          title: title,
+                          content: dadosProf.nome,
+                          contentFull: contentFull,
+                          uuid: dados.uuid})
+              }
       })
     },
     uuidv4() {
@@ -485,11 +467,8 @@ export default {
 }
   },
   created() {
-    this.getPacientesDb()
-    this.getProfissionaisDb()
-    this.getSalasDB()
-    this.getProcedimentosDB()
-    this.getSessoes()
+    this.getSessaoDB()
+    // this.$store.dispatch('getEventsDb')
   }
 }
 </script>
@@ -512,7 +491,7 @@ export default {
 
 }
 .vuecal__event{
-  background-color: lawngreen;
+  background-color: rgba(196, 193, 193, 0.5);
   border: 4px white solid;
   font-size: 0.8em;
 }

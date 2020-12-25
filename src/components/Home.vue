@@ -4,7 +4,12 @@
     <b-navbar toggleable="lg" type="dark" variant="dark">
       <b-navbar-brand :to="{path: `/Home/${$route.params.id}`}" replace class="ml-4 mr-5">CFRA</b-navbar-brand>
 
-      <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
+      <b-navbar-toggle target="nav-collapse" class="mr-auto">
+        <template #default="{ expanded }">
+          <b-icon v-if="expanded" icon="chevron-bar-up"></b-icon>
+          <b-icon v-else icon="chevron-bar-down"></b-icon>
+        </template>
+      </b-navbar-toggle>
 
       <b-collapse id="nav-collapse" is-nav>
 
@@ -32,9 +37,8 @@
           </b-nav-item-dropdown>
 
         </b-navbar-nav>
-          <b-button v-show="user.data" variant="outline-danger" @click="signOut" class="mr-2" size="sm">Logout <b-icon icon="door-closed"></b-icon></b-button>
       </b-collapse>
-
+      <b-button v-show="user.data" variant="outline-danger" @click="signOut" class="mr-2 ml-2 mt-2" size="sm">Logout <b-icon icon="door-open-fill"></b-icon></b-button>
     </b-navbar>
 <!--router view para mostrar os componentes filhos do Home-->
     <router-view></router-view>
@@ -85,6 +89,10 @@ export default {
             console.log(error);
           });
     }
+    //carregar tabelas para consultas
+    this.$store.dispatch('getProfissionaisDb')
+    this.$store.dispatch('getSalasDb')
+    this.$store.dispatch('getProcedimentosDB')
   }
 }
 </script>

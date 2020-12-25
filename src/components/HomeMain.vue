@@ -16,7 +16,10 @@
 
 <script>
 export default {
-name: "HomeMain"
+  name: "HomeMain",
+  created() {
+    this.$store.dispatch('getPacientesDb')
+  }
 }
 </script>
 

@@ -33,7 +33,7 @@ const mutations = {
     }
 }
 
-const actions ={
+const actions = {
     fetchUser({ commit }, user) {
         //se usuário logado
         commit("SET_LOGGED_IN", user !== null);
