@@ -6,8 +6,7 @@ import { routes } from './router'
 import { store } from './store/index'
 import { initBackend } from "@/initBackend";
 import { connDb } from "@/store/connDb";
-import VueBootstrapTypeahead from 'vue-bootstrap-typeahead'
-import 'material-design-icons-iconfont/dist/material-design-icons.css'
+import VueTypeaheadBootstrap from 'vue-typeahead-bootstrap'
 
 Vue.use(BootstrapVue)
 Vue.use(IconsPlugin)
@@ -19,7 +18,7 @@ const router = new VueRouter({
   mode:'history',
   base: process.env.BASE_URL
 })
-Vue.component('vue-bootstrap-typeahead', VueBootstrapTypeahead)
+Vue.component('vue-typeahead-bootstrap', VueTypeaheadBootstrap)
 Vue.config.productionTip = false
 
 connDb.methods.connDbAuth().onAuthStateChanged(user => {

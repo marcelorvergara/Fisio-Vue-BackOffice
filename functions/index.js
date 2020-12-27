@@ -3,6 +3,20 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+exports.removeSessao = functions.https.onCall((data)=> {
+
+    return new Promise((resolve, reject) => {
+        console.log('data',data)
+        const db = admin.firestore()
+        db.collection('sessoes')
+            .doc(data).delete().then(() => {
+            resolve(`Sessão desmarcada com sucesso.`)
+        })
+            .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+
+    })
+})
+
 exports.getSessoes = functions.https.onCall(async() => {
     //async na chamada da função por causa dos documentos que são referenciados nos valores das sessões
     //a atualização de uma sessão ocorrerá se o dado de algum objeto mudar(paciente, profissional,
@@ -12,7 +26,7 @@ exports.getSessoes = functions.https.onCall(async() => {
     var profissional;
     var procedimento;
     var sala;
-
+    var tamanhoSnap =0;
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('sessoes')
@@ -20,6 +34,7 @@ exports.getSessoes = functions.https.onCall(async() => {
             .get()
             .then( function (querySnapshot) {
                 console.log("tamanho docs ",querySnapshot.docs.length)
+                tamanhoSnap = querySnapshot.docs.length;
                 querySnapshot.forEach(async function(doc) {
                     var sessao = {
                         uuid: null,
@@ -62,6 +77,9 @@ exports.getSessoes = functions.https.onCall(async() => {
                 return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
                     .then(() => {
                         console.log('tamanho enviado',listSessoes.length)
+                        if (listSessoes.length !== tamanhoSnap){
+                            reject('Número de sessões discrepantes.')
+                        }
                         resolve(listSessoes)
                     })
 
@@ -151,8 +169,7 @@ exports.cadastroProcedimentos = functions.https.onCall((data) =>{
         //vamos testar se é para cadastro ou atualização
         if (data.uuid === undefined){
             const { v4: uuidv4 } = require('uuid');
-            const uuid = uuidv4()
-            data.uuid = uuid
+            data.uuid = uuidv4()
             msg = 'cadastrado'
         }
         const db = admin.firestore()
@@ -189,8 +206,7 @@ exports.cadastroPaciente = functions.https.onCall((data) =>{
         //vamos testar se é para cadastro ou atualização
         if (data.uuid === undefined){
             const { v4: uuidv4 } = require('uuid');
-            const uuid = uuidv4()
-            data.uuid = uuid
+            data.uuid = uuidv4()
             msg = 'cadastrado'
         }
         const db = admin.firestore()
@@ -288,13 +304,12 @@ exports.criarProfissional = functions.https.onCall((data) => {
     //promise para retornar para tela do usuário
     return new Promise((resolve, reject) => {
         const { v4: uuidv4 } = require('uuid');
-        const uuid = uuidv4()
-        data.uuid = uuid
+        data.uuid = uuidv4()
         admin
             .auth()
             .getUser(data.admUid)
             .then((adminRec) => {
-                //checa se é administrador
+                //***checa se é administrador***
                 if (adminRec.customClaims.funcao === 'Admin') {
                     return admin.auth().createUser({email: data.email, password: data.password})
                         .then((user) => {

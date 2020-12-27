@@ -5,16 +5,17 @@
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3 d-flex justify-content-center">
           <b-card header="Cadastro de Profissional" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome do Profissional:" label-for="nome">
-              <vue-bootstrap-typeahead
+              <vue-typeahead-bootstrap
+                  disableSort
                   id="nome"
                   v-model="nome"
                   placeholder="Nome completo"
                   required
-                  :data="nomes"
+                  :data="nomesProfs"
                   @hit="preencheVal($event)"
                   :minMatchingChars="0"
                   >
-              </vue-bootstrap-typeahead>
+              </vue-typeahead-bootstrap>
             </b-form-group>
             <b-form @submit="cadastrar" @reset="resetar" v-if="show" >
               <b-form-group id="grp-phone" label="Telefone do Profissional:" label-for="phone">
@@ -144,6 +145,17 @@ export default {
       }
     }
   },
+  computed:{
+    nomesProfs() {
+      var nomes = [];
+      for (let i = 0; i < this.$store.getters.getProfissionais.length; i++) {
+        nomes.push(this.$store.getters.getProfissionais[i].nome.trim())
+      }
+      return nomes.sort(function (a, b) {
+        return a.localeCompare(b);
+      });
+    }
+  },
   methods:{
     updateValue(){
       this.styleObj.color = this.colors.hex
@@ -224,6 +236,7 @@ export default {
       // é necessário rever esse método
       const getProfissionais = this.connDbFunc().httpsCallable('getProfissionais')
       await getProfissionais().then(result => {
+
         for (let dados of result.data){
           this.dadosPro.push(dados)
           this.nomes.push(dados.nome)
@@ -257,6 +270,8 @@ export default {
                   this.mensagem = retorno.data
                   this.loading = false
                   this.$refs['modal-ok'].show()
+                  this.resetar()
+                  this.getNomeDb()
                 })
                 .catch( error => {
                   console.log(error)
@@ -266,6 +281,7 @@ export default {
                 })
           }
         }else {
+          //criação de profissional
           const criaProfissional = this.connDbFunc().httpsCallable('criarProfissional')
           this.form.nome = this.nome
           this.form.admUid = this.$store.getters.user.data.uid
@@ -276,6 +292,8 @@ export default {
                 this.mensagem = retorno.data
                 this.loading = false
                 this.$refs['modal-ok'].show()
+                this.resetar()
+                this.getNomeDb()
               })
               .catch( error => {
                 this.mensagem = error
@@ -285,9 +303,8 @@ export default {
         }
       }
     },
-    resetar(event){
-      console.log(this.colors)
-      event.preventDefault()
+    resetar(){
+      this.colors = '#00753A',
       this.nome = ''
       this.form.email = ''
       this.form.phone = ''

@@ -5,14 +5,16 @@
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
           <b-card header="Cadastro de Procedimentos" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome do Procedimento:" label-for="nome">
-              <vue-bootstrap-typeahead
+              <vue-typeahead-bootstrap
+                  disableSort
                   id="nome"
                   v-model="nomeProcedimento"
                   placeholder="Nome do procedimento"
                   required
-                  :data="nomesProcedimentos"
-                  @hit="preencheVal($event)">
-              </vue-bootstrap-typeahead>
+                  :data="nomesProcs"
+                  @hit="preencheVal($event)"
+                  :minMatchingChars="0">
+              </vue-typeahead-bootstrap>
             </b-form-group>
             <b-form @submit="cadastrar" @reset="resetar" v-if="show" >
               <b-form-group id="grp-qtd-pacientes" label="Pacientes simultâneos:" label-for="email">
@@ -49,7 +51,7 @@
 </template>
 
 <script>
-import { connDb } from '@/store/connDb'
+import {connDb} from '@/store/connDb'
 
 export default {
   name: "Procedimentos",
@@ -63,53 +65,59 @@ export default {
       submitBtn: 'Cadastrar',
       dadosProcedimentos: [],
       nomeProcedimento:'',
-      nomesProcedimentos: [],
       form:{
         qtdPacientes:null
       }
     }
   },
+  computed:{
+    nomesProcs() {
+      var nomes = [];
+      for (let i = 0; i < this.$store.getters.getProcedimentos.length; i++) {
+        nomes.push(this.$store.getters.getProcedimentos[i].nomeProcedimento.trim())
+      }
+      return nomes.sort(function (a, b) {
+        return a.localeCompare(b);
+      });
+    }
+  },
   methods:{
     preencheVal(nome){
-      const dados = this.dadosProcedimentos.find( f => f.nomeProcedimento === nome)
+      const dados = this.$store.getters.getProcedimentos.find( f => f.nomeProcedimento === nome)
       this.form.qtdPacientes = dados.qtdPacientes
       this.submitBtn = 'Atualizar'
       this.uuid = dados.uuid
     },
-    async getProcedimentosDB(){
-      //pegar os nomes dos procedimentos para o autocomplete
-      const getPaciente = this.connDbFunc().httpsCallable('getProcedimentos')
-      await getPaciente().then(result => {
-        for (let dados of result.data){
-          this.dadosProcedimentos.push(dados)
-          this.nomesProcedimentos.push(dados.nomeProcedimento)
-        }
-      })
-    },
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
-
-      const cadProcedimento = this.connDbFunc().httpsCallable('cadastroProcedimentos')
-      this.form.nomeProcedimento = this.nomeProcedimento
-      //vamos testar se é para cadastrar ou atualizar
-      if (this.submitBtn === 'Atualizar') {
-        this.form.uuid = this.uuid
-      }
-      await cadProcedimento(this.form)
-      .then((retorno) => {
-        this.mensagem = retorno.data
-        this.loading = false
-        this.$refs['modal-ok'].show()
-      })
-      .catch(error => {
-        this.mensagem = error
+      if(this.form.qtdPacientes === '' || this.nomeProcedimento === ''){
+        this.mensagem = 'É necessário preencher todos os campos.'
         this.loading = false
         this.$refs['modal-err'].show()
-      })
+      }else {
+        const cadProcedimento = this.connDbFunc().httpsCallable('cadastroProcedimentos')
+        this.form.nomeProcedimento = this.nomeProcedimento
+        //vamos testar se é para cadastrar ou atualizar
+        if (this.submitBtn === 'Atualizar') {
+          this.form.uuid = this.uuid
+        }
+        await cadProcedimento(this.form)
+            .then((retorno) => {
+              this.mensagem = retorno.data
+              this.loading = false
+              this.$refs['modal-ok'].show()
+              this.$store.dispatch('getProcedimentosDB')
+              this.resetar()
+            })
+            .catch(error => {
+              this.mensagem = error
+              this.loading = false
+              this.$refs['modal-err'].show()
+            })
+      }
     },
-    resetar(event){
-      event.preventDefault()
+    resetar(){
       this.submitBtn = 'Cadastrar'
       this.nomeProcedimento = ''
       this.form.qtdPacientes = ''
@@ -120,7 +128,6 @@ export default {
     }
   },
   created() {
-    this.getProcedimentosDB()
   }
 }
 </script>

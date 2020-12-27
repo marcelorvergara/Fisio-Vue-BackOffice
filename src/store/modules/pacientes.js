@@ -14,8 +14,8 @@ const getters = {
     getEvents: state => state.events,
     getProfissionais: state => state.profissionais,
     getSalas: state => state.salas,
-    getProcedimentos:state=>state.procedimentos,
-    getPacientes:state=>state.pacientes
+    getProcedimentos:state => state.procedimentos,
+    getPacientes:state => state.pacientes
 }
 
 const mutations = {
@@ -26,6 +26,9 @@ const mutations = {
     // reseta o state events para não apresentar duplicado na tela
     resetEvents(state){
         state.events = []
+    },
+    removeEvent(state,event){
+        state.events.splice(event,1)
     },
     setProfissionais(state,profissionais){
         state.profissionais.push(profissionais)
@@ -65,6 +68,9 @@ const actions = {
                 context.commit('setProfissionais', dados)
             }
         })
+            .catch(err => {
+                console.log(err)
+            })
     },
     async getSalasDb(context) {
         //pegar os nomes dos procedimentos para o autocomplete
@@ -75,6 +81,9 @@ const actions = {
                 context.commit('setSalas',dados)
             }
         })
+            .catch(err => {
+                console.log(err)
+            })
     },
     async getProcedimentosDB(context){
     //pegar os nomes dos procedimentos para o autocomplete
@@ -85,6 +94,9 @@ const actions = {
             context.commit('setProcedimentos',dados)
         }
     })
+        .catch(err => {
+            console.log(err)
+        })
     },
     async getPacientesDb(context) {
         //pegar os pacientes
@@ -95,6 +107,9 @@ const actions = {
                 context.commit('setPacientes',dados)
             }
         })
+            .catch(err => {
+                console.log(err)
+            })
     },
     //pega as sessões do DB
     async getEventsDb(context){
@@ -115,6 +130,22 @@ const actions = {
                     contentFull: `Procedimento: ${dados.proc} <br> Observação: ${dados.observacao}`,
                     uuid: dados.uuid})
             }
+        })
+            .catch(err => {
+                console.log(err)
+            })
+    },
+    removeEventDb(context,payload){
+        //deletar sessão
+        return new Promise((resolve, reject)=>{
+            const removeSessao = connDb.methods.connDbFunc().httpsCallable('removeSessao')
+            removeSessao(payload.uuid).then(result =>{
+                console.log(result.data)
+                resolve (result.data)
+            })
+                .catch(err => {
+                    reject(err)
+                })
         })
     }
 }

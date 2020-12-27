@@ -5,14 +5,16 @@
       <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
         <b-card header="Cadastro de Paciente" header-bg-variant="dark" header-text-variant="white">
           <b-form-group id="grp-nome" label="Nome do Paciente:" label-for="nome">
-            <vue-bootstrap-typeahead
+            <vue-typeahead-bootstrap
+                disableSort
                 id="nome"
                 v-model="nome"
                 placeholder="Nome completo"
                 required
-                :data="nomes"
-                @hit="preencheVal($event)">
-            </vue-bootstrap-typeahead>
+                :data="nomesPac"
+                @hit="preencheVal($event)"
+                :minMatchingChars="0">
+            </vue-typeahead-bootstrap>
           </b-form-group>
         <b-form @submit="cadastrar" @reset="resetar" v-if="show" >
           <b-form-group id="grp-email" label="Email do Paciente:" label-for="email">
@@ -63,7 +65,7 @@
 </template>
 
 <script>
-import { connDb } from '@/store/connDb'
+import {connDb} from '@/store/connDb'
 
 export default {
   name: "CadastroPaciente",
@@ -75,7 +77,6 @@ export default {
       submitBtn: 'Cadastrar',
       dadosPac:[],
       nome:'',
-      nomes:[],
       nomeSelec:null,
       show: true,
       mensagem:'',
@@ -88,6 +89,17 @@ export default {
       }
     }
   },
+  computed:{
+    nomesPac(){
+      var nomes = []
+      for (let i=0; i < this.$store.getters.getPacientes.length; i++){
+        nomes.push(this.$store.getters.getPacientes[i].nome.trim())
+      }
+      return nomes.sort(function (a, b) {
+        return a.localeCompare(b);
+      });
+    }
+  },
   methods:{
     preencheVal(nome){
       const dados = this.dadosPac.find( f => f.nome === nome)
@@ -98,16 +110,6 @@ export default {
       this.form.nasc = dados.nasc
       this.submitBtn = 'Atualizar'
       this.uuid = dados.uuid
-    },
-    async getNomeDb(){
-      //pegar os nomes dos pacientes para autocomplete
-      const getPaciente = this.connDbFunc().httpsCallable('getPacientes')
-      await getPaciente().then(result => {
-        for (let dados of result.data){
-          this.dadosPac.push(dados)
-          this.nomes.push(dados.nome)
-        }
-      })
     },
     async cadastrar(event){
       event.preventDefault()
@@ -123,6 +125,8 @@ export default {
             this.mensagem = retorno.data
             this.loading = false
             this.$refs['modal-ok'].show()
+            this.$store.dispatch('getPacientesDb')
+            this.resetar()
           })
           .catch(error => {
             this.mensagem = error
@@ -131,8 +135,7 @@ export default {
           })
 
     },
-    resetar(event){
-      event.preventDefault()
+    resetar(){
       this.submitBtn = 'Cadastrar'
       this.nome = ''
       this.form.email = ''
@@ -147,7 +150,7 @@ export default {
     }
   },
   created() {
-    this.getNomeDb()
+
   }
 }
 </script>

@@ -5,14 +5,16 @@
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
           <b-card header="Cadastro de Salas" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome da Sala:" label-for="nome">
-              <vue-bootstrap-typeahead
+              <vue-typeahead-bootstrap
+                  disableSort
                   id="nome"
                   v-model="nomeSala"
                   placeholder="Nome da sala"
                   required
                   :data="nomesSalas"
-                  @hit="preencheVal($event)">
-              </vue-bootstrap-typeahead>
+                  @hit="preencheVal($event)"
+                  :minMatchingChars="0">
+              </vue-typeahead-bootstrap>
             </b-form-group>
             <b-form @submit="cadastrar" @reset="resetar" v-if="show" >
               <b-form-group id="grp-qtd-pacientes" label="Pacientes simultâneos:" label-for="email">
@@ -63,28 +65,28 @@ export default {
       submitBtn: 'Cadastrar',
       dadosSalas: [],
       nomeSala:'',
-      nomesSalas: [],
       form:{
         qtdPacientes:null
       }
     }
   },
+  computed:{
+    nomesSalas(){
+      var nomes = []
+      for (let i=0; i < this.$store.getters.getSalas.length; i++){
+        nomes.push(this.$store.getters.getSalas[i].nomeSala.trim())
+      }
+      return nomes.sort(function (a, b) {
+        return a.localeCompare(b);
+      });
+    }
+  },
   methods:{
     preencheVal(nome){
-      const dados = this.dadosSalas.find( f => f.nomeSala === nome)
+      const dados = this.$store.getters.getSalas.find( f => f.nomeSala === nome)
       this.form.qtdPacientes = dados.qtdPacientes
       this.submitBtn = 'Atualizar'
       this.uuid = dados.uuid
-    },
-    async getSalasDB(){
-      //pegar os nomes dos procedimentos para o autocomplete
-      const getSala = this.connDbFunc().httpsCallable('getSalas')
-      await getSala().then(result => {
-        for (let dados of result.data){
-          this.dadosSalas.push(dados)
-          this.nomesSalas.push(dados.nomeSala)
-        }
-      })
     },
     async cadastrar(event){
       event.preventDefault()
@@ -101,6 +103,8 @@ export default {
             this.mensagem = retorno.data
             this.loading = false
             this.$refs['modal-ok'].show()
+            this.$store.dispatch('getSalasDb')
+            this.resetar()
           })
           .catch(error => {
             this.mensagem = error
@@ -108,8 +112,7 @@ export default {
             this.$refs['modal-err'].show()
           })
     },
-    resetar(event){
-      event.preventDefault()
+    resetar(){
       this.submitBtn = 'Cadastrar'
       this.nomeSala = ''
       this.form.qtdPacientes = ''
@@ -120,7 +123,7 @@ export default {
     }
   },
   created() {
-    this.getSalasDB()
+
   }
 }
 </script>

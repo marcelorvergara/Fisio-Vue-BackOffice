@@ -171,6 +171,7 @@
         <!--  //cancelar sessão pelo uuid da sessão-->
         <b-button variant="outline-danger" @click="cancel(selectedEvent.uuid)">
           Desmarcar
+          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
         </b-button>
         <b-button class="ml-2" variant="outline-success" @click="ok()">
           OK
@@ -251,6 +252,11 @@ export default {
     }
   },
   methods:{
+    uuidv4() {
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+          (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    },
     mudarDiariamente(){
       this.diariamente = '1'
     },
@@ -260,15 +266,33 @@ export default {
     ok(){
       this.$refs['info-modal'].hide()
     },
-    cancel(uuid){
-      console.log(this.$store.getters.getEvents)
-      console.log(uuid)
+    async cancel(uuid){
+      this.loading = true
+      //remove da tela - do store
+      for(var i = 0; i < this.$store.getters.getEvents.length; i++) {
+        if(this.$store.getters.getEvents[i].uuid === uuid) {
+          this.$store.commit('removeEvent',i)
+          break;
+        }
+      }
+      //remove do DB
+      await this.$store.dispatch('removeEventDb',{uuid: uuid})
+          .then((retorno) => {
+            console.log(retorno)
+            this.mensagem = retorno
+            this.loading = false
+            this.$refs['modal-ok'].show()
+          })
+          .catch(error => {
+            this.mensagemErro = error
+            this.loading = false
+            this.$refs['modal-err'].show()
+          })
     },
     sessaoInfo(event){
       //mostra o modal da sessão selecionada
       this.selectedEvent = event
       this.$refs['info-modal'].show()
-
     },
     criarSessao(sessao){
       //trata o evento de clicar no calendário fora de uma sessão
@@ -304,10 +328,10 @@ export default {
         var dtHoraIni
         var dtHoraFim
         //pegando os dados carregados cretare() para enviar informações para o DB
-        const pac = this.dadosPac.find(f => f.nome === this.nome)
-        const prof = this.dadosPro.find(f => f.nome === this.profissional)
-        const sala = this.dadosSalas.find(f => f.nomeSala === this.sala)
-        const proc = this.dadosProcedimentos.find(f => f.nomeProcedimento === this.procedimento)
+        const pac = this.$store.getters.getPacientes.find(f => f.nome === this.nome)
+        const prof = this.$store.getters.getProfissionais.find(f => f.nome === this.profissional)
+        const sala = this.$store.getters.getSalas.find(f => f.nomeSala === this.sala)
+        const proc = this.$store.getters.getProcedimentos.find(f => f.nomeProcedimento === this.procedimento)
 
         if ((this.diariamente === '1') && (this.semanalmente === '1')){
           //agendamento único
@@ -428,16 +452,6 @@ export default {
             this.$refs['modal-err'].show()
           })
     },
-    async getPacientesDb(){
-      //pegar os nomes dos pacientes para autocomplete
-      const getPaciente = this.connDbFunc().httpsCallable('getPacientes')
-      await getPaciente().then(result => {
-        for (let dados of result.data){
-          this.dadosPac.push(dados)
-          this.nomes.push(dados.nome)
-        }
-      })
-    },
     async getSessaoDB(){
       const getSessao = this.connDbFunc().httpsCallable('getSessoes')
       await getSessao().then(result => {
@@ -460,15 +474,34 @@ export default {
               }
       })
     },
-    uuidv4() {
-        return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
-        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
-  );
-}
+    getNomesPacientes(){
+      for (let i=0; i < this.$store.getters.getPacientes.length; i++){
+        this.nomes.push(this.$store.getters.getPacientes[i].nome)
+      }
+    },
+    getNomesProfissionais(){
+      for (let i =0; i < this.$store.getters.getProfissionais.length; i++){
+        this.profissionais.push(this.$store.getters.getProfissionais[i].nome)
+      }
+    },
+    getNomeSalas(){
+      for (let i=0; i< this.$store.getters.getSalas.length; i++) {
+        this.salas.push(this.$store.getters.getSalas[i].nomeSala)
+      }
+    },
+    getNomeProcedimentos(){
+      for (let i=0; i< this.$store.getters.getProcedimentos.length;i++){
+        this.procedimentos.push(this.$store.getters.getProcedimentos[i].nomeProcedimento)
+      }
+    }
   },
   created() {
     this.getSessaoDB()
     // this.$store.dispatch('getEventsDb')
+    this.getNomesPacientes()
+    this.getNomesProfissionais()
+    this.getNomeSalas()
+    this.getNomeProcedimentos()
   }
 }
 </script>
