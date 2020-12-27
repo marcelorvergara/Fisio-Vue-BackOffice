@@ -83,7 +83,7 @@ export default {
   },
   methods:{
     preencheVal(nome){
-      const dados = this.$store.getters.getProcedimentos.find( f => f.nomeProcedimento === nome)
+      const dados = this.$store.getters.getProcedimentos.find( f => f.nomeProcedimento.trim() === nome)
       this.form.qtdPacientes = dados.qtdPacientes
       this.submitBtn = 'Atualizar'
       this.uuid = dados.uuid
@@ -96,18 +96,16 @@ export default {
         this.loading = false
         this.$refs['modal-err'].show()
       }else {
-        const cadProcedimento = this.connDbFunc().httpsCallable('cadastroProcedimentos')
-        this.form.nomeProcedimento = this.nomeProcedimento
+        this.form.nomeProcedimento = this.nomeProcedimento.trim()
         //vamos testar se é para cadastrar ou atualizar
         if (this.submitBtn === 'Atualizar') {
           this.form.uuid = this.uuid
         }
-        await cadProcedimento(this.form)
+        await this.$store.dispatch('setProcedimentoDb', {procedimento: this.form})
             .then((retorno) => {
-              this.mensagem = retorno.data
+              this.mensagem = retorno
               this.loading = false
               this.$refs['modal-ok'].show()
-              this.$store.dispatch('getProcedimentosDB')
               this.resetar()
             })
             .catch(error => {

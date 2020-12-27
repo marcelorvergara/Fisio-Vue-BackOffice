@@ -46,11 +46,11 @@
                 <b-form-input id="dtnasc" v-model="form.nasc" type="date"></b-form-input>
               </b-form-group>
               <b-form-group id="grp-email" label="E-mail/Login do Profissional:" label-for="email">
-                <b-form-input id="email" v-model="form.email" type="email" placeholder="O e-mail será o login da ferramenta" required></b-form-input>
+                <b-form-input :disabled="inputStatus" id="email" v-model="form.email" type="email" placeholder="O e-mail será o login da ferramenta" required></b-form-input>
               </b-form-group>
               <b-input-group prepend="Senha">
-                <b-form-input placeholder="senha" v-model="form.senha" type="password"></b-form-input>
-                <b-form-input placeholder="repita a senha" v-model="form.senha2" type="password"></b-form-input>
+                <b-form-input :disabled="inputStatus" placeholder="senha" v-model="form.senha" type="password"></b-form-input>
+                <b-form-input :disabled="inputStatus" placeholder="repita a senha" v-model="form.senha2" type="password"></b-form-input>
               </b-input-group>
               <div class="text-right mt-3">
                 <b-button variant="outline-success" v-if="senhaBtn" @click="trocaSenha" class="mt-2">Trocar Senha</b-button>
@@ -98,6 +98,7 @@ export default {
   components: {"compact-picker": Compact},
   data() {
     return {
+      inputStatus:false,
       styleObj:{
         color: ''
       },
@@ -179,33 +180,29 @@ export default {
             })
     },
     async statusLogin(){
-      const dados = this.dadosPro.find( f => f.nome === this.nome)
-      var data;
+      const dados = this.$store.getters.getProfissionais.find( f => f.nome === this.nome)
+      var dataStatus;
       if (this.habilitaBtn === 'Habilitar'){
-        data = {nome: dados.nome,
+        dataStatus = {nome: dados.nome,
           email: dados.email,
           admUid: this.$store.getters.user.data.uid,
           uuid: dados.uuid,
           status: {disabled: false}}
       }else if (this.habilitaBtn === 'Desabilitar'){
-        data = {nome: dados.nome,
+        dataStatus = {nome: dados.nome,
           email: dados.email,
           admUid: this.$store.getters.user.data.uid,
           uuid: dados.uuid,
           status:{disabled: true}}
       }
-      const statusProfissionais = this.connDbFunc().httpsCallable('statusProfissional')
-      await statusProfissionais(data)
+      await this.$store.dispatch('setStatusProfissinalDb',{status: dataStatus})
           .then((retorno) => {
-            //retorno do backend sobre criar o usuário (permissão)
-            this.mensagem = retorno.data
+            //retorno do backend sobre alterar o status o usuário (permissão)
+            this.mensagem = retorno
             this.loading = false
             this.$refs['modal-ok'].show()
-            if (this.habilitaBtn === 'Habilitar'){
-              this.habilitaBtn = 'Desabilitar'
-            }else if (this.habilitaBtn === 'Desabilitar'){
-              this.habilitaBtn = 'Habilitar'
-            }
+            this.resetar()
+            this.desabilitar = false
           })
           .catch( error => {
             this.mensagem = error
@@ -214,10 +211,15 @@ export default {
           })
     },
     preencheVal(nome){
-      const dados = this.dadosPro.find( f => f.nome === nome)
+      this.inputStatus = true
+      const dados = this.$store.getters.getProfissionais.find( f => f.nome.trim() === nome)
       if (dados.disabled){
-          this.habilitaBtn = 'Habilitar'
+        this.habilitaBtn = 'Habilitar'
+      }else{
+        this.habilitaBtn = 'Desabilitar'
       }
+      //mostra o botão de desabilitar
+      this.desabilitar = true
       this.colors = this.colorsPalette[dados.corProf.replace('cor','')]
       this.form.phone = dados.phone
       this.form.end = dados.end
@@ -225,23 +227,10 @@ export default {
       this.role = dados.funcao
       this.form.nasc = dados.nasc
       this.form.email = dados.email
-      this.desabilitar = true
       this.senhaBtn = true
       this.resetarBtn = false
       this.form.uuid = dados.uuid
       this.submitBtn = 'Atualizar'
-    },
-    async getNomeDb(){
-      //pegar os nomes dos pacientes para autocomplete
-      // é necessário rever esse método
-      const getProfissionais = this.connDbFunc().httpsCallable('getProfissionais')
-      await getProfissionais().then(result => {
-
-        for (let dados of result.data){
-          this.dadosPro.push(dados)
-          this.nomes.push(dados.nome)
-        }
-      })
     },
     async cadastrar(event){
       this.mensagem = ''
@@ -259,22 +248,19 @@ export default {
             this.$refs['modal-err'].show()
           }else{
             // atualizar os dados do profissional
-            this.form.nome = this.nome
+            this.form.nome = this.nome.trim()
             //envia o uid do user logado para verificar se é admin
             this.form.admUid = this.$store.getters.user.data.uid
             this.form.funcao = this.role
-            const atualizaProfissional = this.connDbFunc().httpsCallable('atualizaProfissional')
-            await atualizaProfissional (this.form)
+            this.$store.dispatch('updateProfissionaisDb',{profissonal: this.form})
                 .then((retorno) => {
                   //retorno do backend sobre atualização do usuário (permissão)
-                  this.mensagem = retorno.data
+                  this.mensagem = retorno
                   this.loading = false
                   this.$refs['modal-ok'].show()
                   this.resetar()
-                  this.getNomeDb()
                 })
                 .catch( error => {
-                  console.log(error)
                   this.mensagem = error
                   this.loading = false
                   this.$refs['modal-err'].show()
@@ -282,18 +268,17 @@ export default {
           }
         }else {
           //criação de profissional
-          const criaProfissional = this.connDbFunc().httpsCallable('criarProfissional')
-          this.form.nome = this.nome
+          this.form.nome = this.nome.trim()
           this.form.admUid = this.$store.getters.user.data.uid
           this.form.funcao = this.role
-          await criaProfissional(this.form)
+          this.form.disabled = true
+          this.$store.dispatch('setProfissionalDb', {profissional: this.form})
               .then((retorno) => {
                 //retorno do backend sobre criar o usuário (permissão)
-                this.mensagem = retorno.data
+                this.mensagem = retorno
                 this.loading = false
                 this.$refs['modal-ok'].show()
                 this.resetar()
-                this.getNomeDb()
               })
               .catch( error => {
                 this.mensagem = error
@@ -304,7 +289,9 @@ export default {
       }
     },
     resetar(){
-      this.colors = '#00753A',
+      //desabilita email e senha na edição do profissional
+      this.inputStatus = false
+      this.colors = '#00753A'
       this.nome = ''
       this.form.email = ''
       this.form.phone = ''
@@ -321,7 +308,6 @@ export default {
     }
   },
   created() {
-    this.getNomeDb()
   }
 }
 </script>

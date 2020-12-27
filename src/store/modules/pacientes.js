@@ -4,17 +4,11 @@ import { connDb } from "@/store/connDb";
 const state = {
     //array de sessões(events)
     events: [],
-    profissionais: [],
-    salas:[],
-    procedimentos:[],
     pacientes:[]
 }
 const getters = {
     //pega o array de sessões (events)
     getEvents: state => state.events,
-    getProfissionais: state => state.profissionais,
-    getSalas: state => state.salas,
-    getProcedimentos:state => state.procedimentos,
     getPacientes:state => state.pacientes
 }
 
@@ -30,24 +24,6 @@ const mutations = {
     removeEvent(state,event){
         state.events.splice(event,1)
     },
-    setProfissionais(state,profissionais){
-        state.profissionais.push(profissionais)
-    },
-    resetProfissionais(state){
-        state.profissionais = []
-    },
-    setSalas(state,salas){
-        state.salas.push(salas)
-    },
-    resetSalas(state){
-        state.salas = []
-    },
-    setProcedimentos(state,procedimentos){
-        state.procedimentos.push(procedimentos)
-    },
-    resetProcedimentos(state){
-        state.procedimentos = []
-    },
     setPacientes(state,pacientes){
         state.pacientes.push(pacientes)
     },
@@ -57,78 +33,61 @@ const mutations = {
 }
 
 const actions = {
-    //tabela de profissionais
-    async getProfissionaisDb(context){
-        //pegar os nomes dos profissionais para autocomplete e join com sessoes
-        //é necessário rever esse método por causa das references
-        const getProfissionais = connDb.methods.connDbFunc().httpsCallable('getProfissionais')
-        await getProfissionais().then(result => {
-            context.commit('resetProfissionais')
+    async getSessoesDb(context){
+        const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoes')
+        await getSessoes().then(result => {
+            context.commit('resetEvents')
             for (let dados of result.data){
-                context.commit('setProfissionais', dados)
+                const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
+                const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
+                const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
+                const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
+                const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
+                const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${dados.observacao}`
+                context.commit('setEvents',
+                    {start: dados.horaInicio,
+                        end: dados.horaFim,
+                        class: dadosProf.corProf,
+                        title: title,
+                        content: dadosProf.nome,
+                        contentFull: contentFull,
+                        uuid: dados.uuid})
             }
         })
-            .catch(err => {
-                console.log(err)
-            })
     },
-    async getSalasDb(context) {
-        //pegar os nomes dos procedimentos para o autocomplete
-        const getSala = connDb.methods.connDbFunc().httpsCallable('getSalas')
-        await getSala().then(result => {
-            context.commit('resetSalas')
-            for (let dados of result.data) {
-                context.commit('setSalas',dados)
-            }
-        })
-            .catch(err => {
-                console.log(err)
-            })
+    setSessaoDb(context,payload){
+      return new Promise((resolve,reject) => {
+          const setSessao = connDb.methods.connDbFunc().httpsCallable('setSessao')
+          setSessao(payload.sessao).then(result => {
+              //atualizar a lista de sessões
+              context.dispatch('getSessoesDb')
+              resolve(result.data)
+          })
+              .catch(err => {
+                  reject(err)
+              })
+      })
     },
-    async getProcedimentosDB(context){
-    //pegar os nomes dos procedimentos para o autocomplete
-    const getPaciente = connDb.methods.connDbFunc().httpsCallable('getProcedimentos')
-    await getPaciente().then(result => {
-        context.commit('resetProcedimentos')
-        for (let dados of result.data){
-            context.commit('setProcedimentos',dados)
-        }
-    })
-        .catch(err => {
-            console.log(err)
+    setPacienteDb(context,payload){
+        return new Promise((resolve, reject) => {
+            const setPaciente = connDb.methods.connDbFunc().httpsCallable('setPaciente')
+            setPaciente(payload.paciente).then(result => {
+                //atualizar a lista de pacientes no app
+                context.dispatch('getPacientesDb')
+                resolve(result.data)
+            })
+                .catch(err => {
+                    reject(err)
+                })
         })
     },
     async getPacientesDb(context) {
         //pegar os pacientes
-        const getSala = connDb.methods.connDbFunc().httpsCallable('getPacientes')
-        await getSala().then(result => {
+        const getPaciente = connDb.methods.connDbFunc().httpsCallable('getPacientes')
+        await getPaciente().then(result => {
             context.commit('resetPacientes')
             for (let dados of result.data) {
                 context.commit('setPacientes',dados)
-            }
-        })
-            .catch(err => {
-                console.log(err)
-            })
-    },
-    //pega as sessões do DB
-    async getEventsDb(context){
-        context.commit('resetEvents')
-        //pegar dados das sessões para colocar na tela ao abrir
-        const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoes')
-        await getSessoes().then(result => {
-            let i =0;
-            for (let dados of result.data){
-                console.log(i++)
-                console.log(dados.paciente)
-                context.commit('setEvents',
-                    {start: dados.horaInicio,
-                    end: dados.horaFim,
-                    class: dados.profClass,
-                    title: `${dados.paciente} - ${dados.sala}`,
-                    content: dados.profNome,
-                    contentFull: `Procedimento: ${dados.proc} <br> Observação: ${dados.observacao}`,
-                    uuid: dados.uuid})
             }
         })
             .catch(err => {
@@ -140,7 +99,6 @@ const actions = {
         return new Promise((resolve, reject)=>{
             const removeSessao = connDb.methods.connDbFunc().httpsCallable('removeSessao')
             removeSessao(payload.uuid).then(result =>{
-                console.log(result.data)
                 resolve (result.data)
             })
                 .catch(err => {

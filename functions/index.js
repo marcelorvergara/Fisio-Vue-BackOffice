@@ -4,7 +4,6 @@ const admin = require('firebase-admin');
 admin.initializeApp({ projectId: "fisiovue" });
 
 exports.removeSessao = functions.https.onCall((data)=> {
-
     return new Promise((resolve, reject) => {
         console.log('data',data)
         const db = admin.firestore()
@@ -114,7 +113,7 @@ exports.getSalas = functions.https.onCall(() =>{
     var listSalas = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
-        db.collection('salas')
+        db.collection('salas').orderBy('nomeSala')
             .get()
             .then(function(querySnapshot){
                 querySnapshot.forEach(function(doc) {
@@ -126,7 +125,7 @@ exports.getSalas = functions.https.onCall(() =>{
     })
 })
 
-exports.cadastroSalas = functions.https.onCall((data) =>{
+exports.setSala = functions.https.onCall((data) =>{
     var msg = 'atualizada';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -151,7 +150,7 @@ exports.getProcedimentos = functions.https.onCall(() =>{
     var listProcedimentos = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
-        db.collection('procedimentos')
+        db.collection('procedimentos').orderBy('nomeProcedimento')
             .get()
             .then(function(querySnapshot){
                 querySnapshot.forEach(function(doc) {
@@ -163,7 +162,7 @@ exports.getProcedimentos = functions.https.onCall(() =>{
     })
 })
 
-exports.cadastroProcedimentos = functions.https.onCall((data) =>{
+exports.setProcedimento = functions.https.onCall((data) =>{
     var msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -188,7 +187,7 @@ exports.getPacientes = functions.https.onCall(() =>{
     var listPacientes = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
-        db.collection('pacientes')
+        db.collection('pacientes').orderBy('nome')
             .get()
             .then(function(querySnapshot){
                 querySnapshot.forEach(function(doc) {
@@ -200,7 +199,7 @@ exports.getPacientes = functions.https.onCall(() =>{
     })
 });
 
-exports.cadastroPaciente = functions.https.onCall((data) =>{
+exports.setPaciente = functions.https.onCall((data) =>{
     var msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -221,7 +220,7 @@ exports.cadastroPaciente = functions.https.onCall((data) =>{
     })
 })
 
-exports.statusProfissional = functions.https.onCall((data) => {
+exports.setStatusProfissional = functions.https.onCall((data) => {
     return new Promise((resolve,reject) => {
         admin
             .auth()
@@ -256,7 +255,7 @@ exports.getProfissionais = functions.https.onCall(() =>{
     var listProfissionais = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
-        db.collection('profissionais')
+        db.collection('profissionais').orderBy('nome')
             .get()
             .then(function(querySnapshot){
                 querySnapshot.forEach(function(doc) {
@@ -268,7 +267,7 @@ exports.getProfissionais = functions.https.onCall(() =>{
     })
 });
 
-exports.atualizaProfissional = functions.https.onCall((data) => {
+exports.updateProfissional = functions.https.onCall((data) => {
     return new Promise((resolve, reject) => {
         admin
             .auth()
@@ -280,6 +279,7 @@ exports.atualizaProfissional = functions.https.onCall((data) => {
                         .auth()
                         .getUserByEmail(data.email)
                         .then((userRecord) => {
+                            console.log(userRecord)
                             // See the UserRecord reference doc for the contents of userRecord.
                             admin.auth().setCustomUserClaims(userRecord.uid, {funcao: data.funcao})
                                 .then(() => {
@@ -300,7 +300,7 @@ exports.atualizaProfissional = functions.https.onCall((data) => {
     })
 })
 
-exports.criarProfissional = functions.https.onCall((data) => {
+exports.setProfissional = functions.https.onCall((data) => {
     //promise para retornar para tela do usuário
     return new Promise((resolve, reject) => {
         const { v4: uuidv4 } = require('uuid');
@@ -311,7 +311,7 @@ exports.criarProfissional = functions.https.onCall((data) => {
             .then((adminRec) => {
                 //***checa se é administrador***
                 if (adminRec.customClaims.funcao === 'Admin') {
-                    return admin.auth().createUser({email: data.email, password: data.password})
+                    return admin.auth().createUser({email: data.email, password: data.senha})
                         .then((user) => {
                             admin.auth().setCustomUserClaims(user.uid, {funcao: data.funcao})
                                 .then(() => {

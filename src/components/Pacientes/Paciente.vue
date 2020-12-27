@@ -102,7 +102,7 @@ export default {
   },
   methods:{
     preencheVal(nome){
-      const dados = this.dadosPac.find( f => f.nome === nome)
+      const dados = this.$store.getters.getPacientes.find( f => f.nome.trim() === nome)
       this.form.email = dados.email
       this.form.phone = dados.phone
       this.form.end = dados.end
@@ -114,18 +114,16 @@ export default {
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
-      const cadPaciente = this.connDbFunc().httpsCallable('cadastroPaciente')
-      this.form.nome = this.nome
+      this.form.nome = this.nome.trim()
       //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {
         this.form.uuid = this.uuid
       }
-      await cadPaciente(this.form)
+      await this.$store.dispatch('setPacienteDb',{paciente:this.form})
           .then((retorno) => {
-            this.mensagem = retorno.data
+            this.mensagem = retorno
             this.loading = false
             this.$refs['modal-ok'].show()
-            this.$store.dispatch('getPacientesDb')
             this.resetar()
           })
           .catch(error => {

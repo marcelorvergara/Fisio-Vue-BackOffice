@@ -13,7 +13,6 @@
     "core-js": "^3.8.1",
     "firebase": "^8.2.0",
     "vue": "^2.6.12",
-    "vue-bootstrap-typeahead": "^0.2.6",
     "vue-cal": "^3.9.0",
     "vue-color": "^2.8.0",
     "vue-router": "^3.4.9",

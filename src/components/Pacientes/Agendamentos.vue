@@ -42,41 +42,45 @@
           <b-col>
             <div style="display: inline-block;" class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
               <b-form-group id="grp-nome" label="Selecione o Paciente:" label-for="nome">
-                <vue-bootstrap-typeahead
+                <vue-typeahead-bootstrap
+                    disableSort
                     text-variant="success"
                     :minMatchingChars="0"
                     id="nome"
                     v-model="nome"
                     required
                     :data="nomes">
-                </vue-bootstrap-typeahead>
+                </vue-typeahead-bootstrap>
               </b-form-group>
               <b-form-group id="grp-profissional" label="Profissional:" label-for="profissional">
-                <vue-bootstrap-typeahead
+                <vue-typeahead-bootstrap
+                    disableSort
                     :minMatchingChars="0"
                     id="profissional"
                     v-model="profissional"
                     required
                     :data="profissionais">
-                </vue-bootstrap-typeahead>
+                </vue-typeahead-bootstrap>
               </b-form-group>
               <b-form-group id="grp-sala" label="Sala:" label-for="sala">
-                <vue-bootstrap-typeahead
+                <vue-typeahead-bootstrap
+                    disableSort
                     :minMatchingChars="0"
                     id="sala"
                     v-model="sala"
                     required
                     :data="salas">
-                </vue-bootstrap-typeahead>
+                </vue-typeahead-bootstrap>
               </b-form-group>
               <b-form-group id="grp-proc" label="Procedimento:" label-for="proc">
-                <vue-bootstrap-typeahead
+                <vue-typeahead-bootstrap
+                    disableSort
                     :minMatchingChars="0"
                     id="proc"
                     v-model="procedimento"
                     required
                     :data="procedimentos">
-                </vue-bootstrap-typeahead>
+                </vue-typeahead-bootstrap>
               </b-form-group>
               <b-form-group label-for="obs" label="Observação:">
                 <b-form-textarea
@@ -278,7 +282,6 @@ export default {
       //remove do DB
       await this.$store.dispatch('removeEventDb',{uuid: uuid})
           .then((retorno) => {
-            console.log(retorno)
             this.mensagem = retorno
             this.loading = false
             this.$refs['modal-ok'].show()
@@ -306,6 +309,12 @@ export default {
       this.dataSessao = this.sessaoArr.toISOString().substr(0, 10)
       this.horaIni = this.sessaoArr.toLocaleString().split(' ')[1]
       this.horaFim = this.sessaoArr.addHours(1).toLocaleString().split(' ')[1]
+
+      // resetar os campos para vazio
+      this.nome = ''
+      this.profissional = ''
+      this.procedimento = ''
+      this.sala = ''
     },
     agendar(){
       // testar os inputs
@@ -323,6 +332,7 @@ export default {
         this.$refs['modal-err'].show()
       } else {
         //ação de Agendar as sessões. Gravar no DB
+        this.loading = true
         var date = new Date(this.dataSessao)
         var dates = [];
         var dtHoraIni
@@ -338,14 +348,6 @@ export default {
           this.dataSessao = date.toISOString().substr(0, 10)
           dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
           dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-          this.$store.commit('setEvents',{
-            start: dtHoraIni,
-            end: dtHoraFim,
-            class: prof.corProf,
-            title: `${this.nome} - ${this.sala}`,
-            content: this.profissional,
-            contentFull: this.observacao
-          })
           //gravar - montar o objeto
           //passando uuid para no banco gerar referencias
           const sessao = {
@@ -371,14 +373,6 @@ export default {
               this.dataSessao = date.toISOString().substr(0, 10)
               dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
               dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-              this.$store.commit('setEvents',{
-                start: dtHoraIni,
-                end: dtHoraFim,
-                class: prof.corProf,
-                title: `${this.nome} - ${this.sala}`,
-                content: this.profissional,
-                contentFull: this.observacao
-              })
               //gravar - montar o objeto
               const sessao = {
                 paciente: pac.uuid,
@@ -406,14 +400,6 @@ export default {
               this.dataSessao = date.toISOString().substr(0, 10)
               dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
               dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-              this.$store.commit('setEvents',{
-                start: dtHoraIni,
-                end: dtHoraFim,
-                class: prof.corProf,
-                title: `${this.nome} - ${this.sala}`,
-                content: this.profissional,
-                contentFull: this.observacao
-              })
               //gravar - montar o objeto
               const sessao = {
                 paciente: pac.uuid,
@@ -434,15 +420,14 @@ export default {
             date = date.addDays(7)
           }
         }
+        this.loading = false
       }
       this.$refs['modal-ag'].hide()
     },
     async gravarDB(sessao){
-      this.loading = true
-      const setSessao = this.connDbFunc().httpsCallable('setSessao')
-      await setSessao(sessao)
+      await this.$store.dispatch('setSessaoDb',{sessao: sessao})
           .then((retorno) => {
-            this.mensagem = retorno.data
+            this.mensagem = retorno
             this.loading = false
             this.$refs['modal-ok'].show()
           })
@@ -451,28 +436,6 @@ export default {
             this.loading = false
             this.$refs['modal-err'].show()
           })
-    },
-    async getSessaoDB(){
-      const getSessao = this.connDbFunc().httpsCallable('getSessoes')
-      await getSessao().then(result => {
-        this.$store.commit('resetEvents')
-            for (let dados of result.data){
-              const dadosProf = this.$store.getters.getProfissionais.find(f => f.uuid === dados.profissional)
-              const dadosPac = this.$store.getters.getPacientes.find(f => f.uuid === dados.paciente)
-              const dadosSala = this.$store.getters.getSalas.find(f =>f.uuid === dados.sala)
-              const dadosProc = this.$store.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
-              const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
-              const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${dados.observacao}`
-              this.$store.commit('setEvents',
-                  {start: dados.horaInicio,
-                          end: dados.horaFim,
-                          class: dadosProf.corProf,
-                          title: title,
-                          content: dadosProf.nome,
-                          contentFull: contentFull,
-                          uuid: dados.uuid})
-              }
-      })
     },
     getNomesPacientes(){
       for (let i=0; i < this.$store.getters.getPacientes.length; i++){
@@ -496,8 +459,7 @@ export default {
     }
   },
   created() {
-    this.getSessaoDB()
-    // this.$store.dispatch('getEventsDb')
+    this.$store.dispatch('getSessoesDb')
     this.getNomesPacientes()
     this.getNomesProfissionais()
     this.getNomeSalas()

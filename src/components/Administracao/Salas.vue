@@ -83,7 +83,7 @@ export default {
   },
   methods:{
     preencheVal(nome){
-      const dados = this.$store.getters.getSalas.find( f => f.nomeSala === nome)
+      const dados = this.$store.getters.getSalas.find( f => f.nomeSala.trim() === nome)
       this.form.qtdPacientes = dados.qtdPacientes
       this.submitBtn = 'Atualizar'
       this.uuid = dados.uuid
@@ -91,19 +91,16 @@ export default {
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
-
-      const cadSala = this.connDbFunc().httpsCallable('cadastroSalas')
-      this.form.nomeSala = this.nomeSala
+      this.form.nomeSala = this.nomeSala.trim()
       //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {
         this.form.uuid = this.uuid
       }
-      await cadSala(this.form)
+      await this.$store.dispatch('setSalasDb',{sala:this.form})
           .then((retorno) => {
-            this.mensagem = retorno.data
+            this.mensagem = retorno
             this.loading = false
             this.$refs['modal-ok'].show()
-            this.$store.dispatch('getSalasDb')
             this.resetar()
           })
           .catch(error => {
