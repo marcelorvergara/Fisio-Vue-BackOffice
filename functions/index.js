@@ -3,9 +3,66 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
-exports.removeSessao = functions.https.onCall((data)=> {
+exports.testAgenda = functions.https.onCall((data) => {
+    return new Promise((resolve,reject) => {
+    console.log(data)
+    //vamos executar a query para data e sala
+    const db = admin.firestore()
+    //monta o objeto sala reference para a query
+    const salaDocRef = db
+        .collection('salas')
+        .doc(data.sala.uuid);
+    //executa a query
+    db.collection('sessoes')
+        .where('sala', '==', salaDocRef)
+        .where('data','==', data.data)
+        .get()
+        .then( function (querySnapshot) {
+            var sessoes = 0
+            var docs = []
+            console.log('tamanho',querySnapshot.docs.length)
+            querySnapshot.forEach( function(doc) {
+                //horas em segundos agendadas no banco
+                const horaIni = doc.data().horaInicio.split(' ')[1].split(':')
+                const segundosIni = (+horaIni[0]) * 60 * 60 + (horaIni[1] * 60)
+                //hora em segundos solicitadas para agendamento
+                const horaIniSolc = data.dtHoraIni.split(' ')[1].split(':')
+                const segundosSolc = (+horaIniSolc[0] * 60 * 60 + (horaIniSolc[1] * 60))
+                //testa o horário. Já foi pego data (where) e sala (where)
+                if (segundosSolc >= segundosIni-1800 && segundosSolc <= segundosIni+1800){
+                    //aqui temos um agendamento na mesma sala e horário
+                    sessoes++;
+                    //responder com campos específicos
+                    const res = {
+                        horaInicio: doc.data().horaInicio,
+                        horaFim:doc.data().horaFim,
+                        prof:doc.get('profissional').id,
+                        sala:doc.get('sala').id
+                    }
+                    docs.push(res)
+                }
+            })
+            //se sessoes 0, só há o agendamento corrente. Caso um, há dois agendamentos. Um no db e esse
+            if (sessoes >= 1){
+                const resp = {
+                    msg: 'Possível conflito de horário e sala com o profissional',
+                    docs: docs
+                }
+                console.log(' há conflito ')
+                resolve(resp)
+            } else {
+                console.log(' não há conflito ')
+                resolve(false)
+            }
+
+        })
+        .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
+
+exports.removeSessao = functions.https.onCall((data) => {
     return new Promise((resolve, reject) => {
-        console.log('data',data)
         const db = admin.firestore()
         db.collection('sessoes')
             .doc(data).delete().then(() => {
@@ -32,7 +89,7 @@ exports.getSessoes = functions.https.onCall(async() => {
             .where("uuid", "!=", " ")
             .get()
             .then( function (querySnapshot) {
-                console.log("tamanho docs ",querySnapshot.docs.length)
+                console.warn("tamanho docs ",querySnapshot.docs.length)
                 tamanhoSnap = querySnapshot.docs.length;
                 querySnapshot.forEach(async function(doc) {
                     var sessao = {
@@ -75,7 +132,7 @@ exports.getSessoes = functions.https.onCall(async() => {
                 // tem que aguardar na disciplina II
                 return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
                     .then(() => {
-                        console.log('tamanho enviado',listSessoes.length)
+                        console.warn('tamanho enviado',listSessoes.length)
                         if (listSessoes.length !== tamanhoSnap){
                             reject('Número de sessões discrepantes.')
                         }
@@ -87,7 +144,7 @@ exports.getSessoes = functions.https.onCall(async() => {
     })
 })
 
-exports.setSessao = functions.https.onCall((data)=>{
+exports.setSessao = functions.https.onCall((data) => {
     return new Promise((resolve,reject)=>{
         const db = admin.firestore()
         const uuid = data.paciente
@@ -109,7 +166,7 @@ exports.setSessao = functions.https.onCall((data)=>{
     })
 })
 
-exports.getSalas = functions.https.onCall(() =>{
+exports.getSalas = functions.https.onCall(() => {
     var listSalas = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
@@ -125,7 +182,7 @@ exports.getSalas = functions.https.onCall(() =>{
     })
 })
 
-exports.setSala = functions.https.onCall((data) =>{
+exports.setSala = functions.https.onCall((data) => {
     var msg = 'atualizada';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -146,7 +203,7 @@ exports.setSala = functions.https.onCall((data) =>{
     })
 })
 
-exports.getProcedimentos = functions.https.onCall(() =>{
+exports.getProcedimentos = functions.https.onCall(() => {
     var listProcedimentos = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
@@ -162,7 +219,7 @@ exports.getProcedimentos = functions.https.onCall(() =>{
     })
 })
 
-exports.setProcedimento = functions.https.onCall((data) =>{
+exports.setProcedimento = functions.https.onCall((data) => {
     var msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -183,7 +240,7 @@ exports.setProcedimento = functions.https.onCall((data) =>{
     })
 })
 
-exports.getPacientes = functions.https.onCall(() =>{
+exports.getPacientes = functions.https.onCall(() => {
     var listPacientes = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
@@ -199,7 +256,7 @@ exports.getPacientes = functions.https.onCall(() =>{
     })
 });
 
-exports.setPaciente = functions.https.onCall((data) =>{
+exports.setPaciente = functions.https.onCall((data) => {
     var msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -251,7 +308,7 @@ exports.setStatusProfissional = functions.https.onCall((data) => {
     })
 })
 
-exports.getProfissionais = functions.https.onCall(() =>{
+exports.getProfissionais = functions.https.onCall(() => {
     var listProfissionais = []
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
@@ -279,7 +336,6 @@ exports.updateProfissional = functions.https.onCall((data) => {
                         .auth()
                         .getUserByEmail(data.email)
                         .then((userRecord) => {
-                            console.log(userRecord)
                             // See the UserRecord reference doc for the contents of userRecord.
                             admin.auth().setCustomUserClaims(userRecord.uid, {funcao: data.funcao})
                                 .then(() => {

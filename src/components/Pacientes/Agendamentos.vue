@@ -216,6 +216,7 @@ export default {
   },
   data(){
     return{
+      boxTwo:'',
       selectedEvent: {},
       mensagem:'',
       mensagemErro:'',
@@ -316,20 +317,32 @@ export default {
       this.procedimento = ''
       this.sala = ''
     },
+    testAgenda(date,dtHoraIni,sala,proc){
+      return new Promise((resolve, reject) => {
+        //testar se há espaço no horário
+        this.$store.dispatch('testAgendaDb',{data:date,dtHoraIni:dtHoraIni,sala:sala,proc:proc}).then(res => {
+          resolve (res)
+        }).catch(err => reject(err))
+      })
+    },
     agendar(){
       // testar os inputs
       if (this.nome === '' || this.nomes.indexOf(this.nome) === -1){
         this.mensagemErro = 'Nome do paciente não cadastrado'
         this.$refs['modal-err'].show()
+        return
       } else if (this.profissional === '' || this.profissionais.indexOf(this.profissional) === -1){
         this.mensagemErro = 'Nome do profissional não cadastrado'
         this.$refs['modal-err'].show()
+        return
       }if (this.sala === '' || this.salas.indexOf(this.sala) === -1){
         this.mensagemErro = 'Nome da sala não cadastrada'
         this.$refs['modal-err'].show()
+        return
       } if (this.procedimento === '' || this.procedimentos.indexOf(this.procedimento) === -1){
         this.mensagemErro = 'Nome do procedimento não cadastrado'
         this.$refs['modal-err'].show()
+        return
       } else {
         //ação de Agendar as sessões. Gravar no DB
         this.loading = true
@@ -348,23 +361,103 @@ export default {
           this.dataSessao = date.toISOString().substr(0, 10)
           dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
           dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-          //gravar - montar o objeto
-          //passando uuid para no banco gerar referencias
-          const sessao = {
-            paciente: pac.uuid,
-            profissional: prof.uuid,
-            sala: sala.uuid,
-            procedimento: proc.uuid,
-            observacao: this.observacao,
-            data: this.dataSessao,
-            horaInicio: dtHoraIni,
-            horaFim: dtHoraFim,
-            recorrenciaDiaria: this.diariamente,
-            recorrenciaSemanal:this.semanalmente,
-            uuid: this.uuidv4(),
-            class: prof.corProf
-          }
-          this.gravarDB(sessao)
+
+          //testar se há conflito no horário
+          // eslint-disable-next-line no-unused-vars
+          const agenda = this.testAgenda(this.dataSessao,dtHoraIni,sala,proc).then(res => {
+            console.log('res',res)
+            if (!res){
+              console.log('sem problemas')
+              //gravar - montar o objeto
+              //passando uuid para no banco gerar referencias
+              const sessao = {
+                paciente: pac.uuid,
+                profissional: prof.uuid,
+                sala: sala.uuid,
+                procedimento: proc.uuid,
+                observacao: this.observacao,
+                data: this.dataSessao,
+                horaInicio: dtHoraIni,
+                horaFim: dtHoraFim,
+                recorrenciaDiaria: this.diariamente,
+                recorrenciaSemanal:this.semanalmente,
+                uuid: this.uuidv4(),
+                class: prof.corProf
+              }
+              //gravando direto quando não há conflito de agenda
+              this.gravarDB(sessao)
+            }else{
+              console.log('há conflito')
+              // refazer o array res.docs para pegar as referências
+              var newDocs = []
+              for (let i=0; i<res.docs.length; i++){
+                console.log(res.docs[i])
+                const prof = this.$store.getters.getProfissionais.find(f=> f.uuid === res.docs[i].prof)
+                const sala = this.$store.getters.getSalas.find(f=>f.uuid === res.docs[i].sala)
+                const obj = {
+                  data: res.docs[i].horaInicio.split(' ')[0].split('-')[2],
+                  inicio: res.docs[i].horaInicio.split(' ')[1],
+                  fim: res.docs[i].horaFim.split(' ')[1],
+                  profissional: prof.nome,
+                  sala: sala.nomeSala
+                }
+                newDocs.push(obj)
+              }
+              //montando o modal
+              const h = this.$createElement
+              const titleVNode = h('div', { domProps: { innerHTML: `Conflito de Agenda. Dia: ${newDocs[0].data}`} })
+              const messageVNode = h('b-table', {
+                props: {
+                  bordered: "bordered",
+                  small:"small",
+                  hover:"hover",
+                  headVariant:"light",
+                  items: newDocs,
+                  fields:['inicio','fim','profissional','sala']
+                }
+                })
+              // exibindo o modal montado
+              this.$bvModal.msgBoxConfirm([messageVNode], {
+                title: [titleVNode],
+                buttonSize: 'sm',
+                centered: true, size: 'lg',
+                okVariant: 'outline-success', okTitle: 'Agendar',
+                cancelVariant:'outline-danger',cancelTitle: 'Cancelar',
+                footerClass: 'p-2',
+                hideHeaderClose: false
+              })
+                  //aguardando a resposta do modal
+                  .then(value => {
+                    if(value){
+                      //gravar - montar o objeto
+                      //passando uuid para no banco gerar referencias
+                      const sessao = {
+                        paciente: pac.uuid,
+                        profissional: prof.uuid,
+                        sala: sala.uuid,
+                        procedimento: proc.uuid,
+                        observacao: this.observacao,
+                        data: this.dataSessao,
+                        horaInicio: dtHoraIni,
+                        horaFim: dtHoraFim,
+                        recorrenciaDiaria: this.diariamente,
+                        recorrenciaSemanal:this.semanalmente,
+                        uuid: this.uuidv4(),
+                        class: prof.corProf
+                      }
+                      this.gravarDB(sessao)
+                    }else {
+                      //não agendar por causa do conflito
+                      this.mensagemErro = 'Agendamento não realizado.'
+                      this.loading = false
+                      this.$refs['modal-err'].show()
+                    }
+                  })
+                  .catch(err => {
+                    console.log(err)
+                  })
+            }
+          })
         } else if (this.diariamente !== '1' && this.semanalmente === '1' ) {
           // agendamento com repetição de dias
           while(dates.length < this.diariamente) {
@@ -390,6 +483,8 @@ export default {
               }
               this.gravarDB(sessao)
             }
+
+            //incrementa 1 dia para realizar a repetição
             date = date.addDays(1)
           }
         } else {
@@ -417,6 +512,8 @@ export default {
               }
               this.gravarDB(sessao)
             }
+
+            //incrementa 7 dias para realizar repetição semanal
             date = date.addDays(7)
           }
         }

@@ -2,6 +2,7 @@ const state = {
     user: {
         loggedIn: false,
         data: null,
+        uid:null
     },
     funcao:null
 }

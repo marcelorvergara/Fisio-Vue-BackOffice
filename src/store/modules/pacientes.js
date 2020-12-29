@@ -96,9 +96,20 @@ const actions = {
     },
     removeEventDb(context,payload){
         //deletar sessão
-        return new Promise((resolve, reject)=>{
+        return new Promise((resolve, reject) => {
             const removeSessao = connDb.methods.connDbFunc().httpsCallable('removeSessao')
             removeSessao(payload.uuid).then(result =>{
+                resolve (result.data)
+            })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+    },
+    testAgendaDb(context,payload){
+        return new Promise((resolve,reject) => {
+            const testAgenda = connDb.methods.connDbFunc().httpsCallable('testAgenda')
+            testAgenda(payload).then(result =>{
                 resolve (result.data)
             })
                 .catch(err => {

@@ -38,7 +38,7 @@
 
         </b-navbar-nav>
       </b-collapse>
-      <b-button v-show="user.data" variant="outline-light" @click="signOut" class="mr-2 ml-2 mt-2" size="sm">Sair <b-icon icon="door-open-fill"></b-icon></b-button>
+      <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm">Sair <b-icon icon="door-open-fill"></b-icon></b-button>
     </b-navbar>
 <!--router view para mostrar os componentes filhos do Home-->
     <router-view></router-view>
