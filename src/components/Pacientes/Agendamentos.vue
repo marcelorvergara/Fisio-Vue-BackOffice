@@ -9,7 +9,7 @@
                    ref="vuecal"
                    :time-from="7 * 60" :time-to="22 * 60" :time-step="60"
                    :hide-weekdays="[7]"
-                   events-on-month-view="true"
+                   events-on-month-view="short"
                    show-all-day-events="true"
                    :events="$store.getters.getEvents"
                    :disable-views="['years', 'year']"
@@ -33,10 +33,13 @@
     </b-container>
     <!--    modal para escolher o início e o fim da sessão-->
     <b-modal
-        title="Agendar Sessão"
         ref="modal-ag"
         header-bg-variant="dark"
         header-text-variant="white">
+      <template #modal-title >
+        <b-icon icon="journal-bookmark" scale="2" variant="white"></b-icon>
+        <span class="m-3">Agendar Sessão</span>
+      </template>
       <b-container>
         <b-row align-h="center">
           <b-col>
@@ -158,7 +161,8 @@
              header-text-variant="white"
               hide-footer>
       <template #modal-title >
-        <span>{{ selectedEvent.title  }}</span>
+        <b-icon icon="info-circle" scale="2" variant="white"></b-icon>
+        <span class="m-3">{{ selectedEvent.title  }}</span>
       </template>
       <b-card>
         <b-card-text>
@@ -199,6 +203,55 @@
       </template>
       <p v-html="mensagemErro"></p>
     </b-modal>
+
+<!--    modal para mostras recorrência e conflitos-->
+    <b-modal size="lg" ref="modal-rec" header-bg-variant="dark" header-text-variant="white">
+      <div class="text-right mb-2">
+        <b-button class="m-1" size="sm" @click="selectAllRows">Selecionar Todas</b-button>
+        <b-button class="m-1" size="sm" @click="clearSelected">Desmarcar Todas</b-button>
+      </div>
+      <template #modal-title>
+        <b-icon icon="arrow-repeat" scale="2" variant="white"></b-icon>
+        <span class="m-3">Agendamento de Recorrências</span>
+      </template>
+      <b-table :items="agendaTab" :fields="['dataSessao','HoraInicio','HoraFim','conflito']"
+               head-variant="light"
+               fixed bordered responsive="sm"
+               select-mode="range"
+               ref="selectableTable"
+               selectable
+               @row-selected="onRowSelected">
+        <template #cell(conflito)="row">
+          <b-button variant="outline-dark" v-if="row.item.statusConflito !== 'N/A'" size="sm" @click="row.toggleDetails" class="mr-2">
+            {{ row.detailsShowing ? '-' : '+'}} Detalhes
+          </b-button>
+          <p v-else>Não se Aplica</p>
+        </template>
+        <template #row-details="row">
+          <b-card>
+            <b-table
+                small head-variant="light"
+                :items="row.item.statusConflito"
+                :fields="['horaInicio','horaFim','profissional','procedimento']">
+
+            </b-table>
+            <b-button variant="outline-success" size="sm" @click="row.toggleDetails">- Detalhes</b-button>
+          </b-card>
+        </template>
+      </b-table>
+      <template #modal-footer="{ ok, cancel }">
+        <!-- Emulate built in modal footer ok and cancel button actions -->
+        <b-button variant="outline-danger" @click="cancel()">
+          Cancelar
+        </b-button>
+        <b-button variant="outline-success" @click="agendarRec()">
+          Agendar
+          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+        </b-button>
+      </template>
+    </b-modal>
+
+
   </div>
 </template>
 
@@ -216,7 +269,8 @@ export default {
   },
   data(){
     return{
-      boxTwo:'',
+      recorrencias: [],
+      agendaTab:'',
       selectedEvent: {},
       mensagem:'',
       mensagemErro:'',
@@ -262,6 +316,26 @@ export default {
           (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
       );
     },
+    agendarRec(){
+      for (let sessao of this.selected){
+        //para agendar, vamos remover campos utilizados para verificar conflitos
+        delete sessao.HoraFim
+        delete sessao.HoraInicio
+        delete sessao.dataSessao
+        delete sessao.statusConflito
+        this.gravarDB(sessao)
+        this.$refs['modal-rec'].hide()
+      }
+    },
+    onRowSelected(items) {
+      this.selected = items
+    },
+    selectAllRows() {
+      this.$refs.selectableTable.selectAllRows()
+    },
+    clearSelected() {
+      this.$refs.selectableTable.clearSelected()
+    },
     mudarDiariamente(){
       this.diariamente = '1'
     },
@@ -271,7 +345,6 @@ export default {
     ok(){
       this.$refs['info-modal'].hide()
     },
-
     async cancel(uuid){
       this.loading = true
       //remove da tela - do store
@@ -326,7 +399,7 @@ export default {
         }).catch(err => reject(err))
       })
     },
-    agendar(){
+    async agendar(){
       // testar os inputs
       if (this.nome === '' || this.nomes.indexOf(this.nome) === -1){
         this.mensagemErro = 'Nome do paciente não cadastrado'
@@ -351,6 +424,7 @@ export default {
         var dates = [];
         var dtHoraIni
         var dtHoraFim
+        var novaAgenda = []
         //pegando os dados carregados cretare() para enviar informações para o DB
         const pac = this.$store.getters.getPacientes.find(f => f.nome === this.nome)
         const prof = this.$store.getters.getProfissionais.find(f => f.nome === this.profissional)
@@ -366,7 +440,6 @@ export default {
           //testar se há conflito no horário
           // eslint-disable-next-line no-unused-vars
           const agenda = this.testAgenda(this.dataSessao,dtHoraIni,sala,proc).then(res => {
-            console.log('res',res)
             if (!res){
               console.log('sem problemas')
               //gravar - montar o objeto
@@ -459,37 +532,105 @@ export default {
                   })
             }
           })
-        } else if (this.diariamente !== '1' && this.semanalmente === '1' ) {
-          // agendamento com repetição de dias
-          while(dates.length < this.diariamente) {
-            if(date.getDay() !== 0 && date.getDay() !== 6) {
-              dates.push(date);
-              this.dataSessao = date.toISOString().substr(0, 10)
-              dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
-              dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-              //gravar - montar o objeto
-              const sessao = {
-                paciente: pac.uuid,
-                profissional: prof.uuid,
-                sala: sala.uuid,
-                procedimento: proc.uuid,
-                observacao: this.observacao,
-                data: this.dataSessao,
-                horaInicio: dtHoraIni,
-                horaFim: dtHoraFim,
-                recorrenciaDiaria: this.diariamente,
-                recorrenciaSemanal:this.semanalmente,
-                uuid: this.uuidv4(),
-                class: prof.corProf
-              }
-              this.gravarDB(sessao)
-            }
+        }
 
+        else if (this.diariamente !== '1' && this.semanalmente === '1' ) {
+          // *** agendamento com repetição de dias ***
+          //pegando os dias do intervalo tirando domingo
+          while(dates.length < this.diariamente) {
+            if(date.getDay() !== 6 ) {
+              dates.push(date);
+            }
             //incrementa 1 dia para realizar a repetição
             date = date.addDays(1)
           }
+          //testar conflito de cada dia
+          for (let dia of dates){
+            const dataSessao = dia.toISOString().substr(0, 10)
+            dtHoraIni = `${dataSessao}`+` `+`${this.horaIni}`
+            dtHoraFim = `${dataSessao}`+` `+`${this.horaFim}`
+            // eslint-disable-next-line no-unused-vars
+            const agenda = await this.testAgenda(dataSessao,dtHoraIni,sala,proc).then(res => {
+              if (!res){
+                console.log('sem conflito')
+                //valores para b-table
+                const dataBr = dataSessao.split('-')
+                const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
+                const colHoraIni = dtHoraIni.split(' ')[1]
+                const colHoraFim = dtHoraFim.split(' ')[1]
+                const sessao = {
+                  dataSessao : dataBr2,
+                  HoraInicio: colHoraIni,
+                  HoraFim:colHoraFim,
+                  paciente: pac.uuid,
+                  profissional: prof.uuid,
+                  sala: sala.uuid,
+                  procedimento: proc.uuid,
+                  observacao: this.observacao,
+                  data: dataSessao,
+                  horaInicio: dtHoraIni,
+                  horaFim: dtHoraFim,
+                  recorrenciaDiaria: this.diariamente,
+                  recorrenciaSemanal:this.semanalmente,
+                  uuid: this.uuidv4(),
+                  class: prof.corProf,
+                  statusConflito: 'N/A'
+                }
+                novaAgenda.push(sessao)
+              }else{
+                console.log('com conflito')
+                var conflito
+                var conflitoArr = []
+                //montar obj com o(s) conflito(s)
+                for (let i of res.docs){
+                  //pegando as referências
+                  const profNome = this.$store.getters.getProfissionais.find(f=>f.uuid===i.prof)
+                  const procNome = this.$store.getters.getProcedimentos.find(f=>f.uuid===i.proc)
+                  conflito = {
+                    horaInicio: i.horaInicio.split(' ')[1],
+                    horaFim: i.horaFim.split(' ')[1],
+                    profissional: profNome.nome,
+                    procedimento:procNome.nomeProcedimento
+                  }
+                  conflitoArr.push(conflito)
+                }
+                //valores para b-table
+                const dataBr = dataSessao.split('-')
+                const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
+                const colHoraIni = dtHoraIni.split(' ')[1]
+                const colHoraFim = dtHoraFim.split(' ')[1]
+                const sessao = {
+                  dataSessao : dataBr2,
+                  HoraInicio: colHoraIni,
+                  HoraFim:colHoraFim,
+                  paciente: pac.uuid,
+                  profissional: prof.uuid,
+                  sala: sala.uuid,
+                  procedimento: proc.uuid,
+                  observacao: this.observacao,
+                  data: dataSessao,
+                  horaInicio: dtHoraIni,
+                  horaFim: dtHoraFim,
+                  recorrenciaDiaria: this.diariamente,
+                  recorrenciaSemanal:this.semanalmente,
+                  uuid: this.uuidv4(),
+                  class: prof.corProf,
+                  statusConflito: conflitoArr
+                }
+                novaAgenda.push(sessao)
+              }
+
+          })
+          }
+          Promise.all([novaAgenda]).then(() => {
+            this.agendaTab = novaAgenda
+            this.$refs['modal-rec'].show()
+            this.$refs['modal-ag'].hide()
+          })
+
+
         } else {
-          //agendamento com repetição de semana
+          //***agendamento com repetição de semana ***
           while(dates.length < this.semanalmente) {
             if(date.getDay() !== 0 && date.getDay() !== 6) {
               dates.push(date);
