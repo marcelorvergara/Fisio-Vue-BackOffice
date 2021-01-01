@@ -34,6 +34,7 @@
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Profissionais`}" replace>Profissionais</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Procedimentos`}" replace>Procedimentos</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Salas`}" replace>Salas</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Feriados`}" replace>Feriados</b-dropdown-item>
           </b-nav-item-dropdown>
 
         </b-navbar-nav>
@@ -93,6 +94,7 @@ export default {
     this.$store.dispatch('getProfissionaisDb')
     this.$store.dispatch('getSalasDb')
     this.$store.dispatch('getProcedimentosDB')
+    this.$store.dispatch('getFeriadosDB')
   }
 }
 </script>
