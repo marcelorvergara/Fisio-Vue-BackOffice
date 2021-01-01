@@ -105,8 +105,8 @@
                 <b-form-group label-for="fim" label="Hora de Término:">
                   <b-form-input id="fim" type="time" v-model="horaFim"></b-form-input>
                 </b-form-group>
-                <b-card header="Recorrência:">
-                  <b-card-text>
+                <b-card header="Recorrência:" align="left" no-body>
+                  <b-card-text class="m-2">
                     <b-form-group label="Diária" v-slot="{ ariaDescribedby }">
                       <b-form-radio-group
                           @change="mudarSemanalmente"
@@ -275,20 +275,22 @@ export default {
       mensagem:'',
       mensagemErro:'',
       holder:'',
-      diariamente:'1',
+      diariamente:1,
       diriamenteOpt:[
         { text: 'N/A ', value: 1 },
         { text: '5 ', value: 5 },
         { text: '10 ', value: 10 },
-        { text: '15 ', value: 15 }
+        { text: '15 ', value: 15 },
+        {text: '30', value: 30}
       ],
-      semanalmente:'1',
+      semanalmente:1,
       semanaOpt:[
         { text: 'N/A ', value: 1 },
         { text: '2 ', value: 2 },
         { text: '3 ', value: 3 },
         { text: '4 ', value: 4 },
-        { text: '5 ', value: 5 },
+        { text: '5 ', value: 5 }
+
       ],
       dataSessao:'',
       sessaoArr:'',
@@ -317,14 +319,44 @@ export default {
       );
     },
     agendarRec(){
-      for (let sessao of this.selected){
-        //para agendar, vamos remover campos utilizados para verificar conflitos
-        delete sessao.HoraFim
-        delete sessao.HoraInicio
-        delete sessao.dataSessao
-        delete sessao.statusConflito
-        this.gravarDB(sessao)
-        this.$refs['modal-rec'].hide()
+      this.loading = true
+      var ret
+      //testar se o usuário escolheu pelo menos uma sessão para marcar
+      if (this.selected === undefined){
+        this.mensagemErro = 'É necessário escolher pelo menos uma sessão para agendar.'
+        this.loading = false
+        this.$refs['modal-err'].show()
+      }else{
+        //agendando as recorrências a partir do modal
+        for (let sessao of this.selected){
+          //para agendar, vamos remover campos utilizados para verificar conflitos
+          delete sessao.HoraFim
+          delete sessao.HoraInicio
+          delete sessao.dataSessao
+          delete sessao.statusConflito
+          // eslint-disable-next-line no-unused-vars
+          ret = this.gravarRecDB(sessao).then(retorno => {
+            if (retorno !== 'Sessão(ões) marcada(s) com sucesso.'){
+              return 'Erro na gravação.'
+            } else{
+              return 'Gravação da sessão com sucesso.'
+            }
+          })
+        }
+        Promise.all([ret]).then((retorno) => {
+          console.log(retorno)
+          if (retorno[0] === 'Gravação da sessão com sucesso.'){
+            this.mensagem = retorno[0]
+            this.loading = false
+            this.$refs['modal-rec'].hide()
+            this.$refs['modal-ok'].show()
+          }else{
+            this.mensagemErro = retorno[0]
+            this.loading = false
+            this.$refs['modal-rec'].hide()
+            this.$refs['modal-err'].show()
+          }
+        })
       }
     },
     onRowSelected(items) {
@@ -337,10 +369,10 @@ export default {
       this.$refs.selectableTable.clearSelected()
     },
     mudarDiariamente(){
-      this.diariamente = '1'
+      this.diariamente = 1
     },
     mudarSemanalmente(){
-      this.semanalmente = '1'
+      this.semanalmente = 1
     },
     ok(){
       this.$refs['info-modal'].hide()
@@ -400,7 +432,13 @@ export default {
       })
     },
     async agendar(){
-      // testar os inputs
+      var date = new Date(this.dataSessao)
+      console.log('asdasd',date)
+      this.dataSessao = date.toISOString().substr(0, 10)
+      dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
+      dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
+      const feriado = this.$store.getters.getFeriados.find(f => f.dtFeriado === this.dataSessao)
+      // testar os inputs e se é feriado
       if (this.nome === '' || this.nomes.indexOf(this.nome) === -1){
         this.mensagemErro = 'Nome do paciente não cadastrado'
         this.$refs['modal-err'].show()
@@ -409,18 +447,23 @@ export default {
         this.mensagemErro = 'Nome do profissional não cadastrado'
         this.$refs['modal-err'].show()
         return
-      }if (this.sala === '' || this.salas.indexOf(this.sala) === -1){
+      } else if (this.sala === '' || this.salas.indexOf(this.sala) === -1){
         this.mensagemErro = 'Nome da sala não cadastrada'
         this.$refs['modal-err'].show()
         return
-      } if (this.procedimento === '' || this.procedimentos.indexOf(this.procedimento) === -1){
+      } else if (this.procedimento === '' || this.procedimentos.indexOf(this.procedimento) === -1){
         this.mensagemErro = 'Nome do procedimento não cadastrado'
+        this.$refs['modal-err'].show()
+        return
+      } else if(feriado !== undefined){
+        const feriadoBr = feriado.dtFeriado.split('-')
+        const feriadoBr2 = feriadoBr[2]+'-'+feriadoBr[1]+'-'+feriadoBr[0]
+        this.mensagemErro =  `Dia ${feriadoBr2} é feriado. ${feriado.nomeFeriado}`
         this.$refs['modal-err'].show()
         return
       } else {
         //ação de Agendar as sessões. Gravar no DB
         this.loading = true
-        var date = new Date(this.dataSessao)
         var dates = [];
         var dtHoraIni
         var dtHoraFim
@@ -431,12 +474,8 @@ export default {
         const sala = this.$store.getters.getSalas.find(f => f.nomeSala === this.sala)
         const proc = this.$store.getters.getProcedimentos.find(f => f.nomeProcedimento === this.procedimento)
 
-        if ((this.diariamente === '1') && (this.semanalmente === '1')){
-          //agendamento único
-          this.dataSessao = date.toISOString().substr(0, 10)
-          dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
-          dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-
+        if ((this.diariamente === 1) && (this.semanalmente === 1)){
+          //***agendamento único ***
           //testar se há conflito no horário
           // eslint-disable-next-line no-unused-vars
           const agenda = this.testAgenda(this.dataSessao,dtHoraIni,sala,proc).then(res => {
@@ -533,13 +572,16 @@ export default {
             }
           })
         }
-
-        else if (this.diariamente !== '1' && this.semanalmente === '1' ) {
+        else if (this.diariamente !== 1 && this.semanalmente === 1 ) {
           // *** agendamento com repetição de dias ***
           //pegando os dias do intervalo tirando domingo
           while(dates.length < this.diariamente) {
             if(date.getDay() !== 6 ) {
-              dates.push(date);
+              const testaFeriado = date.toISOString().substr(0, 10)
+              const resultaFeriado = this.$store.getters.getFeriados.find(f => f.dtFeriado === testaFeriado)
+              if (resultaFeriado === undefined){
+                dates.push(date)
+              }
             }
             //incrementa 1 dia para realizar a repetição
             date = date.addDays(1)
@@ -552,7 +594,98 @@ export default {
             // eslint-disable-next-line no-unused-vars
             const agenda = await this.testAgenda(dataSessao,dtHoraIni,sala,proc).then(res => {
               if (!res){
-                console.log('sem conflito')
+                //valores para b-table
+                const dataBr = dataSessao.split('-')
+                const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
+                const colHoraIni = dtHoraIni.split(' ')[1]
+                const colHoraFim = dtHoraFim.split(' ')[1]
+                const sessao = {
+                  dataSessao : dataBr2,
+                  HoraInicio: colHoraIni,
+                  HoraFim:colHoraFim,
+                  paciente: pac.uuid,
+                  profissional: prof.uuid,
+                  sala: sala.uuid,
+                  procedimento: proc.uuid,
+                  observacao: this.observacao,
+                  data: dataSessao,
+                  horaInicio: dtHoraIni,
+                  horaFim: dtHoraFim,
+                  recorrenciaDiaria: this.diariamente,
+                  recorrenciaSemanal:this.semanalmente,
+                  uuid: this.uuidv4(),
+                  class: prof.corProf,
+                  statusConflito: 'N/A'
+                }
+                novaAgenda.push(sessao)
+              }else{
+                var conflito
+                var conflitoArr = []
+                //montar obj com o(s) conflito(s)
+                for (let i of res.docs){
+                  //pegando as referências
+                  const profNome = this.$store.getters.getProfissionais.find(f=>f.uuid===i.prof)
+                  const procNome = this.$store.getters.getProcedimentos.find(f=>f.uuid===i.proc)
+                  conflito = {
+                    horaInicio: i.horaInicio.split(' ')[1],
+                    horaFim: i.horaFim.split(' ')[1],
+                    profissional: profNome.nome,
+                    procedimento:procNome.nomeProcedimento
+                  }
+                  conflitoArr.push(conflito)
+                }
+                //valores para b-table
+                const dataBr = dataSessao.split('-')
+                const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
+                const colHoraIni = dtHoraIni.split(' ')[1]
+                const colHoraFim = dtHoraFim.split(' ')[1]
+                const sessao = {
+                  dataSessao : dataBr2,
+                  HoraInicio: colHoraIni,
+                  HoraFim:colHoraFim,
+                  paciente: pac.uuid,
+                  profissional: prof.uuid,
+                  sala: sala.uuid,
+                  procedimento: proc.uuid,
+                  observacao: this.observacao,
+                  data: dataSessao,
+                  horaInicio: dtHoraIni,
+                  horaFim: dtHoraFim,
+                  recorrenciaDiaria: this.diariamente,
+                  recorrenciaSemanal:this.semanalmente,
+                  uuid: this.uuidv4(),
+                  class: prof.corProf,
+                  statusConflito: conflitoArr
+                }
+                novaAgenda.push(sessao)
+              }
+          })
+          }
+          Promise.all([novaAgenda]).then(() => {
+            this.agendaTab = novaAgenda
+            this.$refs['modal-rec'].show()
+            this.$refs['modal-ag'].hide()
+          })
+        } else {
+          //***agendamento com repetição de semana ***
+          //pegando os dias do intervalo tirando domingo
+          while(dates.length < this.semanalmente) {
+            const testaFeriado = date.toISOString().substr(0, 10)
+            const resultaFeriado = this.$store.getters.getFeriados.find(f => f.dtFeriado === testaFeriado)
+            if (resultaFeriado === undefined){
+              dates.push(date)
+            }
+            //incrementa 1 dia para realizar a repetição
+            date = date.addDays(7)
+          }
+          //testar conflito de cada dia
+          for (let dia of dates){
+            const dataSessao = dia.toISOString().substr(0, 10)
+            dtHoraIni = `${dataSessao}`+` `+`${this.horaIni}`
+            dtHoraFim = `${dataSessao}`+` `+`${this.horaFim}`
+            // eslint-disable-next-line no-unused-vars
+            const agenda = await this.testAgenda(dataSessao,dtHoraIni,sala,proc).then(res => {
+              if (!res){
                 //valores para b-table
                 const dataBr = dataSessao.split('-')
                 const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
@@ -620,44 +753,13 @@ export default {
                 novaAgenda.push(sessao)
               }
 
-          })
+            })
           }
           Promise.all([novaAgenda]).then(() => {
             this.agendaTab = novaAgenda
             this.$refs['modal-rec'].show()
             this.$refs['modal-ag'].hide()
           })
-
-
-        } else {
-          //***agendamento com repetição de semana ***
-          while(dates.length < this.semanalmente) {
-            if(date.getDay() !== 0 && date.getDay() !== 6) {
-              dates.push(date);
-              this.dataSessao = date.toISOString().substr(0, 10)
-              dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
-              dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
-              //gravar - montar o objeto
-              const sessao = {
-                paciente: pac.uuid,
-                profissional: prof.uuid,
-                sala: sala.uuid,
-                procedimento: proc.uuid,
-                observacao: this.observacao,
-                data: this.dataSessao,
-                horaInicio: dtHoraIni,
-                horaFim: dtHoraFim,
-                recorrenciaDiaria: this.diariamente,
-                recorrenciaSemanal:this.semanalmente,
-                uuid: this.uuidv4(),
-                class: prof.corProf
-              }
-              this.gravarDB(sessao)
-            }
-
-            //incrementa 7 dias para realizar repetição semanal
-            date = date.addDays(7)
-          }
         }
         this.loading = false
       }
@@ -675,6 +777,18 @@ export default {
             this.loading = false
             this.$refs['modal-err'].show()
           })
+    },
+    gravarRecDB(sessao){
+      return new Promise((resolve,reject) => {
+        this.$store.dispatch('setSessaoDb',{sessao: sessao})
+            .then((retorno) => {
+              resolve (retorno)
+            })
+            .catch((error) => {
+              reject (error)
+            })
+      })
+
     },
     getNomesPacientes(){
       for (let i=0; i < this.$store.getters.getPacientes.length; i++){
