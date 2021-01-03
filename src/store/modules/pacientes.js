@@ -4,12 +4,14 @@ import { connDb } from "@/store/connDb";
 const state = {
     //array de sessões(events)
     events: [],
-    pacientes:[]
+    pacientes:[],
+    sessoesPresenca:[]
 }
 const getters = {
     //pega o array de sessões (events)
     getEvents: state => state.events,
-    getPacientes:state => state.pacientes
+    getPacientes:state => state.pacientes,
+    getSessoesPresenca: state => state.sessoesPresenca
 }
 
 const mutations = {
@@ -29,10 +31,58 @@ const mutations = {
     },
     resetPacientes(state){
         state.pacientes = []
+    },
+    setSessoesPresenca(state,presenca){
+        state.sessoesPresenca.push(presenca)
+    },
+    resetSessoesPresenca(state){
+        state.sessoesPresenca = []
     }
 }
 
 const actions = {
+    updateSessoesDb(context,payload){
+        return new Promise((resolve,reject) => {
+            const updateSessoes = connDb.methods.connDbFunc().httpsCallable('updateSessoes')
+            updateSessoes(payload).then(result => {
+                resolve (result)
+            })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+
+    },
+    async getSessoesPresencaDb(context,payload){
+        const getSessoesPres = connDb.methods.connDbFunc().httpsCallable('getSessoesPresenca')
+        await getSessoesPres(payload.uuid).then(result => {
+            context.commit('resetSessoesPresenca')
+            for (let sessao of result.data){
+                const dadosProf = context.getters.getProfissionais.find(f => f.uuid === sessao.profissional)
+                const dadosPac = context.getters.getPacientes.find(f => f.uuid === sessao.paciente)
+                const dadosSala = context.getters.getSalas.find(f =>f.uuid === sessao.sala)
+                const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === sessao.proc)
+                const dataBr = sessao.horaInicio.split(' ')[0].split('-')
+                const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
+                const sessaoObj = {
+                    profissional: dadosProf.nome,
+                    procedimento: dadosProc.nomeProcedimento,
+                    sala: dadosSala.nomeSala,
+                    agendador: sessao.agendador,
+                    dataAgendamento:sessao.dataDoAgendamento
+                }
+                context.commit('setSessoesPresenca',{
+                    uuid: sessao.uuid,
+                    paciente: dadosPac.nome,
+                    data:dataBr2,
+                    inicio: sessao.horaInicio.split(' ')[1],
+                    fim: sessao.horaFim.split(' ')[1],
+                    detalhesSessao: sessaoObj,
+                    status:sessao.presenca})
+            }
+        })
+    },
+    //mostras as sessões na agenda
     async getSessoesDb(context){
         const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoes')
         await getSessoes().then(result => {
@@ -43,11 +93,21 @@ const actions = {
                 const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
                 const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
                 const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
-                const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${dados.observacao}`
+                const obs = dados.observacao || 'N/A'
+                const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
+                //trocar a cor caso a presença ou falta tenha sido dada
+                var classCor
+                if (dados.presenca === 'confirmada'){
+                    classCor = 'corOk'
+                } else if (dados.presenca === 'falta'){
+                    classCor = 'corFa'
+                }else{
+                    classCor = dadosProf.corProf
+                }
                 context.commit('setEvents',
                     {start: dados.horaInicio,
                         end: dados.horaFim,
-                        class: dadosProf.corProf,
+                        class: classCor,
                         title: title,
                         content: dadosProf.nome,
                         contentFull: contentFull,

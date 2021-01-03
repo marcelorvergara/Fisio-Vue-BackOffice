@@ -177,7 +177,7 @@
       </b-card>
       <div class="text-right mt-3">
         <!--  //cancelar sessão pelo uuid da sessão-->
-        <b-button variant="outline-danger" @click="cancel(selectedEvent.uuid)">
+        <b-button variant="outline-danger" @click="cancel(selectedEvent)">
           Desmarcar
           <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
         </b-button>
@@ -235,7 +235,9 @@
                 :fields="['horaInicio','horaFim','profissional','procedimento']">
 
             </b-table>
-            <b-button variant="outline-success" size="sm" @click="row.toggleDetails">- Detalhes</b-button>
+            <div class="text-right">
+              <b-button variant="outline-success"  size="sm" @click="row.toggleDetails">- Detalhes</b-button>
+            </div>
           </b-card>
         </template>
       </b-table>
@@ -339,13 +341,12 @@ export default {
             if (retorno !== 'Sessão(ões) marcada(s) com sucesso.'){
               return 'Erro na gravação.'
             } else{
-              return 'Gravação da sessão com sucesso.'
+              return 'Gravação(oes) da(s) sessão(ões) realizada(s) com sucesso.'
             }
           })
         }
         Promise.all([ret]).then((retorno) => {
-          console.log(retorno)
-          if (retorno[0] === 'Gravação da sessão com sucesso.'){
+          if (retorno[0] === 'Gravação(oes) da(s) sessão(ões) realizada(s) com sucesso.'){
             this.mensagem = retorno[0]
             this.loading = false
             this.$refs['modal-rec'].hide()
@@ -377,27 +378,29 @@ export default {
     ok(){
       this.$refs['info-modal'].hide()
     },
-    async cancel(uuid){
+    async cancel(event){
       this.loading = true
-      //remove da tela - do store
-      for(var i = 0; i < this.$store.getters.getEvents.length; i++) {
-        if(this.$store.getters.getEvents[i].uuid === uuid) {
-          this.$store.commit('removeEvent',i)
-          break;
-        }
+      if (event.class === 'corOk' || event.class === 'corFa'){
+        const status = event.class === 'corOk' ? 'presença' : 'falta'
+        this.mensagemErro = `Sessão já computada com ${status}. Não é possível deletar.`
+        this.loading = false
+        this.$refs['modal-err'].show()
+      }else{
+        //remove do DB
+        await this.$store.dispatch('removeEventDb',{uuid: event.uuid})
+            .then((retorno) => {
+              this.mensagem = retorno
+              this.loading = false
+              this.$refs['modal-ok'].show()
+              this.$refs['info-modal'].hide()
+              this.$store.dispatch('getSessoesDb')
+            })
+            .catch(error => {
+              this.mensagemErro = error
+              this.loading = false
+              this.$refs['modal-err'].show()
+            })
       }
-      //remove do DB
-      await this.$store.dispatch('removeEventDb',{uuid: uuid})
-          .then((retorno) => {
-            this.mensagem = retorno
-            this.loading = false
-            this.$refs['modal-ok'].show()
-          })
-          .catch(error => {
-            this.mensagemErro = error
-            this.loading = false
-            this.$refs['modal-err'].show()
-          })
     },
     sessaoInfo(event){
       //mostra o modal da sessão selecionada
@@ -405,6 +408,8 @@ export default {
       this.$refs['info-modal'].show()
     },
     criarSessao(sessao){
+      this.diariamente = 1
+      this.semanalmente = 1
       //trata o evento de clicar no calendário fora de uma sessão
       this.$refs['modal-ag'].show()
       //arrendondando para cima 10 minutos
@@ -433,7 +438,6 @@ export default {
     },
     async agendar(){
       var date = new Date(this.dataSessao)
-      console.log('asdasd',date)
       this.dataSessao = date.toISOString().substr(0, 10)
       dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
       dtHoraFim = `${this.dataSessao}`+` `+`${this.horaFim}`
@@ -463,6 +467,8 @@ export default {
         return
       } else {
         //ação de Agendar as sessões. Gravar no DB
+        const dataAtual = new Date().toLocaleDateString()
+        const agendador = this.$store.getters.user.data.email
         this.loading = true
         var dates = [];
         var dtHoraIni
@@ -480,7 +486,6 @@ export default {
           // eslint-disable-next-line no-unused-vars
           const agenda = this.testAgenda(this.dataSessao,dtHoraIni,sala,proc).then(res => {
             if (!res){
-              console.log('sem problemas')
               //gravar - montar o objeto
               //passando uuid para no banco gerar referencias
               const sessao = {
@@ -495,7 +500,9 @@ export default {
                 recorrenciaDiaria: this.diariamente,
                 recorrenciaSemanal:this.semanalmente,
                 uuid: this.uuidv4(),
-                class: prof.corProf
+                dataDoAgendamento:dataAtual,
+                agendador: agendador,
+                presenca: null
               }
               //gravando direto quando não há conflito de agenda
               this.gravarDB(sessao)
@@ -556,7 +563,9 @@ export default {
                         recorrenciaDiaria: this.diariamente,
                         recorrenciaSemanal:this.semanalmente,
                         uuid: this.uuidv4(),
-                        class: prof.corProf
+                        dataDoAgendamento:dataAtual,
+                        agendador: agendador,
+                        presenca: null
                       }
                       this.gravarDB(sessao)
                     }else {
@@ -614,8 +623,10 @@ export default {
                   recorrenciaDiaria: this.diariamente,
                   recorrenciaSemanal:this.semanalmente,
                   uuid: this.uuidv4(),
-                  class: prof.corProf,
-                  statusConflito: 'N/A'
+                  dataDoAgendamento:dataAtual,
+                  agendador: agendador,
+                  statusConflito: 'N/A',
+                  presenca: null
                 }
                 novaAgenda.push(sessao)
               }else{
@@ -654,8 +665,10 @@ export default {
                   recorrenciaDiaria: this.diariamente,
                   recorrenciaSemanal:this.semanalmente,
                   uuid: this.uuidv4(),
-                  class: prof.corProf,
-                  statusConflito: conflitoArr
+                  dataDoAgendamento:dataAtual,
+                  agendador: agendador,
+                  statusConflito: conflitoArr,
+                  presenca: null
                 }
                 novaAgenda.push(sessao)
               }
@@ -706,12 +719,13 @@ export default {
                   recorrenciaDiaria: this.diariamente,
                   recorrenciaSemanal:this.semanalmente,
                   uuid: this.uuidv4(),
-                  class: prof.corProf,
-                  statusConflito: 'N/A'
+                  dataDoAgendamento:dataAtual,
+                  agendador: agendador,
+                  statusConflito: 'N/A',
+                  presenca: null
                 }
                 novaAgenda.push(sessao)
               }else{
-                console.log('com conflito')
                 var conflito
                 var conflitoArr = []
                 //montar obj com o(s) conflito(s)
@@ -747,8 +761,10 @@ export default {
                   recorrenciaDiaria: this.diariamente,
                   recorrenciaSemanal:this.semanalmente,
                   uuid: this.uuidv4(),
-                  class: prof.corProf,
-                  statusConflito: conflitoArr
+                  dataDoAgendamento:dataAtual,
+                  agendador: agendador,
+                  statusConflito: conflitoArr,
+                  presenca: null
                 }
                 novaAgenda.push(sessao)
               }
@@ -797,7 +813,9 @@ export default {
     },
     getNomesProfissionais(){
       for (let i =0; i < this.$store.getters.getProfissionais.length; i++){
-        this.profissionais.push(this.$store.getters.getProfissionais[i].nome)
+        if (this.$store.getters.getProfissionais[i].funcao !== 'Financeiro'){
+          this.profissionais.push(this.$store.getters.getProfissionais[i].nome)
+        }
       }
     },
     getNomeSalas(){
@@ -843,6 +861,14 @@ export default {
   border: 4px white solid;
   font-size: 0.8em;
 }
+.vuecal__event.corOk {
+  background-color: rgba(196, 193, 193, 0.5);
+  border: 3px solid var(--corOk);
+  color: var(--corOk);}
+.vuecal__event.corFa {
+  background-color: rgba(196, 193, 193, 0.5);
+  border: 3px solid var(--corFa);
+  color: var(--corFa);}
 .vuecal__event.cor0 {
   background-color: rgba(196, 193, 193, 0.5);
   border: 3px solid var(--cor0);

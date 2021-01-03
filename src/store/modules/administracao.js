@@ -4,13 +4,15 @@ import { connDb } from "@/store/connDb";
 const state = {
     procedimentos:[],
     profissionais: [],
-    salas:[]
+    salas:[],
+    feriados:[]
 }
 
 const getters = {
     getProcedimentos:state => state.procedimentos,
     getProfissionais: state => state.profissionais,
-    getSalas: state => state.salas
+    getSalas: state => state.salas,
+    getFeriados: state => state.feriados
 }
 
 const mutations = {
@@ -32,9 +34,41 @@ const mutations = {
     resetSalas(state){
         state.salas = []
     },
+    setFeriados(state,feriados){
+        state.feriados.push(feriados)
+    },
+    resetFeriados(state){
+        state.feriados = []
+    }
 }
 
 const actions = {
+    setFeriadoDb(context,payload){
+        return new Promise((resolve,reject) => {
+            const setFeriados = connDb.methods.connDbFunc().httpsCallable('setFeriado')
+            setFeriados(payload.feriado).then(result => {
+                //atualizar a lista de procedimento no app
+                context.dispatch('getFeriadosDB')
+                resolve(result.data)
+            })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+    },
+    async getFeriadosDB(context){
+        //pegar os nomes dos procedimentos para o autocomplete
+        const getPaciente = connDb.methods.connDbFunc().httpsCallable('getFeriados')
+        await getPaciente().then(result => {
+            context.commit('resetFeriados')
+            for (let dados of result.data){
+                context.commit('setFeriados',dados)
+            }
+        })
+            .catch(err => {
+                console.log(err)
+            })
+    },
     setProcedimentoDb(context,payload){
       return new Promise((resolve,reject) => {
           const setProcedimento = connDb.methods.connDbFunc().httpsCallable('setProcedimento')

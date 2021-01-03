@@ -3,6 +3,126 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+exports.updateSessoes = functions.https.onCall((data) => {
+    console.log(data)
+    return new Promise ((resolve, reject) => {
+        const db = admin.firestore()
+        let batch = db.batch()
+        for (let sessao of data.sessao){
+            batch.set(db.collection('sessoes').doc(sessao.uuid),sessao,{merge: true})
+        }
+        batch.commit()
+            .then((res) => {
+            console.log(res)
+            resolve('Atualização realizada com sucesso.')
+        })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
+exports.getSessoesPresenca = functions.https.onCall((data) => {
+    var listSessoes = [];
+    var paciente;
+    var profissional;
+    var procedimento;
+    var sala;
+    const profDocRef = admin.firestore()
+        .collection('profissionais')
+        .doc(data);
+    return new Promise((resolve, reject) => {
+        const db = admin.firestore()
+        db.collection('sessoes')
+            .where('profissional', "==", profDocRef)
+            .orderBy('data')
+            .get()
+            .then(function(querySnapshot) {
+                querySnapshot.forEach(function(doc) {
+                    var sessao = {
+                        uuid: null,
+                        horaInicio: null,
+                        horaFim: null,
+                        observacao: null,
+                        paciente:null,
+                        proc:null,
+                        sala:null
+                    }
+                    //começã a buscar os 'collection' de outras 'collections'
+                    sessao.paciente = doc.get('paciente').id
+                    // paciente =  doc.get('paciente').get().then((resPac)=>{
+                    //     sessao.paciente = resPac.data().nome
+                    //     console.log(doc.get('paciente').id)
+                    // })
+                    sessao.profissional = doc.get('profissional').id
+
+                    // profissional = doc.get('profissional').get().then((resProf)=>{
+                    //     sessao.profClass = resProf.data().corProf
+                    //     sessao.profNome = resProf.data().nome
+                    // })
+                    sessao.proc = doc.get('procedimento').id
+                    // procedimento =  doc.get('procedimento').get().then((resProc)=>{
+                    //     sessao.proc = resProc.data().nomeProcedimento
+                    // })
+                    sessao.sala = doc.get('sala').id
+                    // sala =  doc.get('sala').get().then((resSala)=>{
+                    //     sessao.sala = resSala.data().nomeSala
+                    // })
+                    sessao.uuid = doc.data().uuid
+                    sessao.horaInicio = doc.data().horaInicio
+                    sessao.horaFim = doc.data().horaFim
+                    sessao.observacao = doc.data().observacao
+                    sessao.agendador = doc.data().agendador
+                    sessao.dataDoAgendamento = doc.data().dataDoAgendamento
+                    sessao.presenca = doc.data().presenca
+                    listSessoes.push(sessao)
+                })
+                // tem que aguardar na disciplina II
+                return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
+                    .then(() => {
+                        resolve(listSessoes)
+                    })
+                })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+            })
+    })
+
+exports.getFeriados = functions.https.onCall(() => {
+    var listFeriados = []
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('feriados').orderBy('nomeFeriado')
+            .get()
+            .then(function(querySnapshot){
+                querySnapshot.forEach(function(doc) {
+                    listFeriados.push(doc.data())
+                });
+                resolve(listFeriados)
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
+exports.setFeriado = functions.https.onCall((data) => {
+    console.log(data)
+    var msg = 'atualizado';
+    return new Promise((resolve, reject) =>{
+        //vamos testar se é para cadastro ou atualização
+        if (data.uuid === undefined){
+            const { v4: uuidv4 } = require('uuid');
+            data.uuid = uuidv4()
+            msg = 'cadastrado'
+        }
+        const db = admin.firestore()
+        db.collection('feriados')
+            .doc(data.uuid)
+            .set(
+                data
+            ).then(() => {
+            resolve(`Feriado ${data.nomeFeriado} ${msg} com sucesso.`)
+        })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
 exports.testAgenda = functions.https.onCall((data) => {
     return new Promise((resolve,reject) => {
     console.log(data)
@@ -37,7 +157,9 @@ exports.testAgenda = functions.https.onCall((data) => {
                         horaInicio: doc.data().horaInicio,
                         horaFim:doc.data().horaFim,
                         prof:doc.get('profissional').id,
-                        sala:doc.get('sala').id
+                        proc:doc.get('procedimento').id,
+                        sala:doc.get('sala').id,
+                        uuid:doc.data().uuid
                     }
                     docs.push(res)
                 }
@@ -98,8 +220,6 @@ exports.getSessoes = functions.https.onCall(async() => {
                         horaFim: null,
                         observacao: null,
                         paciente:null,
-                        profClass:null,
-                        profNome:null,
                         proc:null,
                         sala:null
                     }
@@ -127,6 +247,7 @@ exports.getSessoes = functions.https.onCall(async() => {
                     sessao.horaInicio = doc.data().horaInicio
                     sessao.horaFim = doc.data().horaFim
                     sessao.observacao = doc.data().observacao
+                    sessao.presenca = doc.data().presenca
                     listSessoes.push(sessao)
                 })
                 // tem que aguardar na disciplina II
@@ -160,7 +281,7 @@ exports.setSessao = functions.https.onCall((data) => {
             .set(
                 data
             ).then(() => {
-                resolve(`Sessa(oes) gravada(s) com sucesso.`)
+                resolve(`Sessão(ões) marcada(s) com sucesso.`)
             })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })

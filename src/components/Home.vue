@@ -20,7 +20,7 @@
           <b-nav-item-dropdown class="m-1" text="Pacientes" right v-if="$store.getters.getFuncao === 'Profissional' || $store.getters.getFuncao === 'Admin'">
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/CadastroPaciente`}" replace>Cadastrar/Atualizar</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Agendamentos`}" replace>Agendar</b-dropdown-item>
-            <b-dropdown-item href="#">Confirmar Presença</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Presenca`}" replace>Presença</b-dropdown-item>
             <b-dropdown-item href="#">Relatório</b-dropdown-item>
           </b-nav-item-dropdown>
 
@@ -76,7 +76,7 @@ export default {
     })
   },
   created() {
-    if (this.user.data == null){
+    if (this.user.data === null){
       this.$router.replace({
         name: "Login"
       });
@@ -89,12 +89,12 @@ export default {
           .catch((error) => {
             console.log(error);
           });
+      //carregar tabelas para consultas
+      this.$store.dispatch('getProfissionaisDb')
+      this.$store.dispatch('getSalasDb')
+      this.$store.dispatch('getProcedimentosDB')
+      this.$store.dispatch('getFeriadosDB')
     }
-    //carregar tabelas para consultas
-    this.$store.dispatch('getProfissionaisDb')
-    this.$store.dispatch('getSalasDb')
-    this.$store.dispatch('getProcedimentosDB')
-    this.$store.dispatch('getFeriadosDB')
   }
 }
 </script>

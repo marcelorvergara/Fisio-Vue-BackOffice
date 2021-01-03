@@ -86,7 +86,6 @@
 </template>
 
 <script>
-import { connDb } from '@/store/connDb'
 import {Compact} from "vue-color";
 import firebase from "firebase/app";
 import 'firebase/auth'
@@ -94,7 +93,6 @@ import 'firebase/auth'
 
 export default {
   name: "Profissionais",
-  mixins:[connDb],
   components: {"compact-picker": Compact},
   data() {
     return {
@@ -251,6 +249,7 @@ export default {
             this.form.nome = this.nome.trim()
             //envia o uid do user logado para verificar se é admin
             this.form.admUid = this.$store.getters.user.data.uid
+            console.log('admUid',this.$store.getters.user.data.uid)
             this.form.funcao = this.role
             this.$store.dispatch('updateProfissionaisDb',{profissonal: this.form})
                 .then((retorno) => {

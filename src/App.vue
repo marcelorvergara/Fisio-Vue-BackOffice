@@ -25,7 +25,9 @@ body{
   font-family: 'Work Sans', sans-serif;
 }
 :root{
-  --cor0 : #00753A;
+  --corOk: #ffffff;
+  --corFa: #ff0000;
+  --cor0: #00753A;
   --cor1: #009E47;
   --cor2: #16DD36;
   --cor3: #0052A5;

@@ -51,11 +51,9 @@
 </template>
 
 <script>
-import {connDb} from '@/store/connDb'
 
 export default {
   name: "Procedimentos",
-  mixins:[connDb],
   data(){
     return {
       loading: false,

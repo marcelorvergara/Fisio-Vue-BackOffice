@@ -22,7 +22,7 @@ Vue.component('vue-typeahead-bootstrap', VueTypeaheadBootstrap)
 Vue.config.productionTip = false
 
 connDb.methods.connDbAuth().onAuthStateChanged(user => {
-  store.dispatch("fetchUser", user);
+  store.dispatch('fetchUser', user);
 });
 
 new Vue({

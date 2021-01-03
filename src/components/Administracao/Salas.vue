@@ -51,11 +51,10 @@
 </template>
 
 <script>
-import { connDb } from '@/store/connDb'
+
 
 export default {
   name: "Salas",
-  mixins:[connDb],
   data(){
     return {
       loading: false,

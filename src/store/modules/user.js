@@ -8,26 +8,16 @@ const state = {
 }
 
 const getters = {
-    user(state){
-        return state.user
-    },
-    SET_LOGGED_IN(state, value) {
-        state.user.loggedIn = value;
-    },
-    SET_USER(state, data) {
-        state.user.data = data;
-    },
-    getFuncao(state){
-        return state.funcao
-    }
+    user: state => state.user,
+    getFuncao: state => state.funcao
 }
 
 const mutations = {
     SET_LOGGED_IN(state, value) {
         state.user.loggedIn = value;
     },
-    SET_USER(state, data) {
-        state.user.data = data;
+    SET_USER(state, userData) {
+        state.user.data = userData;
     },
     setFuncao(state, value){
         state.funcao = value
@@ -37,7 +27,7 @@ const mutations = {
 const actions = {
     fetchUser({ commit }, user) {
         //se usuário logado
-        commit("SET_LOGGED_IN", user !== null);
+        commit("SET_LOGGED_IN", true);
         if (user) {
             commit("SET_USER", {
                 displayName: user.displayName,

@@ -8,6 +8,7 @@ import Profissionais from "@/components/Administracao/Profissionais";
 import Procedimentos from "@/components/Administracao/Procedimentos";
 import Salas from "@/components/Administracao/Salas";
 import Feriados from "@/components/Administracao/Feriados";
+import Presenca from "@/components/Pacientes/Presenca";
 
 export const routes = [
     {
@@ -27,7 +28,8 @@ export const routes = [
             { path:'Procedimentos', component: Procedimentos },
             { path:'Salas', component: Salas },
             { path:'Profissionais', component: Profissionais },
-            { path: 'Feriados', component: Feriados}
+            { path: 'Feriados', component: Feriados},
+            { path: 'Presenca', component: Presenca},
         ]
     }
     ]
