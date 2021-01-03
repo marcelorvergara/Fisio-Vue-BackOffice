@@ -5,13 +5,15 @@ const state = {
     //array de sessões(events)
     events: [],
     pacientes:[],
-    sessoesPresenca:[]
+    sessoesPresenca:[],
+    sessoesRelatorio: []
 }
 const getters = {
     //pega o array de sessões (events)
     getEvents: state => state.events,
     getPacientes:state => state.pacientes,
-    getSessoesPresenca: state => state.sessoesPresenca
+    getSessoesPresenca: state => state.sessoesPresenca,
+    getSessoesRelatorio: state => state.sessoesRelatorio
 }
 
 const mutations = {
@@ -37,10 +39,32 @@ const mutations = {
     },
     resetSessoesPresenca(state){
         state.sessoesPresenca = []
+    },
+    setSessoesRelatorio(state,sessao) {
+        state.sessoesRelatorio = sessao
+    },
+    resetSessaoRelatorio(state){
+        state.sessoesRelatorio = []
     }
+
 }
 
 const actions = {
+    getSessoesRelDb(context,payload){
+        return new Promise ((resolve, reject) => {
+            context.commit('resetSessaoRelatorio')
+            const getSessRel = connDb.methods.connDbFunc().httpsCallable('getSessoesRel')
+            getSessRel(payload).then(result => {
+                context.commit('setSessoesRelatorio', result)
+                resolve('Ok')
+            })
+                .catch(error => {
+                    console.log(error)
+                    reject(error)
+                })
+        })
+
+    },
     updateSessoesDb(context,payload){
         return new Promise((resolve,reject) => {
             const updateSessoes = connDb.methods.connDbFunc().httpsCallable('updateSessoes')

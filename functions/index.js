@@ -3,8 +3,73 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+exports.getSessoesRel = functions.https.onCall((data) => {
+    var listSessoes = [];
+    var paciente;
+    var profissional;
+    var procedimento;
+    var sala;
+    const profDocRef = admin.firestore()
+        .collection('profissionais')
+        .doc(data.uuid);
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('sessoes')
+            .where('profissional', "==", profDocRef)
+            .where('presenca','!=',null)
+            .get()
+            .then(function(querySnapshot) {
+                console.log(querySnapshot.docs.length)
+                querySnapshot.forEach(function(doc) {
+                    var sessao = {
+                        uuid: null,
+                        horaInicio: null,
+                        horaFim: null,
+                        observacao: null,
+                        paciente:null,
+                        proc:null,
+                        sala:null
+                    }
+                    //começã a buscar os 'collection' de outras 'collections'
+                    sessao.paciente = doc.get('paciente').id
+                    // paciente =  doc.get('paciente').get().then((resPac)=>{
+                    //     sessao.paciente = resPac.data().nome
+                    //     console.log(doc.get('paciente').id)
+                    // })
+                    sessao.profissional = doc.get('profissional').id
+
+                    // profissional = doc.get('profissional').get().then((resProf)=>{
+                    //     sessao.profClass = resProf.data().corProf
+                    //     sessao.profNome = resProf.data().nome
+                    // })
+                    sessao.proc = doc.get('procedimento').id
+                    // procedimento =  doc.get('procedimento').get().then((resProc)=>{
+                    //     sessao.proc = resProc.data().nomeProcedimento
+                    // })
+                    sessao.sala = doc.get('sala').id
+                    // sala =  doc.get('sala').get().then((resSala)=>{
+                    //     sessao.sala = resSala.data().nomeSala
+                    // })
+                    sessao.uuid = doc.data().uuid
+                    sessao.horaInicio = doc.data().horaInicio
+                    sessao.horaFim = doc.data().horaFim
+                    sessao.observacao = doc.data().observacao
+                    sessao.agendador = doc.data().agendador
+                    sessao.dataDoAgendamento = doc.data().dataDoAgendamento
+                    sessao.presenca = doc.data().presenca
+                    listSessoes.push(sessao)
+                })
+                // tem que aguardar na disciplina II
+                return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
+                    .then(() => {
+                        resolve(listSessoes)
+                    })
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
 exports.updateSessoes = functions.https.onCall((data) => {
-    console.log(data)
     return new Promise ((resolve, reject) => {
         const db = admin.firestore()
         let batch = db.batch()

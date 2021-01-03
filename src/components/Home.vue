@@ -21,7 +21,7 @@
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/CadastroPaciente`}" replace>Cadastrar/Atualizar</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Agendamentos`}" replace>Agendar</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Presenca`}" replace>Presença</b-dropdown-item>
-            <b-dropdown-item href="#">Relatório</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Relatorio`}" replace>Relatório</b-dropdown-item>
           </b-nav-item-dropdown>
 
         <b-nav-item-dropdown class="m-1" text="Financeiro" right v-if="$store.getters.getFuncao === 'Financeiro' || $store.getters.getFuncao === 'Admin'">
@@ -39,7 +39,7 @@
 
         </b-navbar-nav>
       </b-collapse>
-      <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm">Sair <b-icon icon="door-open-fill"></b-icon></b-button>
+      <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm"><b-icon icon="door-open-fill"> </b-icon>{{ user.data.email }}</b-button>
     </b-navbar>
 <!--router view para mostrar os componentes filhos do Home-->
     <router-view></router-view>

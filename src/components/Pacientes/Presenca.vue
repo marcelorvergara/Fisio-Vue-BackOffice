@@ -9,6 +9,7 @@
               <b-button class="m-1" size="sm" @click="clearSelected">Desmarcar Todas</b-button>
             </div>
             <b-table
+                table-variant="secondary"
                 class="text-center"
                 ref="selectableTable"
                 selectable
