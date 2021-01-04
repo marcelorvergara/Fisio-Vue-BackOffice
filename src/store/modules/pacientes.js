@@ -107,44 +107,79 @@ const actions = {
         })
     },
     //mostras as sessões na agenda
-    async getSessoesDb(context){
-        const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoes')
-        await getSessoes().then(result => {
-            context.commit('resetEvents')
-            for (let dados of result.data){
-                const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
-                const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
-                const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
-                const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
-                const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
-                const obs = dados.observacao || 'N/A'
-                const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
-                //trocar a cor caso a presença ou falta tenha sido dada
-                var classCor
-                if (dados.presenca === 'confirmada'){
-                    classCor = 'corOk'
-                } else if (dados.presenca === 'falta'){
-                    classCor = 'corFa'
-                }else{
-                    classCor = dadosProf.corProf
+    async getSessoesDb(context,payload){
+        if (payload.funcao === 'Parceiro'){
+            const userEmail = context.getters.user.data.email
+
+            console.log(context.getters.getProfissionais)
+            const prof = context.getters.getProfissionais.find(f => f.email === userEmail)
+            const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoesParceiro')
+            await getSessoes(prof.uuid).then(result => {
+                context.commit('resetEvents')
+                for (let dados of result.data){
+                    const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
+                    const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
+                    const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
+                    const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
+                    const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
+                    const obs = dados.observacao || 'N/A'
+                    const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
+                    //trocar a cor caso a presença ou falta tenha sido dada
+                    var classCor
+                    if (dados.presenca === 'confirmada'){
+                        classCor = 'corOk'
+                    } else if (dados.presenca === 'falta'){
+                        classCor = 'corFa'
+                    }else{
+                        classCor = dadosProf.corProf
+                    }
+                    context.commit('setEvents',
+                        {start: dados.horaInicio,
+                            end: dados.horaFim,
+                            class: classCor,
+                            title: title,
+                            content: dadosProf.nome,
+                            contentFull: contentFull,
+                            uuid: dados.uuid})
                 }
-                context.commit('setEvents',
-                    {start: dados.horaInicio,
-                        end: dados.horaFim,
-                        class: classCor,
-                        title: title,
-                        content: dadosProf.nome,
-                        contentFull: contentFull,
-                        uuid: dados.uuid})
-            }
-        })
+            })
+        }else{
+            const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoes')
+            await getSessoes().then(result => {
+                context.commit('resetEvents')
+                for (let dados of result.data){
+                    const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
+                    const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
+                    const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
+                    const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
+                    const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
+                    const obs = dados.observacao || 'N/A'
+                    const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
+                    //trocar a cor caso a presença ou falta tenha sido dada
+                    var classCor
+                    if (dados.presenca === 'confirmada'){
+                        classCor = 'corOk'
+                    } else if (dados.presenca === 'falta'){
+                        classCor = 'corFa'
+                    }else{
+                        classCor = dadosProf.corProf
+                    }
+                    context.commit('setEvents',
+                        {start: dados.horaInicio,
+                            end: dados.horaFim,
+                            class: classCor,
+                            title: title,
+                            content: dadosProf.nome,
+                            contentFull: contentFull,
+                            uuid: dados.uuid})
+                }
+            })
+        }
     },
     setSessaoDb(context,payload){
       return new Promise((resolve,reject) => {
           const setSessao = connDb.methods.connDbFunc().httpsCallable('setSessao')
           setSessao(payload.sessao).then(result => {
-              //atualizar a lista de sessões
-              context.dispatch('getSessoesDb')
               resolve(result.data)
           })
               .catch(err => {

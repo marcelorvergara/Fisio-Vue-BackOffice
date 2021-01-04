@@ -17,9 +17,9 @@
         <!-- Right aligned nav items -->
         <b-navbar-nav class="mr-auto">
 
-          <b-nav-item-dropdown class="m-1" text="Pacientes" right v-if="$store.getters.getFuncao === 'Profissional' || $store.getters.getFuncao === 'Admin'">
+          <b-nav-item-dropdown class="m-1" text="Pacientes" right v-if="$store.getters.getFuncao === 'Parceiro' ||$store.getters.getFuncao === 'Profissional' || $store.getters.getFuncao === 'Admin'">
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/CadastroPaciente`}" replace>Cadastrar/Atualizar</b-dropdown-item>
-            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Agendamentos`}" replace>Agendar</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Agendamentos`}" replace>Agenda</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Presenca`}" replace>Presença</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Relatorio`}" replace>Relatório</b-dropdown-item>
           </b-nav-item-dropdown>
@@ -39,7 +39,7 @@
 
         </b-navbar-nav>
       </b-collapse>
-      <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm"><b-icon icon="door-open-fill"> </b-icon>{{ user.data.email }}</b-button>
+      <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm">Sair <b-icon icon="door-open-fill"> </b-icon>{{ userEmail }}</b-button>
     </b-navbar>
 <!--router view para mostrar os componentes filhos do Home-->
     <router-view></router-view>
@@ -56,7 +56,7 @@ export default {
   mixins:[connDb],
   data(){
     return {
-
+      userEmail:''
     }
   },
   methods:{
@@ -81,6 +81,7 @@ export default {
         name: "Login"
       });
     }else {
+      this.userEmail = this.user.data.email || 'email'
       //pegar qual o papel - função - do login
       this.connDbAuth().currentUser.getIdTokenResult()
           .then((idTokenResult) => {

@@ -126,11 +126,12 @@ export default {
       loading: false,
       show: true,
       mensagem:'',
-      role:'Profissional',
+      role:'Parceiro',
       opcoes:[
+        { text: 'Parceiro', value: 'Parceiro'},
         { text: 'Profissional', value: 'Profissional'},
         { text: 'Financeiro', value: 'Financeiro'},
-        { text: 'Ambos', value: 'Admin'},
+        { text: 'Admin', value: 'Admin'},
       ],
       form:{
         email:'',

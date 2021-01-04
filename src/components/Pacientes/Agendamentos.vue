@@ -393,7 +393,7 @@ export default {
               this.loading = false
               this.$refs['modal-ok'].show()
               this.$refs['info-modal'].hide()
-              this.$store.dispatch('getSessoesDb')
+              this.getSessoesDb()
             })
             .catch(error => {
               this.mensagemErro = error
@@ -511,7 +511,6 @@ export default {
               // refazer o array res.docs para pegar as referências
               var newDocs = []
               for (let i=0; i<res.docs.length; i++){
-                console.log(res.docs[i])
                 const prof = this.$store.getters.getProfissionais.find(f=> f.uuid === res.docs[i].prof)
                 const sala = this.$store.getters.getSalas.find(f=>f.uuid === res.docs[i].sala)
                 const obj = {
@@ -787,6 +786,8 @@ export default {
             this.mensagem = retorno
             this.loading = false
             this.$refs['modal-ok'].show()
+            //atualizar a lista de sessões
+            this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
           })
           .catch((error) => {
             this.mensagem = error
@@ -798,6 +799,8 @@ export default {
       return new Promise((resolve,reject) => {
         this.$store.dispatch('setSessaoDb',{sessao: sessao})
             .then((retorno) => {
+              //atualizar a lista de sessões
+              this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
               resolve (retorno)
             })
             .catch((error) => {
@@ -827,10 +830,14 @@ export default {
       for (let i=0; i< this.$store.getters.getProcedimentos.length;i++){
         this.procedimentos.push(this.$store.getters.getProcedimentos[i].nomeProcedimento)
       }
+    },
+    getSessoesDb(){
+      console.log(this.$store.getters.getFuncao)
+      this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
     }
   },
   created() {
-    this.$store.dispatch('getSessoesDb')
+    this.getSessoesDb()
     this.getNomesPacientes()
     this.getNomesProfissionais()
     this.getNomeSalas()

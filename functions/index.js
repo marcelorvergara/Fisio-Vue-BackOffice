@@ -259,6 +259,79 @@ exports.removeSessao = functions.https.onCall((data) => {
 
     })
 })
+exports.getSessoesParceiro = functions.https.onCall(async(data) => {
+    console.log(data)
+    //async na chamada da função por causa dos documentos que são referenciados nos valores das sessões
+    //a atualização de uma sessão ocorrerá se o dado de algum objeto mudar(paciente, profissional,
+    //sala e procedimento)
+    var listSessoes = [];
+    var paciente;
+    var profissional;
+    var procedimento;
+    var sala;
+    var tamanhoSnap =0;
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        const profDocRef = admin.firestore()
+            .collection('profissionais')
+            .doc(data);
+        db.collection('sessoes')
+            .where('profissional', "==", profDocRef)
+            .get()
+            .then( function (querySnapshot) {
+                console.warn("tamanho docs ",querySnapshot.docs.length)
+                tamanhoSnap = querySnapshot.docs.length;
+                querySnapshot.forEach(async function(doc) {
+                    var sessao = {
+                        uuid: null,
+                        horaInicio: null,
+                        horaFim: null,
+                        observacao: null,
+                        paciente:null,
+                        proc:null,
+                        sala:null
+                    }
+                    //começã a buscar os 'collection' de outras 'collections'
+                    sessao.paciente = doc.get('paciente').id
+                    // paciente =  doc.get('paciente').get().then((resPac)=>{
+                    //     sessao.paciente = resPac.data().nome
+                    //     console.log(doc.get('paciente').id)
+                    // })
+                    sessao.profissional = doc.get('profissional').id
+
+                    // profissional = doc.get('profissional').get().then((resProf)=>{
+                    //     sessao.profClass = resProf.data().corProf
+                    //     sessao.profNome = resProf.data().nome
+                    // })
+                    sessao.proc = doc.get('procedimento').id
+                    // procedimento =  doc.get('procedimento').get().then((resProc)=>{
+                    //     sessao.proc = resProc.data().nomeProcedimento
+                    // })
+                    sessao.sala = doc.get('sala').id
+                    // sala =  doc.get('sala').get().then((resSala)=>{
+                    //     sessao.sala = resSala.data().nomeSala
+                    // })
+                    sessao.uuid = doc.data().uuid
+                    sessao.horaInicio = doc.data().horaInicio
+                    sessao.horaFim = doc.data().horaFim
+                    sessao.observacao = doc.data().observacao
+                    sessao.presenca = doc.data().presenca
+                    listSessoes.push(sessao)
+                })
+                // tem que aguardar na disciplina II
+                return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
+                    .then(() => {
+                        console.warn('tamanho enviado',listSessoes.length)
+                        if (listSessoes.length !== tamanhoSnap){
+                            reject('Número de sessões discrepantes.')
+                        }
+                        resolve(listSessoes)
+                    })
+
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
 
 exports.getSessoes = functions.https.onCall(async() => {
     //async na chamada da função por causa dos documentos que são referenciados nos valores das sessões

@@ -45,8 +45,8 @@ export default {
         { key: 'inicio', sortable: true },
         { key: 'fim', sortable: true },
         { key: 'procedimento', sortable: true },
-        { key: 'agendador', sortable: false },
-        { key: 'status', sortable: false }
+        { key: 'agendador', sortable: true },
+        { key: 'status', sortable: true }
       ],
       mensagemErro:'',
       lista: []
