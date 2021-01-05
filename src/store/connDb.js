@@ -6,12 +6,16 @@ export const connDb = {
     methods: {
         connDbFunc(){
             //emulador local
-            firebase.functions().useEmulator("localhost",5001)
+            if (location.hostname === "localhost") {
+                firebase.functions().useEmulator("localhost",5001)
+            }
             return firebase.functions()
         },
         connDbAuth(){
             //emulador local
-            firebase.auth().useEmulator('http://localhost:9099/')
+            if (location.hostname === "localhost") {
+                firebase.auth().useEmulator('http://localhost:9099/')
+            }
             return firebase.auth()
         }
     }

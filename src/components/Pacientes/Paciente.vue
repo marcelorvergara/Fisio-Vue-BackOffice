@@ -65,11 +65,9 @@
 </template>
 
 <script>
-import {connDb} from '@/store/connDb'
 
 export default {
   name: "CadastroPaciente",
-  mixins:[connDb],
   data(){
     return {
       loading: false,

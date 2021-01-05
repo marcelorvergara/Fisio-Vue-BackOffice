@@ -35,6 +35,7 @@
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Procedimentos`}" replace>Procedimentos</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Salas`}" replace>Salas</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Feriados`}" replace>Feriados</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Homologa`}" replace>Funções de Homologação</b-dropdown-item>
           </b-nav-item-dropdown>
 
         </b-navbar-nav>
@@ -81,7 +82,7 @@ export default {
         name: "Login"
       });
     }else {
-      this.userEmail = this.user.data.email || 'email'
+      this.userEmail = this.user.data.displayName || this.user.data.email || 'email'
       //pegar qual o papel - função - do login
       this.connDbAuth().currentUser.getIdTokenResult()
           .then((idTokenResult) => {

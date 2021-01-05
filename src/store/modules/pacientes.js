@@ -110,8 +110,6 @@ const actions = {
     async getSessoesDb(context,payload){
         if (payload.funcao === 'Parceiro'){
             const userEmail = context.getters.user.data.email
-
-            console.log(context.getters.getProfissionais)
             const prof = context.getters.getProfissionais.find(f => f.email === userEmail)
             const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoesParceiro')
             await getSessoes(prof.uuid).then(result => {

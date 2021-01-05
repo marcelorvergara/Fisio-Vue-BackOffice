@@ -122,7 +122,7 @@ export default {
       uuid:null,
       dadosPro:[],
       nomes:[],
-      nome:'',
+      nome:null,
       loading: false,
       show: true,
       mensagem:'',
@@ -237,7 +237,14 @@ export default {
       if (this.form.senha !== this.form.senha2){
         this.mensagem = 'As senhas não conferem.'
         this.$refs['modal-err'].show()
-      }else {
+      } else if (this.nome === null || this.nome === ''){
+        this.mensagem = 'Nome não preenchido.'
+        this.$refs['modal-err'].show()
+      } else if (this.form.nasc === null || this.form.nasc === ''){
+        this.mensagem = 'Data de nascimento não preenchida.'
+        this.$refs['modal-err'].show()
+      }
+      else {
         this.loading = true
         if (this.submitBtn === 'Atualizar') {
           // aviso para usar a troca de senha com o botão de troca de senha

@@ -48,11 +48,11 @@
                 />
               </b-input-group>
               <b-form-group class="mb-0 text-right">
-                <b-button size="sm" @click="restSenha" variant="outline-dark"  class="ml-2">
+                <b-button @click="restSenha" variant="outline-dark"  class="ml-2">
                   Reset Senha
                   <b-spinner v-show="loadingRS" small label="Carregando..."></b-spinner>
                 </b-button>
-                <b-button size="sm" type="submit" variant="outline-dark" class="ml-2">
+                <b-button type="submit" variant="outline-dark" class="ml-2">
                   Login
                   <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
                 </b-button>

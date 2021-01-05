@@ -832,7 +832,6 @@ export default {
       }
     },
     getSessoesDb(){
-      console.log(this.$store.getters.getFuncao)
       this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
     }
   },

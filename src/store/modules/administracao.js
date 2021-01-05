@@ -43,6 +43,10 @@ const mutations = {
 }
 
 const actions = {
+    limpaSessoesDb(){
+        const limpaSessoesDb = connDb.methods.connDbFunc().httpsCallable('limpaSessoes')
+        limpaSessoesDb()
+    },
     setFeriadoDb(context,payload){
         return new Promise((resolve,reject) => {
             const setFeriados = connDb.methods.connDbFunc().httpsCallable('setFeriado')

@@ -3,6 +3,8 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+
+
 exports.getSessoesRel = functions.https.onCall((data) => {
     var listSessoes = [];
     var paciente;
@@ -616,6 +618,7 @@ exports.updateProfissional = functions.https.onCall((data) => {
 })
 
 exports.setProfissional = functions.https.onCall((data) => {
+    console.log(data)
     //promise para retornar para tela do usuário
     return new Promise((resolve, reject) => {
         const { v4: uuidv4 } = require('uuid');
@@ -628,8 +631,10 @@ exports.setProfissional = functions.https.onCall((data) => {
                 if (adminRec.customClaims.funcao === 'Admin') {
                     return admin.auth().createUser({email: data.email, password: data.senha})
                         .then((user) => {
+                            //setando a role do login
                             admin.auth().setCustomUserClaims(user.uid, {funcao: data.funcao})
                                 .then(() => {
+                                    //enviando para o banco os dados do profissional
                                     const db = admin.firestore()
                                     data.date = new Date()
                                     db.collection('profissionais')
@@ -638,6 +643,8 @@ exports.setProfissional = functions.https.onCall((data) => {
                                         resolve(`Profissional ${data.nome} cadastrado com sucesso.`)
                                     })
                                 })
+                            //cadastrando o display name
+                            admin.auth().updateUser(user.uid, {displayName:data.nome})
                         })
                         .catch((error) => {
                             throw new functions.https.HttpsError('internal', error.message)
@@ -649,3 +656,23 @@ exports.setProfissional = functions.https.onCall((data) => {
             .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 });
+
+//função para facilitar homologação
+exports.limpaSessoes = functions.https.onCall(async () => {
+    var sessoesList = []
+    const db = admin.firestore()
+    await db.collection('sessoes').get().then(function(querySnapshot) {
+        querySnapshot.forEach(function(doc) {
+            sessoesList.push(doc.data().uuid)
+        });
+    })
+    Promise.all([sessoesList]).then(() => {
+        for (let i of sessoesList){
+            db.collection('sessoes').doc(i).delete().then(function() {
+                console.log("Document successfully deleted!");
+            }).catch(function(error) {
+                console.error("Error removing document: ", error);
+            });
+        }
+    })
+})
