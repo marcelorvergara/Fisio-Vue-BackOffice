@@ -7,7 +7,7 @@
             <b-table
                 table-variant="secondary"
                 class="text-center"
-                bordered hover head-variant="dark" small fixed
+                bordered hover head-variant="dark"
                 responsive="sm"
                 :items="lista"
                 :fields="fields"
@@ -46,42 +46,53 @@ export default {
         { key: 'fim', sortable: true },
         { key: 'procedimento', sortable: true },
         { key: 'agendador', sortable: true },
-        { key: 'status', sortable: true }
+        { key: 'status', sortable: true },
+        { key: 'profissional', sortable: true}
       ],
       mensagemErro:'',
       lista: []
     }
   },
+  mounted() {
+    this.getSessoesRel()
+  },
   methods:{
     getSessoesRel(){
       const profUuid = this.$store.getters.getProfissionais.find(f => f.email === this.user.data.email)
-      this.$store.dispatch('getSessoesRelDb',{uuid:profUuid.uuid}).then(() => {
-        const sessoesList = this.$store.getters.getSessoesRelatorio.data
-
-        for (let sessao of sessoesList){
-          const dia0 = sessao.horaInicio.split(' ')[0].split('-')
-          const dia = dia0[2]+'-'+dia0[1]+'-'+dia0[0]
-          const horaIni = sessao.horaInicio.split(' ')[1]
-          const horaFim = sessao.horaFim.split(' ')[1]
-          const paciente = this.$store.getters.getPacientes.find(f => f.uuid === sessao.paciente)
-          const procedimento = this.$store.getters.getProcedimentos.find(f => f.uuid === sessao.proc)
-          const agendador = sessao.agendador
-          const status = sessao.presenca
-          const sessaoObj = {
-            data: dia,
-            inicio: horaIni,
-            fim: horaFim,
-            paciente: paciente.nome,
-            procedimento: procedimento.nomeProcedimento,
-            agendador: agendador,
-            status,
-          }
-          this.lista.push(sessaoObj)
-        }
-      }).catch(error => {
-        this.mensagemErro = error
+      if (profUuid === undefined){
+        this.mensagemErro = 'Profissional sem sessões ou não cadastrado'
+        //criar user com nome, email e uuid
         this.$refs['modal-err'].show()
-      })
+      }else{
+        this.$store.dispatch('getSessoesRelDb',{uuid:profUuid.uuid, admUid: this.$store.getters.user.data.uid}).then(() => {
+          const sessoesList = this.$store.getters.getSessoesRelatorio.data
+          for (let sessao of sessoesList){
+            const dia0 = sessao.horaInicio.split(' ')[0].split('-')
+            const dia = dia0[2]+'-'+dia0[1]+'-'+dia0[0]
+            const horaIni = sessao.horaInicio.split(' ')[1]
+            const horaFim = sessao.horaFim.split(' ')[1]
+            const paciente = this.$store.getters.getPacientes.find(f => f.uuid === sessao.paciente)
+            const procedimento = this.$store.getters.getProcedimentos.find(f => f.uuid === sessao.proc)
+            const profissional = this.$store.getters.getProfissionais.find(f => f.uuid === sessao.profissional)
+            const agendador = sessao.agendador
+            const status = sessao.presenca
+            const sessaoObj = {
+                data: dia,
+                inicio: horaIni,
+                fim: horaFim,
+                paciente: paciente.nome,
+                procedimento: procedimento.nomeProcedimento,
+                agendador: agendador,
+                status,
+                profissional:profissional.nome}
+            this.lista.push(sessaoObj)
+          }
+        }).catch(error => {
+          this.mensagemErro = error
+          this.$refs['modal-err'].show()
+        })
+      }
+
     }
   },
   computed:{
@@ -90,7 +101,7 @@ export default {
     })
   },
   created() {
-    this.getSessoesRel()
+
   }
 }
 </script>

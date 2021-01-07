@@ -258,14 +258,12 @@
 </template>
 
 <script>
-import { connDb } from '@/store/connDb'
 import VueCal from 'vue-cal'
 import 'vue-cal/dist/i18n/pt-br.js'
 import 'vue-cal/dist/vuecal.css'
 
 export default {
   name: "Agendamentos",
-  mixins:[connDb],
   components:{
     VueCal
   },

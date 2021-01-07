@@ -194,16 +194,13 @@ export default {
       this.$store.commit('resetSessoesPresenca')
       const profList = this.$store.getters.getProfissionais
       const userEmail = this.$store.getters.user.data.email
+      //procurando o usuário logado
       const objProf = profList.find(f => f.email === userEmail)
-      if (objProf === undefined){
-        console.log('nenhuma sessão ou usuário inválido.')
-      }else{
-        const profId = objProf.uuid
-        this.$store.dispatch('getSessoesPresencaDb',{uuid:profId})
-      }
+      //obj que será passado para o procura por sessões
+      this.$store.dispatch('getSessoesPresencaDb', {uuid: objProf.uuid, admUid: this.$store.getters.user.data.uid})
     }
   },
-  created() {
+  mounted() {
     this.getSessoesInit()
   }
 }

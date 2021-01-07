@@ -4,12 +4,12 @@
       <b-row align-h="center">
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
           <b-card header="Cadastro de Procedimentos" header-bg-variant="dark" header-text-variant="white">
-            <b-form-group id="grp-nome" label="Nome do Procedimento:" label-for="nome">
+            <b-form-group id="grp-nome" label="Nome do Procedimento ou Pacote:" label-for="nome">
               <vue-typeahead-bootstrap
                   disableSort
                   id="nome"
                   v-model="nomeProcedimento"
-                  placeholder="Nome do procedimento"
+                  placeholder="Nome do procedimento ou pacote"
                   required
                   :data="nomesProcs"
                   @hit="preencheVal($event)"
@@ -17,9 +17,34 @@
               </vue-typeahead-bootstrap>
             </b-form-group>
             <b-form @submit="cadastrar" @reset="resetar" v-if="show" >
-              <b-form-group id="grp-qtd-pacientes" label="Pacientes simultâneos:" label-for="email">
-                <b-form-input id="qtd-pacientes" v-model="form.qtdPacientes" type="number" placeholder="Quantidade de pacientes simultâneos" required></b-form-input>
-              </b-form-group>
+              <b-row>
+                <b-col sm="12" lg="6">
+                  <b-form-group id="grp-qtd-pacientes" label="Pacientes simultâneos:" label-for="qtd-pacientes">
+                    <b-form-input id="qtd-pacientes" v-model.number="form.qtdPacientes" type="number" placeholder="Qtd. simultânea" required></b-form-input>
+                  </b-form-group>
+                </b-col>
+                <b-col>
+                  <b-form-group id="grp-qtd-sessoes" label="Número de sessões:" label-for="qtd-sessoes">
+                    <b-form-input id="qtd-sessoes" v-model.number="form.qtdSessoes" type="number" placeholder="Qtd. de sessões" required></b-form-input>
+                  </b-form-group>
+                </b-col>
+              </b-row>
+              <b-row>
+                <b-col sm="12" lg="6">
+                  <b-form-group id="grp-comissao" label="Comissão do prof.:" label-for="comissao">
+                    <b-input-group append="%">
+                      <b-form-input id="comissao" v-model.number="form.comissao" type="number" placeholder="0 a 100" required></b-form-input>
+                    </b-input-group>
+                  </b-form-group>
+                </b-col>
+                <b-col>
+                  <b-form-group id="grp-valor" label="Valor:" label-for="valor">
+                    <b-input-group prepend="R$">
+                      <b-form-input id="valor" v-model.number="form.valor" type="number" placeholder="Valor" required></b-form-input>
+                    </b-input-group>
+                  </b-form-group>
+                </b-col>
+              </b-row>
               <div class="text-right mt-3">
                 <b-button type="reset" variant="outline-danger">Resetar</b-button>
                 <b-button type="submit" variant="outline-success" class="ml-2">
@@ -64,7 +89,10 @@ export default {
       dadosProcedimentos: [],
       nomeProcedimento:'',
       form:{
-        qtdPacientes:null
+        qtdPacientes:null,
+        qtdSessoes:null,
+        comissao: null,
+        valor: 0.00
       }
     }
   },
@@ -117,6 +145,9 @@ export default {
       this.submitBtn = 'Cadastrar'
       this.nomeProcedimento = ''
       this.form.qtdPacientes = ''
+      this.form.valor = 0
+      this.form.comissao = ''
+      this.form.qtdSessoes = ''
       this.show = false
       this.$nextTick(() => {
         this.show = true

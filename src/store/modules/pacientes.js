@@ -46,7 +46,6 @@ const mutations = {
     resetSessaoRelatorio(state){
         state.sessoesRelatorio = []
     }
-
 }
 
 const actions = {
@@ -75,11 +74,10 @@ const actions = {
                     reject(err)
                 })
         })
-
     },
     async getSessoesPresencaDb(context,payload){
-        const getSessoesPres = connDb.methods.connDbFunc().httpsCallable('getSessoesPresenca')
-        await getSessoesPres(payload.uuid).then(result => {
+        const getSessoesPres = connDb.methods.connDbFunc().httpsCallable('getSessoesParaPresenca')
+        await getSessoesPres(payload).then(result => {
             context.commit('resetSessoesPresenca')
             for (let sessao of result.data){
                 const dadosProf = context.getters.getProfissionais.find(f => f.uuid === sessao.profissional)
