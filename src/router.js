@@ -11,6 +11,7 @@ import Feriados from "@/components/Administracao/Feriados";
 import Presenca from "@/components/Pacientes/Presenca";
 import Relatorio from "@/components/Pacientes/Relatorio";
 import Homologa from "@/components/Administracao/Homologa";
+import Acompanhamento from "@/components/Pacientes/Acompanhamento";
 
 export const routes = [
     {
@@ -34,6 +35,7 @@ export const routes = [
             { path: 'Presenca', component: Presenca},
             { path: 'Relatorio', component: Relatorio },
             { path: 'Homologa', component: Homologa},
+            { path: 'Acompanhamento', component: Acompanhamento},
         ]
     }
     ]

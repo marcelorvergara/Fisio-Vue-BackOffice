@@ -1,6 +1,6 @@
 <template>
 <div>
-  <b-container class="mt-3">
+  <b-container fluid class="mt-3">
     <b-row>
       <b-col>
           <div>

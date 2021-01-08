@@ -20,6 +20,7 @@
           <b-nav-item-dropdown class="m-1" text="Pacientes" right v-if="$store.getters.getFuncao === 'Parceiro' ||$store.getters.getFuncao === 'Profissional' || $store.getters.getFuncao === 'Admin'">
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/CadastroPaciente`}" replace>Cadastrar/Atualizar</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Agendamentos`}" replace>Agenda</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Acompanhamento`}" replace>Acompanhamento</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Presenca`}" replace>Presença</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Relatorio`}" replace>Relatório</b-dropdown-item>
           </b-nav-item-dropdown>

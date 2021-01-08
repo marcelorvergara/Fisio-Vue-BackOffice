@@ -1,10 +1,47 @@
 <template>
   <div>
-    <b-container class="mt-3">
+    <b-container fluid class="mt-3">
+      <b-row class="mb-3">
+        <b-col lg="4">
+          <b-form-group label="Filtro" label-for="filtro-input" label-cols-sm="3" label-align-sm="right" label-size="sm">
+            <b-input-group size="sm">
+              <b-form-input autocomplete="off" id="filtro-input" v-model="filter" type="search" placeholder="pesquise aqui">
+              </b-form-input>
+              <b-input-group-append>
+                <b-button :disabled="!filter" @click="filter = ''">Limpar</b-button>
+              </b-input-group-append>
+            </b-input-group>
+          </b-form-group>
+        </b-col>
+        <b-col lg="6">
+          <b-form-group
+              v-model="sortDirection"
+              description="Filtro de colunas. Deixe desmarcado para filtrar todos os dados"
+              label-cols-sm="3"
+              label-align-sm="right"
+              label-size="sm"
+              v-slot="{ ariaDescribedby }">
+            <b-form-checkbox-group
+                v-model="filterOn"
+                :aria-describedby="ariaDescribedby">
+              <b-form-checkbox value="data">Data</b-form-checkbox>
+              <b-form-checkbox value="paciente">Paciente</b-form-checkbox>
+              <b-form-checkbox value="procedimento">Procedimento</b-form-checkbox>
+              <b-form-checkbox value="status">Status</b-form-checkbox>
+              <b-form-checkbox value="profissional">Profissional</b-form-checkbox>
+            </b-form-checkbox-group>
+          </b-form-group>
+        </b-col>
+      </b-row>
       <b-row>
         <b-col>
           <div>
             <b-table
+                :current-page="currentPage"
+                :per-page="perPage"
+                :filter="filter"
+                :filter-included-fields="filterOn"
+                :sort-direction="sortDirection"
                 table-variant="secondary"
                 class="text-center"
                 bordered hover head-variant="dark"
@@ -13,7 +50,42 @@
                 :fields="fields"
                 :sort-by.sync="sortBy"
                 :sort-desc.sync="sortDesc"
-                sort-icon-left></b-table>
+                sort-icon-left
+                show-empty
+                small
+                @filtered="onFiltered"></b-table>
+          </div>
+        </b-col>
+      </b-row>
+      <b-row class="mt-2 mb-4" align-h="end">
+        <b-col lg="5">
+          <div class="mb-3">
+          <b-form-group
+              label="Itens por Página"
+              label-for="per-page-select"
+              label-cols-sm="6"
+              label-cols-md="4"
+              label-cols-lg="3"
+              label-align-sm="right"
+              label-size="sm"
+              class="mb-0">
+            <b-form-select
+                id="per-page-select"
+                v-model="perPage"
+                :options="pageOptions"
+                size="sm"
+            ></b-form-select>
+          </b-form-group>
+          </div>
+          <div>
+          <b-pagination
+              v-model="currentPage"
+              :total-rows="totalRows"
+              :per-page="perPage"
+              align="fill"
+              size="sm"
+              class="my-0"
+          ></b-pagination>
           </div>
         </b-col>
       </b-row>
@@ -37,14 +109,21 @@ export default {
   name: "Relatorio",
   data(){
     return {
+      pageOptions: [5, 10, 15, { value: 100, text: "Mostrar o máximo por página" }],
+      perPage:10,
+      totalRows:1,
+      currentPage:1,
+      filterOn: [],
+      sortDirection: 'asc',
+      filter: null,
       sortBy: 'data',
       sortDesc: false,
       fields: [
         { key: 'data', sortable: true },
         { key: 'paciente', sortable: true },
+        { key: 'procedimento', sortable: true },
         { key: 'inicio', sortable: true },
         { key: 'fim', sortable: true },
-        { key: 'procedimento', sortable: true },
         { key: 'agendador', sortable: true },
         { key: 'status', sortable: true },
         { key: 'profissional', sortable: true}
@@ -57,6 +136,10 @@ export default {
     this.getSessoesRel()
   },
   methods:{
+    onFiltered(filteredItems){
+      this.totalRows = filteredItems.length
+      this.currentPage = 1
+    },
     getSessoesRel(){
       const profUuid = this.$store.getters.getProfissionais.find(f => f.email === this.user.data.email)
       if (profUuid === undefined){
@@ -87,6 +170,7 @@ export default {
                 profissional:profissional.nome}
             this.lista.push(sessaoObj)
           }
+          this.totalRows = this.$store.getters.getSessoesRelatorio.data.length
         }).catch(error => {
           this.mensagemErro = error
           this.$refs['modal-err'].show()
