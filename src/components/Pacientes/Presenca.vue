@@ -33,7 +33,7 @@
                 </template>
               </template>
               <template #cell(detalhesSessao)="row">
-                <b-button variant="outline-success" size="sm" @click="row.toggleDetails" class="mr-2">
+                <b-button variant="outline-info" size="sm" @click="row.toggleDetails" class="mr-2">
                   {{ row.detailsShowing ? '-' : '+'}} Detalhes
                 </b-button>
               </template>
@@ -64,7 +64,7 @@
                     <b-col>{{ row.item.detalhesSessao.dataAgendamento }}</b-col>
                   </b-row>
                 <div class="text-right">
-                  <b-button variant="outline-success"  size="sm" @click="row.toggleDetails">- Detalhes</b-button>
+                  <b-button variant="outline-info"  size="sm" @click="row.toggleDetails">- Detalhes</b-button>
                 </div>
                 </b-card>
               </template>

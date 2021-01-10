@@ -6,14 +6,16 @@ const state = {
     events: [],
     pacientes:[],
     sessoesPresenca:[],
-    sessoesRelatorio: []
+    sessoesRelatorio: [],
+    sessoesAcompDia:[]
 }
 const getters = {
     //pega o array de sessões (events)
     getEvents: state => state.events,
     getPacientes:state => state.pacientes,
     getSessoesPresenca: state => state.sessoesPresenca,
-    getSessoesRelatorio: state => state.sessoesRelatorio
+    getSessoesRelatorio: state => state.sessoesRelatorio,
+    getSessoesAcompDia: state => state.sessoesAcompDia
 }
 
 const mutations = {
@@ -45,10 +47,62 @@ const mutations = {
     },
     resetSessaoRelatorio(state){
         state.sessoesRelatorio = []
+    },
+    setSessoesAcompDia(state,sessao){
+        state.sessoesAcompDia.push(sessao)
+    },
+    resetSessoesAcompDia(state){
+        state.sessoesAcompDia = []
     }
 }
 
 const actions = {
+    setSessoesAcompDiaDb(context,payload){
+      return new Promise((resolve, reject) => {
+          const setAcompanhamento = connDb.methods.connDbFunc().httpsCallable('setSesssaoAcomDiario')
+          setAcompanhamento(payload).then(res => {
+              resolve(res)
+          })
+              .catch(error => {
+                  reject(error)
+              })
+      })
+    },
+    getSessoesAcompDiaDb(context,payload){
+        return new Promise((resolve, reject) => {
+            context.commit('resetSessoesAcompDia')
+            const getSessAcDia = connDb.methods.connDbFunc().httpsCallable('getSessoesAcomDiario')
+            getSessAcDia(payload).then(result => {
+                if (result.data.length === 0){
+                    resolve('Vazio')
+                }else {
+                    for (let i=0; i < result.data.length; i++){
+                        //formatar os campos para apresentar na tabela de acompanhamento do paciente
+                        const dados = result.data[i]
+                        const dia = dados.horaInicio.split(' ')[0].split('-')
+                        const data = dia[2]+'-'+dia[1]+'-'+dia[0]
+                        const presenca = dados.presenca || 'Não marcada'
+                        const proc = context.getters.getProcedimentos.find(f => f.uuid === dados.proc)
+                        const procedimento = proc.nomeProcedimento
+                        const prof = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
+                        const profissional = prof.nome
+                        const pac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
+                        const paciente = pac.nome
+                        const acompanhamento = dados.acompanhamento || 'Sem acompanhamento nesta data'
+                        const uuid = dados.uuid
+                        const sessObj = {
+                            data,presenca,procedimento,profissional,acompanhamento,uuid,paciente
+                        }
+                        context.commit('setSessoesAcompDia',sessObj)
+                    }
+                    resolve('Ok')
+                }
+            })
+                .catch(error => {
+                    reject(error)
+                })
+        })
+    },
     getSessoesRelDb(context,payload){
         return new Promise ((resolve, reject) => {
             context.commit('resetSessaoRelatorio')
@@ -58,7 +112,7 @@ const actions = {
                 resolve('Ok')
             })
                 .catch(error => {
-                    console.log(error)
+                    console.error(error)
                     reject(error)
                 })
         })
@@ -206,7 +260,7 @@ const actions = {
             }
         })
             .catch(err => {
-                console.log(err)
+                console.error(err)
             })
     },
     removeEventDb(context,payload){

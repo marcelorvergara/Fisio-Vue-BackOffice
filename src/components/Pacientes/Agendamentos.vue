@@ -500,7 +500,8 @@ export default {
                 uuid: this.uuidv4(),
                 dataDoAgendamento:dataAtual,
                 agendador: agendador,
-                presenca: null
+                presenca: null,
+                acompanhamento:null
               }
               //gravando direto quando não há conflito de agenda
               this.gravarDB(sessao)
@@ -562,7 +563,8 @@ export default {
                         uuid: this.uuidv4(),
                         dataDoAgendamento:dataAtual,
                         agendador: agendador,
-                        presenca: null
+                        presenca: null,
+                        acompanhamento:null
                       }
                       this.gravarDB(sessao)
                     }else {
@@ -623,7 +625,8 @@ export default {
                   dataDoAgendamento:dataAtual,
                   agendador: agendador,
                   statusConflito: 'N/A',
-                  presenca: null
+                  presenca: null,
+                  acompanhamento:null
                 }
                 novaAgenda.push(sessao)
               }else{
@@ -665,7 +668,8 @@ export default {
                   dataDoAgendamento:dataAtual,
                   agendador: agendador,
                   statusConflito: conflitoArr,
-                  presenca: null
+                  presenca: null,
+                  acompanhamento:null
                 }
                 novaAgenda.push(sessao)
               }
@@ -719,7 +723,8 @@ export default {
                   dataDoAgendamento:dataAtual,
                   agendador: agendador,
                   statusConflito: 'N/A',
-                  presenca: null
+                  presenca: null,
+                  acompanhamento:null
                 }
                 novaAgenda.push(sessao)
               }else{
@@ -761,7 +766,8 @@ export default {
                   dataDoAgendamento:dataAtual,
                   agendador: agendador,
                   statusConflito: conflitoArr,
-                  presenca: null
+                  presenca: null,
+                  acompanhamento:null
                 }
                 novaAgenda.push(sessao)
               }
