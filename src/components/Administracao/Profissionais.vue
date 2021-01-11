@@ -257,7 +257,6 @@ export default {
             this.form.nome = this.nome.trim()
             //envia o uid do user logado para verificar se é admin
             this.form.admUid = this.$store.getters.user.data.uid
-            console.log('admUid',this.$store.getters.user.data.uid)
             this.form.funcao = this.role
             this.$store.dispatch('updateProfissionaisDb',{profissonal: this.form})
                 .then((retorno) => {
@@ -267,7 +266,7 @@ export default {
                   this.$refs['modal-ok'].show()
                   this.resetar()
                 })
-                .catch( error => {
+                .catch(error => {
                   this.mensagem = error
                   this.loading = false
                   this.$refs['modal-err'].show()

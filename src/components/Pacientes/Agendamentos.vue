@@ -466,7 +466,7 @@ export default {
       } else {
         //ação de Agendar as sessões. Gravar no DB
         const dataAtual = new Date().toLocaleDateString()
-        const agendador = this.$store.getters.user.data.email
+        const agendador = this.$store.getters.user.data.displayName
         this.loading = true
         var dates = [];
         var dtHoraIni

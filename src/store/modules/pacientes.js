@@ -164,7 +164,7 @@ const actions = {
             const userEmail = context.getters.user.data.email
             const prof = context.getters.getProfissionais.find(f => f.email === userEmail)
             const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoesParceiro')
-            await getSessoes(prof.uuid).then(result => {
+            await getSessoes({uuid:prof.uuid,agendador:prof.nome}).then(result => {
                 context.commit('resetEvents')
                 for (let dados of result.data){
                     const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)

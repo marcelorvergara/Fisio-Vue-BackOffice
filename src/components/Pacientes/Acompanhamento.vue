@@ -163,11 +163,7 @@ export default {
     },
     editar(sessaoUuid,text,data,paciente,presenca){
       //botão switch de presença na tela
-      if (presenca === 'falta'){
-        this.presenca = false
-      } else {
-        this.presenca = true
-      }
+      this.presenca = presenca !== 'falta';
       //atribuindo o uuid da sessão para depois enviar ao banco de dados
       this.sessaoUUid = sessaoUuid
       //mini header do modal

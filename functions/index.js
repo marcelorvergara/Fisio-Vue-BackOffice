@@ -523,145 +523,116 @@ exports.removeSessao = functions.https.onCall((data) => {
 
     })
 })
+//função para pegar os docs que são do perfil parceiro e docs que o parceiro agendou para outros profissionais/parceiros
+async function getSessoesParceiroAsync(data,prof){
+    const db = admin.firestore().collection('sessoes')
+
+    const q1 = db.where('profissional', "==", prof).get()
+    const q2 = db
+        .where('agendador','==',data.agendador)
+        .where('profissional','!=',prof)
+        .get()
+
+    const [querySnapshot1, querySnapshot2] = await Promise.all([q1,q2])
+
+    const docArray1 = querySnapshot1.docs
+    const docArray2 = querySnapshot2.docs
+
+    const concatenado = docArray1.concat(docArray2)
+    console.log('concatenado')
+    return concatenado
+}
+
+function getSessoesShare(querySnapshot){
+    return new Promise((resolve,reject) => {
+    var listSessoes = [];
+    var paciente;
+    var profissional;
+    var procedimento;
+    var sala;
+    querySnapshot.forEach(async function(doc) {
+        var sessao = {
+            uuid: null,
+            horaInicio: null,
+            horaFim: null,
+            observacao: null,
+            paciente:null,
+            proc:null,
+            sala:null
+        }
+        //começã a buscar os 'collection' de outras 'collections'
+        sessao.paciente = doc.get('paciente').id
+        // paciente =  doc.get('paciente').get().then((resPac)=>{
+        //     sessao.paciente = resPac.data().nome
+        //     console.log(doc.get('paciente').id)
+        // })
+        sessao.profissional = doc.get('profissional').id
+
+        // profissional = doc.get('profissional').get().then((resProf)=>{
+        //     sessao.profClass = resProf.data().corProf
+        //     sessao.profNome = resProf.data().nome
+        // })
+        sessao.proc = doc.get('procedimento').id
+        // procedimento =  doc.get('procedimento').get().then((resProc)=>{
+        //     sessao.proc = resProc.data().nomeProcedimento
+        // })
+        sessao.sala = doc.get('sala').id
+        // sala =  doc.get('sala').get().then((resSala)=>{
+        //     sessao.sala = resSala.data().nomeSala
+        // })
+        sessao.uuid = doc.data().uuid
+        sessao.horaInicio = doc.data().horaInicio
+        sessao.horaFim = doc.data().horaFim
+        sessao.observacao = doc.data().observacao
+        sessao.presenca = doc.data().presenca
+        listSessoes.push(sessao)
+    })
+    // tem que aguardar na disciplina II
+    return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
+        .then(() => {
+            console.warn('tamanho enviado',listSessoes.length)
+            resolve(listSessoes)
+        }) .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+}
 
 //mostrar na agenda apenas as sessões relativas ao próprio usuário (parceiros)
 exports.getSessoesParceiro = functions.https.onCall(async(data) => {
     //async na chamada da função por causa dos documentos que são referenciados nos valores das sessões
     //a atualização de uma sessão ocorrerá se o dado de algum objeto mudar(paciente, profissional,
     //sala e procedimento)
-    var listSessoes = [];
-    var paciente;
-    var profissional;
-    var procedimento;
-    var sala;
-    var tamanhoSnap =0;
     return new Promise((resolve,reject) => {
-        const db = admin.firestore()
         const profDocRef = admin.firestore()
             .collection('profissionais')
-            .doc(data);
-        db.collection('sessoes')
-            .where('profissional', "==", profDocRef)
-            .get()
-            .then( function (querySnapshot) {
-                console.warn("tamanho docs ",querySnapshot.docs.length)
-                tamanhoSnap = querySnapshot.docs.length;
-                querySnapshot.forEach(async function(doc) {
-                    var sessao = {
-                        uuid: null,
-                        horaInicio: null,
-                        horaFim: null,
-                        observacao: null,
-                        paciente:null,
-                        proc:null,
-                        sala:null
-                    }
-                    //começã a buscar os 'collection' de outras 'collections'
-                    sessao.paciente = doc.get('paciente').id
-                    // paciente =  doc.get('paciente').get().then((resPac)=>{
-                    //     sessao.paciente = resPac.data().nome
-                    //     console.log(doc.get('paciente').id)
-                    // })
-                    sessao.profissional = doc.get('profissional').id
-
-                    // profissional = doc.get('profissional').get().then((resProf)=>{
-                    //     sessao.profClass = resProf.data().corProf
-                    //     sessao.profNome = resProf.data().nome
-                    // })
-                    sessao.proc = doc.get('procedimento').id
-                    // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                    //     sessao.proc = resProc.data().nomeProcedimento
-                    // })
-                    sessao.sala = doc.get('sala').id
-                    // sala =  doc.get('sala').get().then((resSala)=>{
-                    //     sessao.sala = resSala.data().nomeSala
-                    // })
-                    sessao.uuid = doc.data().uuid
-                    sessao.horaInicio = doc.data().horaInicio
-                    sessao.horaFim = doc.data().horaFim
-                    sessao.observacao = doc.data().observacao
-                    sessao.presenca = doc.data().presenca
-                    listSessoes.push(sessao)
-                })
-                // tem que aguardar na disciplina II
-                return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
-                    .then(() => {
-                        console.warn('tamanho enviado',listSessoes.length)
-                        if (listSessoes.length !== tamanhoSnap){
-                            reject('Número de sessões discrepantes.')
-                        }
-                        resolve(listSessoes)
-                    }) .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
-
+            .doc(data.uuid);
+        getSessoesParceiroAsync(data,profDocRef)
+            .then((querySnapshot) => {
+                console.warn("tamanho docs ",querySnapshot.length)
+                const tamanhoSnap = querySnapshot.length;
+                console.log('tamanhoSnap', tamanhoSnap)
+                const  listSess = getSessoesShare(querySnapshot)
+                resolve (listSess)
             })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
+
 //mostrar todas as sessões (profissionais e admins)
 exports.getSessoes = functions.https.onCall(async() => {
     //async na chamada da função por causa dos documentos que são referenciados nos valores das sessões
     //a atualização de uma sessão ocorrerá se o dado de algum objeto mudar(paciente, profissional,
     //sala e procedimento)
-    var listSessoes = [];
-    var paciente;
-    var profissional;
-    var procedimento;
-    var sala;
-    var tamanhoSnap =0;
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('sessoes')
             .where("uuid", "!=", " ")
             .get()
             .then( function (querySnapshot) {
-                console.warn("tamanho docs ",querySnapshot.docs.length)
-                tamanhoSnap = querySnapshot.docs.length;
-                querySnapshot.forEach(async function(doc) {
-                    var sessao = {
-                        uuid: null,
-                        horaInicio: null,
-                        horaFim: null,
-                        observacao: null,
-                        paciente:null,
-                        proc:null,
-                        sala:null
-                    }
-                    //começã a buscar os 'collection' de outras 'collections'
-                    sessao.paciente = doc.get('paciente').id
-                    // paciente =  doc.get('paciente').get().then((resPac)=>{
-                    //     sessao.paciente = resPac.data().nome
-                    //     console.log(doc.get('paciente').id)
-                    // })
-                    sessao.profissional = doc.get('profissional').id
-
-                    // profissional = doc.get('profissional').get().then((resProf)=>{
-                    //     sessao.profClass = resProf.data().corProf
-                    //     sessao.profNome = resProf.data().nome
-                    // })
-                    sessao.proc = doc.get('procedimento').id
-                    // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                    //     sessao.proc = resProc.data().nomeProcedimento
-                    // })
-                    sessao.sala = doc.get('sala').id
-                    // sala =  doc.get('sala').get().then((resSala)=>{
-                    //     sessao.sala = resSala.data().nomeSala
-                    // })
-                    sessao.uuid = doc.data().uuid
-                    sessao.horaInicio = doc.data().horaInicio
-                    sessao.horaFim = doc.data().horaFim
-                    sessao.observacao = doc.data().observacao
-                    sessao.presenca = doc.data().presenca
-                    listSessoes.push(sessao)
-                })
-                // tem que aguardar na disciplina II
-                return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
-                    .then(() => {
-                        console.warn('tamanho enviado',listSessoes.length)
-                        if (listSessoes.length !== tamanhoSnap){
-                            reject('Número de sessões discrepantes.')
-                        }
-                        resolve(listSessoes)
-                    })
+                console.warn("tamanho docs ",querySnapshot.length)
+                const tamanhoSnap = querySnapshot.length;
+                console.log('tamanhoSnap', tamanhoSnap)
+                const  listSess = getSessoesShare(querySnapshot)
+                resolve (listSess)
 
             })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
