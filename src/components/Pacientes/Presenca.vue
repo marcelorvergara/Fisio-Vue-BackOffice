@@ -21,7 +21,22 @@
                 :fields="fields"
                 :sort-by.sync="sortBy"
                 :sort-desc.sync="sortDesc"
-                sort-icon-left>
+                sort-icon-left
+                show-empty
+                empty-text="Sem dados para apresentar"
+                empty-filtered-text="Sem dados"
+                caption-top
+                caption-html="
+                Quando uma sessão é clicada, outra(s) são desmarcadas.
+                Shift + click seleciona um intervalo contínuo de sessões.
+                Ctrl + click alterna a seleção da sessão clicada."
+                :busy="isBusy">
+              <template #table-busy>
+                <div class="text-center text-info my-2">
+                  <b-spinner class="align-middle"></b-spinner>
+                  <strong>Loading...</strong>
+                </div>
+              </template>
               <template #cell(selecionado)="{ rowSelected }">
                 <template v-if="rowSelected">
                   <span aria-hidden="true">&check;</span>
@@ -59,7 +74,7 @@
                     <b-col>{{ row.item.detalhesSessao.agendador }}</b-col>
                   </b-row>
 
-                  <b-row class="mb-2">
+                  <b-row class="mb-0">
                     <b-col sm="3" class="text-sm-right"><b>Data Agendamento:</b></b-col>
                     <b-col>{{ row.item.detalhesSessao.dataAgendamento }}</b-col>
                   </b-row>
@@ -110,9 +125,10 @@ export default {
   name: "Presenca",
   data(){
     return{
+      isBusy:false,
       mensagemErro:null,
       mensagem:null,
-      sortBy: 'data',
+      sortBy: 'sortData',
       sortDesc: false,
       fields: [
         { key: 'status', sortable: true },
@@ -198,10 +214,16 @@ export default {
       const objProf = profList.find(f => f.email === userEmail)
       //obj que será passado para o procura por sessões
       this.$store.dispatch('getSessoesPresencaDb', {uuid: objProf.uuid, admUid: this.$store.getters.user.data.uid})
+        .then(() => {
+          this.isBusy = false
+        })
     }
   },
   mounted() {
     this.getSessoesInit()
+  },
+  created() {
+    this.isBusy = true
   }
 }
 </script>

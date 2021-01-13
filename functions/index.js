@@ -18,11 +18,7 @@ exports.setSesssaoAcomDiario = functions.https.onCall((data) => {
 })
 
 exports.getSessoesAcomDiario = functions.https.onCall((data) => {
-    var listSessoes = [];
-    var paciente;
-    var profissional;
-    var procedimento;
-    var sala;
+    const listSessoes = [];
     const profDocRef = admin.firestore()
         .collection('profissionais')
         .doc(data.profissionalUuid);
@@ -36,49 +32,12 @@ exports.getSessoesAcomDiario = functions.https.onCall((data) => {
         db.collection('sessoes')
             .where('paciente','==',pacienteDocRef)
             .get()
-            .then(function(querySnapshot) {
-                querySnapshot.forEach(function(doc) {
-                    var sessao = {
-                        uuid: null,
-                        horaInicio: null,
-                        horaFim: null,
-                        observacao: null,
-                        paciente:null,
-                        proc:null,
-                        sala:null
-                    }
-                    //começã a buscar os 'collection' de outras 'collections'
-                    sessao.paciente = doc.get('paciente').id
-                    // paciente =  doc.get('paciente').get().then((resPac)=>{
-                    //     sessao.paciente = resPac.data().nome
-                    //     console.log(doc.get('paciente').id)
-                    // })
-                    sessao.profissional = doc.get('profissional').id
-
-                    // profissional = doc.get('profissional').get().then((resProf)=>{
-                    //     sessao.profClass = resProf.data().corProf
-                    //     sessao.profNome = resProf.data().nome
-                    // })
-                    sessao.proc = doc.get('procedimento').id
-                    // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                    //     sessao.proc = resProc.data().nomeProcedimento
-                    // })
-                    sessao.sala = doc.get('sala').id
-                    // sala =  doc.get('sala').get().then((resSala)=>{
-                    //     sessao.sala = resSala.data().nomeSala
-                    // })
-                    sessao.uuid = doc.data().uuid
-                    sessao.horaInicio = doc.data().horaInicio
-                    sessao.horaFim = doc.data().horaFim
-                    sessao.observacao = doc.data().observacao
-                    sessao.agendador = doc.data().agendador
-                    sessao.dataDoAgendamento = doc.data().dataDoAgendamento
-                    sessao.presenca = doc.data().presenca
-                    sessao.acompanhamento = doc.data().acompanhamento
-                    listSessoes.push(sessao)
-                })
+            .then((querySnapshot) => {
+                console.warn("tamanho docs ",querySnapshot.docs.length)
+                const  listSess = getSessoesShare(querySnapshot)
+                resolve (listSess)
                 // tem que aguardar na disciplina II
-                return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
+                return Promise.all([listSessoes])
                     .then(() => {
                         resolve(listSessoes)
                     })
@@ -92,48 +51,11 @@ exports.getSessoesAcomDiario = functions.https.onCall((data) => {
             .where('paciente','==',pacienteDocRef)
             .get()
             .then(function(querySnapshot) {
-                querySnapshot.forEach(function(doc) {
-                    var sessao = {
-                        uuid: null,
-                        horaInicio: null,
-                        horaFim: null,
-                        observacao: null,
-                        paciente:null,
-                        proc:null,
-                        sala:null
-                    }
-                    //começã a buscar os 'collection' de outras 'collections'
-                    sessao.paciente = doc.get('paciente').id
-                    // paciente =  doc.get('paciente').get().then((resPac)=>{
-                    //     sessao.paciente = resPac.data().nome
-                    //     console.log(doc.get('paciente').id)
-                    // })
-                    sessao.profissional = doc.get('profissional').id
-
-                    // profissional = doc.get('profissional').get().then((resProf)=>{
-                    //     sessao.profClass = resProf.data().corProf
-                    //     sessao.profNome = resProf.data().nome
-                    // })
-                    sessao.proc = doc.get('procedimento').id
-                    // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                    //     sessao.proc = resProc.data().nomeProcedimento
-                    // })
-                    sessao.sala = doc.get('sala').id
-                    // sala =  doc.get('sala').get().then((resSala)=>{
-                    //     sessao.sala = resSala.data().nomeSala
-                    // })
-                    sessao.uuid = doc.data().uuid
-                    sessao.horaInicio = doc.data().horaInicio
-                    sessao.horaFim = doc.data().horaFim
-                    sessao.observacao = doc.data().observacao
-                    sessao.agendador = doc.data().agendador
-                    sessao.dataDoAgendamento = doc.data().dataDoAgendamento
-                    sessao.presenca = doc.data().presenca
-                    sessao.acompanhamento = doc.data().acompanhamento
-                    listSessoes.push(sessao)
-                })
+                console.warn("tamanho docs ",querySnapshot.docs.length)
+                const  listSess = getSessoesShare(querySnapshot)
+                resolve (listSess)
                 // tem que aguardar na disciplina II
-                return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
+                return Promise.all([listSessoes])
                     .then(() => {
                         resolve(listSessoes)
                     })
@@ -144,11 +66,6 @@ exports.getSessoesAcomDiario = functions.https.onCall((data) => {
 })
 
 exports.getSessoesRel = functions.https.onCall((data) => {
-    var listSessoes = [];
-    var paciente;
-    var profissional;
-    var procedimento;
-    var sala;
     const profDocRef = admin.firestore()
         .collection('profissionais')
         .doc(data.uuid);
@@ -164,51 +81,9 @@ exports.getSessoesRel = functions.https.onCall((data) => {
                     db.collection('sessoes')
                         .get()
                         .then(function(querySnapshot) {
-                            console.log(querySnapshot.docs.length)
-                            querySnapshot.forEach(function(doc) {
-                                var sessao = {
-                                    uuid: null,
-                                    horaInicio: null,
-                                    horaFim: null,
-                                    observacao: null,
-                                    paciente:null,
-                                    proc:null,
-                                    sala:null
-                                }
-                                //começã a buscar os 'collection' de outras 'collections'
-                                sessao.paciente = doc.get('paciente').id
-                                // paciente =  doc.get('paciente').get().then((resPac)=>{
-                                //     sessao.paciente = resPac.data().nome
-                                //     console.log(doc.get('paciente').id)
-                                // })
-                                sessao.profissional = doc.get('profissional').id
-
-                                // profissional = doc.get('profissional').get().then((resProf)=>{
-                                //     sessao.profClass = resProf.data().corProf
-                                //     sessao.profNome = resProf.data().nome
-                                // })
-                                sessao.proc = doc.get('procedimento').id
-                                // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                                //     sessao.proc = resProc.data().nomeProcedimento
-                                // })
-                                sessao.sala = doc.get('sala').id
-                                // sala =  doc.get('sala').get().then((resSala)=>{
-                                //     sessao.sala = resSala.data().nomeSala
-                                // })
-                                sessao.uuid = doc.data().uuid
-                                sessao.horaInicio = doc.data().horaInicio
-                                sessao.horaFim = doc.data().horaFim
-                                sessao.observacao = doc.data().observacao
-                                sessao.agendador = doc.data().agendador
-                                sessao.dataDoAgendamento = doc.data().dataDoAgendamento
-                                sessao.presenca = doc.data().presenca
-                                listSessoes.push(sessao)
-                            })
-                            // tem que aguardar na disciplina II
-                            return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
-                                .then(() => {
-                                    resolve(listSessoes)
-                                })
+                            console.log('tamanho docs',querySnapshot.docs.length)
+                            const  listSess = getSessoesShare(querySnapshot)
+                            resolve (listSess)
                         })
                         .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
                 }else {
@@ -218,51 +93,9 @@ exports.getSessoesRel = functions.https.onCall((data) => {
                         .where('presenca','!=',null)
                         .get()
                         .then(function(querySnapshot) {
-                            console.log(querySnapshot.docs.length)
-                            querySnapshot.forEach(function(doc) {
-                                var sessao = {
-                                    uuid: null,
-                                    horaInicio: null,
-                                    horaFim: null,
-                                    observacao: null,
-                                    paciente:null,
-                                    proc:null,
-                                    sala:null
-                                }
-                                //começã a buscar os 'collection' de outras 'collections'
-                                sessao.paciente = doc.get('paciente').id
-                                // paciente =  doc.get('paciente').get().then((resPac)=>{
-                                //     sessao.paciente = resPac.data().nome
-                                //     console.log(doc.get('paciente').id)
-                                // })
-                                sessao.profissional = doc.get('profissional').id
-
-                                // profissional = doc.get('profissional').get().then((resProf)=>{
-                                //     sessao.profClass = resProf.data().corProf
-                                //     sessao.profNome = resProf.data().nome
-                                // })
-                                sessao.proc = doc.get('procedimento').id
-                                // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                                //     sessao.proc = resProc.data().nomeProcedimento
-                                // })
-                                sessao.sala = doc.get('sala').id
-                                // sala =  doc.get('sala').get().then((resSala)=>{
-                                //     sessao.sala = resSala.data().nomeSala
-                                // })
-                                sessao.uuid = doc.data().uuid
-                                sessao.horaInicio = doc.data().horaInicio
-                                sessao.horaFim = doc.data().horaFim
-                                sessao.observacao = doc.data().observacao
-                                sessao.agendador = doc.data().agendador
-                                sessao.dataDoAgendamento = doc.data().dataDoAgendamento
-                                sessao.presenca = doc.data().presenca
-                                listSessoes.push(sessao)
-                            })
-                            // tem que aguardar na disciplina II
-                            return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
-                                .then(() => {
-                                    resolve(listSessoes)
-                                })
+                            console.log('tamanho docs', querySnapshot.docs.length)
+                            const  listSess = getSessoesShare(querySnapshot)
+                            resolve (listSess)
                         })
                         .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
                 }
@@ -280,7 +113,7 @@ exports.updateSessoes = functions.https.onCall((data) => {
         }
         batch.commit()
             // eslint-disable-next-line no-unused-vars
-            .then((res) => {
+            .then(() => {
             resolve('Atualização realizada com sucesso.')
         })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
@@ -288,11 +121,6 @@ exports.updateSessoes = functions.https.onCall((data) => {
 })
 
 exports.getSessoesParaPresenca = functions.https.onCall((data) => {
-    var listSessoes = [];
-    var paciente;
-    var profissional;
-    var procedimento;
-    var sala;
     return new Promise((resolve, reject) => {
         const profDocRef = admin.firestore()
             .collection('profissionais')
@@ -309,50 +137,8 @@ exports.getSessoesParaPresenca = functions.https.onCall((data) => {
                         .orderBy('data')
                         .get()
                         .then(function(querySnapshot) {
-                            querySnapshot.forEach(function(doc) {
-                                var sessao = {
-                                    uuid: null,
-                                    horaInicio: null,
-                                    horaFim: null,
-                                    observacao: null,
-                                    paciente:null,
-                                    proc:null,
-                                    sala:null
-                                }
-                                //começã a buscar os 'collection' de outras 'collections'
-                                sessao.paciente = doc.get('paciente').id
-                                // paciente =  doc.get('paciente').get().then((resPac)=>{
-                                //     sessao.paciente = resPac.data().nome
-                                //     console.log(doc.get('paciente').id)
-                                // })
-                                sessao.profissional = doc.get('profissional').id
-
-                                // profissional = doc.get('profissional').get().then((resProf)=>{
-                                //     sessao.profClass = resProf.data().corProf
-                                //     sessao.profNome = resProf.data().nome
-                                // })
-                                sessao.proc = doc.get('procedimento').id
-                                // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                                //     sessao.proc = resProc.data().nomeProcedimento
-                                // })
-                                sessao.sala = doc.get('sala').id
-                                // sala =  doc.get('sala').get().then((resSala)=>{
-                                //     sessao.sala = resSala.data().nomeSala
-                                // })
-                                sessao.uuid = doc.data().uuid
-                                sessao.horaInicio = doc.data().horaInicio
-                                sessao.horaFim = doc.data().horaFim
-                                sessao.observacao = doc.data().observacao
-                                sessao.agendador = doc.data().agendador
-                                sessao.dataDoAgendamento = doc.data().dataDoAgendamento
-                                sessao.presenca = doc.data().presenca
-                                listSessoes.push(sessao)
-                            })
-                            // tem que aguardar na disciplina II
-                            return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
-                                .then(() => {
-                                    resolve(listSessoes)
-                                })
+                            const  listSess = getSessoesShare(querySnapshot)
+                            resolve (listSess)
                         })
                         .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
                 }else{
@@ -363,50 +149,8 @@ exports.getSessoesParaPresenca = functions.https.onCall((data) => {
                         .orderBy('data')
                         .get()
                         .then(function(querySnapshot) {
-                            querySnapshot.forEach(function(doc) {
-                                var sessao = {
-                                    uuid: null,
-                                    horaInicio: null,
-                                    horaFim: null,
-                                    observacao: null,
-                                    paciente:null,
-                                    proc:null,
-                                    sala:null
-                                }
-                                //começã a buscar os 'collection' de outras 'collections'
-                                sessao.paciente = doc.get('paciente').id
-                                // paciente =  doc.get('paciente').get().then((resPac)=>{
-                                //     sessao.paciente = resPac.data().nome
-                                //     console.log(doc.get('paciente').id)
-                                // })
-                                sessao.profissional = doc.get('profissional').id
-
-                                // profissional = doc.get('profissional').get().then((resProf)=>{
-                                //     sessao.profClass = resProf.data().corProf
-                                //     sessao.profNome = resProf.data().nome
-                                // })
-                                sessao.proc = doc.get('procedimento').id
-                                // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-                                //     sessao.proc = resProc.data().nomeProcedimento
-                                // })
-                                sessao.sala = doc.get('sala').id
-                                // sala =  doc.get('sala').get().then((resSala)=>{
-                                //     sessao.sala = resSala.data().nomeSala
-                                // })
-                                sessao.uuid = doc.data().uuid
-                                sessao.horaInicio = doc.data().horaInicio
-                                sessao.horaFim = doc.data().horaFim
-                                sessao.observacao = doc.data().observacao
-                                sessao.agendador = doc.data().agendador
-                                sessao.dataDoAgendamento = doc.data().dataDoAgendamento
-                                sessao.presenca = doc.data().presenca
-                                listSessoes.push(sessao)
-                            })
-                            // tem que aguardar na disciplina II
-                            return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
-                                .then(() => {
-                                    resolve(listSessoes)
-                                })
+                            const  listSess = getSessoesShare(querySnapshot)
+                            resolve (listSess)
                         })
                         .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
                 }
@@ -416,7 +160,7 @@ exports.getSessoesParaPresenca = functions.https.onCall((data) => {
     })
 
 exports.getFeriados = functions.https.onCall(() => {
-    var listFeriados = []
+    const listFeriados = [];
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('feriados').orderBy('nomeFeriado')
@@ -433,7 +177,7 @@ exports.getFeriados = functions.https.onCall(() => {
 
 exports.setFeriado = functions.https.onCall((data) => {
     console.log(data)
-    var msg = 'atualizado';
+    let msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
         if (data.uuid === undefined){
@@ -467,8 +211,8 @@ exports.testAgenda = functions.https.onCall((data) => {
         .where('data','==', data.data)
         .get()
         .then( function (querySnapshot) {
-            var sessoes = 0
-            var docs = []
+            let sessoes = 0;
+            const docs = [];
             console.log('tamanho',querySnapshot.docs.length)
             querySnapshot.forEach( function(doc) {
                 //horas em segundos agendadas no banco
@@ -523,78 +267,6 @@ exports.removeSessao = functions.https.onCall((data) => {
 
     })
 })
-//função para pegar os docs que são do perfil parceiro e docs que o parceiro agendou para outros profissionais/parceiros
-async function getSessoesParceiroAsync(data,prof){
-    const db = admin.firestore().collection('sessoes')
-
-    const q1 = db.where('profissional', "==", prof).get()
-    const q2 = db
-        .where('agendador','==',data.agendador)
-        .where('profissional','!=',prof)
-        .get()
-
-    const [querySnapshot1, querySnapshot2] = await Promise.all([q1,q2])
-
-    const docArray1 = querySnapshot1.docs
-    const docArray2 = querySnapshot2.docs
-
-    const concatenado = docArray1.concat(docArray2)
-    console.log('concatenado')
-    return concatenado
-}
-
-function getSessoesShare(querySnapshot){
-    return new Promise((resolve,reject) => {
-    var listSessoes = [];
-    var paciente;
-    var profissional;
-    var procedimento;
-    var sala;
-    querySnapshot.forEach(async function(doc) {
-        var sessao = {
-            uuid: null,
-            horaInicio: null,
-            horaFim: null,
-            observacao: null,
-            paciente:null,
-            proc:null,
-            sala:null
-        }
-        //começã a buscar os 'collection' de outras 'collections'
-        sessao.paciente = doc.get('paciente').id
-        // paciente =  doc.get('paciente').get().then((resPac)=>{
-        //     sessao.paciente = resPac.data().nome
-        //     console.log(doc.get('paciente').id)
-        // })
-        sessao.profissional = doc.get('profissional').id
-
-        // profissional = doc.get('profissional').get().then((resProf)=>{
-        //     sessao.profClass = resProf.data().corProf
-        //     sessao.profNome = resProf.data().nome
-        // })
-        sessao.proc = doc.get('procedimento').id
-        // procedimento =  doc.get('procedimento').get().then((resProc)=>{
-        //     sessao.proc = resProc.data().nomeProcedimento
-        // })
-        sessao.sala = doc.get('sala').id
-        // sala =  doc.get('sala').get().then((resSala)=>{
-        //     sessao.sala = resSala.data().nomeSala
-        // })
-        sessao.uuid = doc.data().uuid
-        sessao.horaInicio = doc.data().horaInicio
-        sessao.horaFim = doc.data().horaFim
-        sessao.observacao = doc.data().observacao
-        sessao.presenca = doc.data().presenca
-        listSessoes.push(sessao)
-    })
-    // tem que aguardar na disciplina II
-    return Promise.all([paciente, profissional, procedimento, sala, listSessoes])
-        .then(() => {
-            console.warn('tamanho enviado',listSessoes.length)
-            resolve(listSessoes)
-        }) .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
-    })
-}
 
 //mostrar na agenda apenas as sessões relativas ao próprio usuário (parceiros)
 exports.getSessoesParceiro = functions.https.onCall(async(data) => {
@@ -628,8 +300,8 @@ exports.getSessoes = functions.https.onCall(async() => {
             .where("uuid", "!=", " ")
             .get()
             .then( function (querySnapshot) {
-                console.warn("tamanho docs ",querySnapshot.length)
-                const tamanhoSnap = querySnapshot.length;
+                console.warn("tamanho docs ",querySnapshot.docs.length)
+                const tamanhoSnap = querySnapshot.docs.length;
                 console.log('tamanhoSnap', tamanhoSnap)
                 const  listSess = getSessoesShare(querySnapshot)
                 resolve (listSess)
@@ -662,7 +334,7 @@ exports.setSessao = functions.https.onCall((data) => {
 })
 
 exports.getSalas = functions.https.onCall(() => {
-    var listSalas = []
+    const listSalas = [];
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('salas').orderBy('nomeSala')
@@ -678,7 +350,7 @@ exports.getSalas = functions.https.onCall(() => {
 })
 
 exports.setSala = functions.https.onCall((data) => {
-    var msg = 'atualizada';
+    let msg = 'atualizada';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
         if (data.uuid === undefined){
@@ -699,7 +371,7 @@ exports.setSala = functions.https.onCall((data) => {
 })
 
 exports.getProcedimentos = functions.https.onCall(() => {
-    var listProcedimentos = []
+    const listProcedimentos = [];
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('procedimentos').orderBy('nomeProcedimento')
@@ -715,7 +387,7 @@ exports.getProcedimentos = functions.https.onCall(() => {
 })
 
 exports.setProcedimento = functions.https.onCall((data) => {
-    var msg = 'atualizado';
+    let msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
         if (data.uuid === undefined){
@@ -736,7 +408,7 @@ exports.setProcedimento = functions.https.onCall((data) => {
 })
 
 exports.getPacientes = functions.https.onCall(() => {
-    var listPacientes = []
+    const listPacientes = [];
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('pacientes').orderBy('nome')
@@ -752,7 +424,7 @@ exports.getPacientes = functions.https.onCall(() => {
 });
 
 exports.setPaciente = functions.https.onCall((data) => {
-    var msg = 'atualizado';
+    let msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
         if (data.uuid === undefined){
@@ -804,7 +476,7 @@ exports.setStatusProfissional = functions.https.onCall((data) => {
 })
 
 exports.getProfissionais = functions.https.onCall(() => {
-    var listProfissionais = []
+    const listProfissionais = [];
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('profissionais').orderBy('nome')
@@ -852,7 +524,6 @@ exports.updateProfissional = functions.https.onCall((data) => {
 })
 
 exports.setProfissional = functions.https.onCall((data) => {
-    console.log(data)
     //promise para retornar para tela do usuário
     return new Promise((resolve, reject) => {
         const { v4: uuidv4 } = require('uuid');
@@ -878,11 +549,12 @@ exports.setProfissional = functions.https.onCall((data) => {
                                     })
                                 })
                             //cadastrando o display name
-                            admin.auth().updateUser(user.uid, {displayName:data.nome})
+                            admin.auth().updateUser(user.uid, {displayName: data.nome}).then(res =>{
+                                console.log('Display Name cadastrado com sucesso' + res)
+                            })
+                            .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
                         })
-                        .catch((error) => {
-                            throw new functions.https.HttpsError('internal', error.message)
-                        });
+                        .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
                 } else {
                     resolve ('Usuário não possui permissão para a operação.')
                 }
@@ -891,9 +563,10 @@ exports.setProfissional = functions.https.onCall((data) => {
     })
 });
 
+//*** funções auxiliares ***
 //função para facilitar homologação
 exports.limpaSessoes = functions.https.onCall(async () => {
-    var sessoesList = []
+    const sessoesList = [];
     const db = admin.firestore()
     await db.collection('sessoes').get().then(function(querySnapshot) {
         querySnapshot.forEach(function(doc) {
@@ -910,3 +583,73 @@ exports.limpaSessoes = functions.https.onCall(async () => {
         }
     })
 })
+
+//função para pegar os docs que são do perfil parceiro e docs que o parceiro agendou para outros profissionais/parceiros
+async function getSessoesParceiroAsync(data,prof){
+    const db = admin.firestore().collection('sessoes')
+
+    const q1 = db.where('profissional', "==", prof).get()
+    const q2 = db
+        .where('agendador','==',data.agendador)
+        .where('profissional','!=',prof)
+        .get()
+
+    const [querySnapshot1, querySnapshot2] = await Promise.all([q1,q2])
+
+    const docArray1 = querySnapshot1.docs
+    const docArray2 = querySnapshot2.docs
+
+    return docArray1.concat(docArray2)
+}
+//monta a lista de sessões para retornar ao app
+function getSessoesShare(querySnapshot){
+    return new Promise((resolve,reject) => {
+        const listSessoes = [];
+        querySnapshot.forEach(async function(doc) {
+            const sessao = {
+                uuid: null,
+                horaInicio: null,
+                horaFim: null,
+                observacao: null,
+                paciente: null,
+                proc: null,
+                sala: null
+            };
+            //começã a buscar os 'collection' de outras 'collections'
+            sessao.paciente = doc.get('paciente').id
+            // paciente =  doc.get('paciente').get().then((resPac)=>{
+            //     sessao.paciente = resPac.data().nome
+            //     console.log(doc.get('paciente').id)
+            // })
+            sessao.profissional = doc.get('profissional').id
+
+            // profissional = doc.get('profissional').get().then((resProf)=>{
+            //     sessao.profClass = resProf.data().corProf
+            //     sessao.profNome = resProf.data().nome
+            // })
+            sessao.proc = doc.get('procedimento').id
+            // procedimento =  doc.get('procedimento').get().then((resProc)=>{
+            //     sessao.proc = resProc.data().nomeProcedimento
+            // })
+            sessao.sala = doc.get('sala').id
+            // sala =  doc.get('sala').get().then((resSala)=>{
+            //     sessao.sala = resSala.data().nomeSala
+            // })
+            sessao.uuid = doc.data().uuid
+            sessao.horaInicio = doc.data().horaInicio
+            sessao.horaFim = doc.data().horaFim
+            sessao.observacao = doc.data().observacao
+            sessao.presenca = doc.data().presenca
+            sessao.agendador = doc.data().agendador
+            sessao.dataAgendamento = doc.data().dataDoAgendamento
+            sessao.sortData = doc.data().data
+            listSessoes.push(sessao)
+        })
+        // tem que aguardar na disciplina II
+        return Promise.all([listSessoes])
+            .then(() => {
+                console.warn('tamanho enviado',listSessoes.length)
+                resolve(listSessoes)
+            }) .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+}

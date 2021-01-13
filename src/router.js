@@ -12,6 +12,7 @@ import Presenca from "@/components/Pacientes/Presenca";
 import Relatorio from "@/components/Pacientes/Relatorio";
 import Homologa from "@/components/Administracao/Homologa";
 import Acompanhamento from "@/components/Pacientes/Acompanhamento";
+import Relatorios from "@/components/Financeiro/Relatorios";
 
 export const routes = [
     {
@@ -25,17 +26,18 @@ export const routes = [
     {
         path: '/Home/:id', component: Home,
         children: [
-            { path:'', component: HomeMain },
-            { path:'CadastroPaciente', component: CadastroPaciente },
-            { path:'Agendamentos', component: Agendamentos },
-            { path:'Procedimentos', component: Procedimentos },
-            { path:'Salas', component: Salas },
-            { path:'Profissionais', component: Profissionais },
-            { path: 'Feriados', component: Feriados},
-            { path: 'Presenca', component: Presenca},
-            { path: 'Relatorio', component: Relatorio },
-            { path: 'Homologa', component: Homologa},
-            { path: 'Acompanhamento', component: Acompanhamento},
+            { path:'', component: HomeMain, meta: { breadcrumb: [ { text: 'Home'}]} },
+            { path:'CadastroPaciente', component: CadastroPaciente, meta: { breadcrumb: [ { text: 'Cadastro de Paciente'}]} },
+            { path:'Agendamentos', component: Agendamentos, meta: { breadcrumb: [ { text: 'Agendamento dos Pacientes'}]} },
+            { path:'Procedimentos', component: Procedimentos, meta: { breadcrumb: [ { text: 'Cadastro de Procedimentos'}]} },
+            { path:'Salas', component: Salas, meta: { breadcrumb: [ { text: 'Cadastro de Salas'}]} },
+            { path:'Profissionais', component: Profissionais, meta: { breadcrumb: [ { text: 'Cadastro de Profissionais'}]} },
+            { path: 'Feriados', component: Feriados, meta: { breadcrumb: [ { text: 'Cadastro de Feriados'}]} },
+            { path: 'Presenca', component: Presenca, meta: { breadcrumb: [ { text: 'Marcação de Presença dos Pacientes'}]} },
+            { path: 'Relatorio', component: Relatorio, meta: { breadcrumb: [ { text: 'Relatório de Presença'}]} },
+            { path: 'Homologa', component: Homologa, meta: { breadcrumb: [ { text: 'Homologa'}]} },
+            { path: 'Acompanhamento', component: Acompanhamento, meta: { breadcrumb: [ { text: 'Acompanhamento Diário dos Pacientes'}]} },
+            { path: 'Relatorios', component: Relatorios, meta: { breadcrumb: [ { text: 'Relatórios Financeiros'}]} },
         ]
     }
     ]

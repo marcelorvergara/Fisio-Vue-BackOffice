@@ -26,14 +26,15 @@
         <b-col>
           <div>
             <b-table v-if="mostrarTabela"
+                     :sort-by.sync="sortBy"
                      table-variant="secondary"
                      class="text-center"
                      bordered hover head-variant="dark"
                      responsive="sm"
                      small
                      :items="$store.getters.getSessoesAcompDia"
-                     :fields="fields"
-            >
+                     :fields="fields">
+
               <template #cell(acompanhamento)="row">
                 <b-button variant="outline-info" size="sm" @click="row.toggleDetails" class="mr-2">
                   {{ row.detailsShowing ? 'Ocultar' : 'Mostrar'}}
@@ -117,6 +118,7 @@ export default {
   name: "Acompanhamento",
   data(){
     return {
+      sortBy:'sortData',
       selNome:'',
       sessaoUUid:null,
       presenca:true,
@@ -127,11 +129,11 @@ export default {
       nome: '',
       mostrarTabela: false,
       fields:[
-        {key: 'data', label: 'Data'},
-        {key: 'presenca', label: 'Presença'},
-        {key: 'procedimento', label: 'Procedimento'},
-        {key: 'profissional', label: 'Profissional'},
-        {key: 'acompanhamento', label: 'Acompanhamento'},
+        {key: 'data', label: 'Data', sortable: true },
+        {key: 'presenca', label: 'Presença', sortable: true },
+        {key: 'procedimento', label: 'Procedimento', sortable: true },
+        {key: 'profissional', label: 'Profissional', sortable: true },
+        {key: 'acompanhamento', label: 'Acompanhamento', sortable: true }
       ]
     }
   },

@@ -90,8 +90,9 @@ const actions = {
                         const paciente = pac.nome
                         const acompanhamento = dados.acompanhamento || 'Sem acompanhamento nesta data'
                         const uuid = dados.uuid
+                        const sortData = dados.sortData
                         const sessObj = {
-                            data,presenca,procedimento,profissional,acompanhamento,uuid,paciente
+                            data,presenca,procedimento,profissional,acompanhamento,uuid,paciente,sortData
                         }
                         context.commit('setSessoesAcompDia',sessObj)
                     }
@@ -145,7 +146,7 @@ const actions = {
                     procedimento: dadosProc.nomeProcedimento,
                     sala: dadosSala.nomeSala,
                     agendador: sessao.agendador,
-                    dataAgendamento:sessao.dataDoAgendamento
+                    dataAgendamento:sessao.dataAgendamento
                 }
                 context.commit('setSessoesPresenca',{
                     uuid: sessao.uuid,

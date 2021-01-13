@@ -52,8 +52,19 @@
                 :sort-desc.sync="sortDesc"
                 sort-icon-left
                 show-empty
+                empty-text="Sem dados para apresentar"
+                empty-filtered-text="Sem dados"
                 small
-                @filtered="onFiltered"></b-table>
+                @filtered="onFiltered"
+                :busy="isBusy">
+              <template #table-busy>
+                <div class="text-center text-info my-2">
+                  <b-spinner class="align-middle"></b-spinner>
+                  <strong>Loading...</strong>
+                </div>
+              </template>
+            </b-table>
+
           </div>
         </b-col>
       </b-row>
@@ -109,6 +120,7 @@ export default {
   name: "Relatorio",
   data(){
     return {
+      isBusy: false,
       pageOptions: [5, 10, 15, { value: 100, text: "Mostrar o máximo por página" }],
       perPage:10,
       totalRows:1,
@@ -116,7 +128,7 @@ export default {
       filterOn: [],
       sortDirection: 'asc',
       filter: null,
-      sortBy: 'data',
+      sortBy: 'sortData',
       sortDesc: false,
       fields: [
         { key: 'data', sortable: true },
@@ -146,6 +158,7 @@ export default {
         this.mensagemErro = 'Profissional sem sessões ou não cadastrado'
         //criar user com nome, email e uuid
         this.$refs['modal-err'].show()
+        this.isBusy = false
       }else{
         this.$store.dispatch('getSessoesRelDb',{uuid:profUuid.uuid, admUid: this.$store.getters.user.data.uid}).then(() => {
           const sessoesList = this.$store.getters.getSessoesRelatorio.data
@@ -159,6 +172,7 @@ export default {
             const profissional = this.$store.getters.getProfissionais.find(f => f.uuid === sessao.profissional)
             const agendador = sessao.agendador
             const status = sessao.presenca
+            const sortData = sessao.sortData
             const sessaoObj = {
                 data: dia,
                 inicio: horaIni,
@@ -167,10 +181,13 @@ export default {
                 procedimento: procedimento.nomeProcedimento,
                 agendador: agendador,
                 status,
-                profissional:profissional.nome}
+                profissional:profissional.nome,
+                sortData}
             this.lista.push(sessaoObj)
+
           }
           this.totalRows = this.$store.getters.getSessoesRelatorio.data.length
+          this.isBusy = false
         }).catch(error => {
           this.mensagemErro = error
           this.$refs['modal-err'].show()
@@ -185,7 +202,7 @@ export default {
     })
   },
   created() {
-
+    this.isBusy = true
   }
 }
 </script>

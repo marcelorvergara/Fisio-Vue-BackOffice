@@ -13,8 +13,6 @@
       </b-navbar-toggle>
 
       <b-collapse id="nav-collapse" is-nav>
-
-        <!-- Right aligned nav items -->
         <b-navbar-nav class="mr-auto">
 
           <b-nav-item-dropdown class="m-1" text="Pacientes" right v-if="$store.getters.getFuncao === 'Parceiro' ||$store.getters.getFuncao === 'Profissional' || $store.getters.getFuncao === 'Admin'">
@@ -26,9 +24,9 @@
           </b-nav-item-dropdown>
 
         <b-nav-item-dropdown class="m-1" text="Financeiro" right v-if="$store.getters.getFuncao === 'Financeiro' || $store.getters.getFuncao === 'Admin'">
-            <b-dropdown-item href="#">Fluxo de Caixa</b-dropdown-item>
+            <b-dropdown-item href="#">Custos</b-dropdown-item>
             <b-dropdown-item href="#">Comissões</b-dropdown-item>
-            <b-dropdown-item href="#">Relatório</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Relatorios`}" replace>Relatórios</b-dropdown-item>
           </b-nav-item-dropdown>
 
           <b-nav-item-dropdown class="m-1" text="Administração" right v-if="$store.getters.getFuncao === 'Admin'">
@@ -43,9 +41,12 @@
       </b-collapse>
       <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm">Sair <b-icon icon="door-open-fill"> </b-icon>{{ userEmail }}</b-button>
     </b-navbar>
+    <b-breadcrumb :items="$route.meta.breadcrumb"></b-breadcrumb>
 <!--router view para mostrar os componentes filhos do Home-->
+
     <router-view></router-view>
 
+<!--    <b-breadcrumb :items=""></b-breadcrumb>-->
   </div>
 </template>
 
@@ -55,14 +56,23 @@ import { connDb } from "@/store/connDb";
 
 export default {
   name: "Home",
+  watch:{
+    '$route'(){
+      this.breadcrumbList = this.$route.meta.breadcrumb
+    }
+  },
   mixins:[connDb],
   data(){
     return {
+      breadcrumbList:'',
       userEmail:''
     }
   },
   methods:{
     signOut() {
+      //limpando vuex para se algum login diferente entrar no app (mesmo browser), não pegar dados armazenados
+      this.$store.commit('resetEvents')
+      this.$store.commit('resetSessoesAcompDia')
       this.connDbAuth()
           .signOut()
           .then(() => {
