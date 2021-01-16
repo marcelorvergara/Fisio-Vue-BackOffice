@@ -111,6 +111,10 @@ export default {
     preencheVal(nome){
       const dados = this.$store.getters.getProcedimentos.find( f => f.nomeProcedimento.trim() === nome)
       this.form.qtdPacientes = dados.qtdPacientes
+      this.form.qtdSessoes = dados.qtdSessoes
+      this.form.comissao = dados.comissao
+      this.form.valor = dados.valor
+
       this.submitBtn = 'Atualizar'
       this.uuid = dados.uuid
     },

@@ -26,3 +26,4 @@ npm
     npm i vue-bootstrap-typeahead --save
     npm i vue-cal --save
     npm install vue-color --save
+    npm install echarts vue-echarts

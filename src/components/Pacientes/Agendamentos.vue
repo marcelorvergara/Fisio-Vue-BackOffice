@@ -220,7 +220,11 @@
                select-mode="range"
                ref="selectableTable"
                selectable
-               @row-selected="onRowSelected">
+               @row-selected="onRowSelected"
+               caption-html="
+                Ctrl + click alterna a seleção da sessão clicada.
+                Shift + click seleciona um intervalo contínuo de sessões.
+                Quando uma sessão é clicada, outra(s) são desmarcadas.">
         <template #cell(conflito)="row">
           <b-button variant="outline-dark" v-if="row.item.statusConflito !== 'N/A'" size="sm" @click="row.toggleDetails" class="mr-2">
             {{ row.detailsShowing ? '-' : '+'}} Detalhes
@@ -261,6 +265,9 @@
 import VueCal from 'vue-cal'
 import 'vue-cal/dist/i18n/pt-br.js'
 import 'vue-cal/dist/vuecal.css'
+//firebase para tratar timestamp das sessões
+import firebase from "firebase/app";
+import 'firebase/firestore'
 
 export default {
   name: "Agendamentos",
@@ -484,6 +491,8 @@ export default {
           // eslint-disable-next-line no-unused-vars
           const agenda = this.testAgenda(this.dataSessao,dtHoraIni,sala,proc).then(res => {
             if (!res){
+              const dataTS = new Date(this.dataSessao);
+              const dataSolicitada = firebase.firestore.Timestamp.fromDate(dataTS);
               //gravar - montar o objeto
               //passando uuid para no banco gerar referencias
               const sessao = {
@@ -493,6 +502,7 @@ export default {
                 procedimento: proc.uuid,
                 observacao: this.observacao,
                 data: this.dataSessao,
+                dataFS: dataSolicitada,
                 horaInicio: dtHoraIni,
                 horaFim: dtHoraFim,
                 recorrenciaDiaria: this.diariamente,
@@ -506,7 +516,7 @@ export default {
               //gravando direto quando não há conflito de agenda
               this.gravarDB(sessao)
             }else{
-              console.log('há conflito')
+              //aqui há conflito de agenda
               // refazer o array res.docs para pegar as referências
               var newDocs = []
               for (let i=0; i<res.docs.length; i++){
@@ -549,6 +559,8 @@ export default {
                     if(value){
                       //gravar - montar o objeto
                       //passando uuid para no banco gerar referencias
+                      const dataTS = new Date(this.dataSessao);
+                      const dataSolicitada = firebase.firestore.Timestamp.fromDate(dataTS);
                       const sessao = {
                         paciente: pac.uuid,
                         profissional: prof.uuid,
@@ -556,6 +568,7 @@ export default {
                         procedimento: proc.uuid,
                         observacao: this.observacao,
                         data: this.dataSessao,
+                        dataFS: dataSolicitada,
                         horaInicio: dtHoraIni,
                         horaFim: dtHoraFim,
                         recorrenciaDiaria: this.diariamente,
@@ -575,7 +588,7 @@ export default {
                     }
                   })
                   .catch(err => {
-                    console.log(err)
+                    console.error(err)
                   })
             }
           })
@@ -607,6 +620,9 @@ export default {
                 const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
                 const colHoraIni = dtHoraIni.split(' ')[1]
                 const colHoraFim = dtHoraFim.split(' ')[1]
+                //formatar para data firestore
+                const dataTS = new Date(dia);
+                const dataSolicitada = firebase.firestore.Timestamp.fromDate(dataTS);
                 const sessao = {
                   dataSessao : dataBr2,
                   HoraInicio: colHoraIni,
@@ -617,6 +633,7 @@ export default {
                   procedimento: proc.uuid,
                   observacao: this.observacao,
                   data: dataSessao,
+                  dataFS: dataSolicitada,
                   horaInicio: dtHoraIni,
                   horaFim: dtHoraFim,
                   recorrenciaDiaria: this.diariamente,
@@ -650,6 +667,9 @@ export default {
                 const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
                 const colHoraIni = dtHoraIni.split(' ')[1]
                 const colHoraFim = dtHoraFim.split(' ')[1]
+                //formatar para data firestore
+                const dataTS = new Date(dia);
+                const dataSolicitada = firebase.firestore.Timestamp.fromDate(dataTS);
                 const sessao = {
                   dataSessao : dataBr2,
                   HoraInicio: colHoraIni,
@@ -660,6 +680,7 @@ export default {
                   procedimento: proc.uuid,
                   observacao: this.observacao,
                   data: dataSessao,
+                  dataFS: dataSolicitada,
                   horaInicio: dtHoraIni,
                   horaFim: dtHoraFim,
                   recorrenciaDiaria: this.diariamente,
@@ -677,6 +698,7 @@ export default {
           }
           Promise.all([novaAgenda]).then(() => {
             this.agendaTab = novaAgenda
+            //modal da recorrência
             this.$refs['modal-rec'].show()
             this.$refs['modal-ag'].hide()
           })
@@ -705,6 +727,9 @@ export default {
                 const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
                 const colHoraIni = dtHoraIni.split(' ')[1]
                 const colHoraFim = dtHoraFim.split(' ')[1]
+                //formatar para data firestore
+                const dataTS = new Date(dia);
+                const dataSolicitada = firebase.firestore.Timestamp.fromDate(dataTS);
                 const sessao = {
                   dataSessao : dataBr2,
                   HoraInicio: colHoraIni,
@@ -715,6 +740,7 @@ export default {
                   procedimento: proc.uuid,
                   observacao: this.observacao,
                   data: dataSessao,
+                  dataFS: dataSolicitada,
                   horaInicio: dtHoraIni,
                   horaFim: dtHoraFim,
                   recorrenciaDiaria: this.diariamente,
@@ -748,6 +774,9 @@ export default {
                 const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
                 const colHoraIni = dtHoraIni.split(' ')[1]
                 const colHoraFim = dtHoraFim.split(' ')[1]
+                //formatar para data firestore
+                const dataTS = new Date(dia);
+                const dataSolicitada = firebase.firestore.Timestamp.fromDate(dataTS);
                 const sessao = {
                   dataSessao : dataBr2,
                   HoraInicio: colHoraIni,
@@ -758,6 +787,7 @@ export default {
                   procedimento: proc.uuid,
                   observacao: this.observacao,
                   data: dataSessao,
+                  dataFS: dataSolicitada,
                   horaInicio: dtHoraIni,
                   horaFim: dtHoraFim,
                   recorrenciaDiaria: this.diariamente,
@@ -776,6 +806,7 @@ export default {
           }
           Promise.all([novaAgenda]).then(() => {
             this.agendaTab = novaAgenda
+            //modal da recorrência
             this.$refs['modal-rec'].show()
             this.$refs['modal-ag'].hide()
           })

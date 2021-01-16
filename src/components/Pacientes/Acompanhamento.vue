@@ -5,19 +5,18 @@
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
           <b-card header="Acompanhamento Diário" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome do Paciente:" label-for="nome">
-              <vue-typeahead-bootstrap
-                  disableSort
-                  id="nome"
-                  v-model="nome"
-                  placeholder="Buscar paciente"
-                  required
-                  :data="nomesPac"
-                  @hit="buscaDados($event)"
-                  :minMatchingChars="0">
-              </vue-typeahead-bootstrap>
-              <div class="text-right mt-2">
-                <b-button variant="outline-warning" :disabled="!nome" @click="nome = ''">Limpar</b-button>
-              </div>
+              <b-input-group>
+                <b-form-select autocomplete="off"
+                               id="rel-input" v-model="nome"
+                               type="search"
+                               placeholder="Pesquise aqui"
+                               :options="nomesPac"
+                               @change="buscaDados">
+                </b-form-select>
+                <b-input-group-append>
+                  <b-button :disabled="!nome" @click="nome = ''">Limpar</b-button>
+                </b-input-group-append>
+              </b-input-group>
             </b-form-group>
           </b-card>
         </b-col>
@@ -174,11 +173,11 @@ export default {
       this.textAcomp = text
       this.$refs['modal-acpm'].show()
     },
-    buscaDados(nome){
+    buscaDados(){
       //atribuição para uso no refresh da table (chamando buscaDados)
-      this.selNome = nome
+      this.selNome = this.nome
       //dados uuid para pegar na query de banco
-      const paciente = this.$store.getters.getPacientes.find(f => f.nome === nome)
+      const paciente = this.$store.getters.getPacientes.find(f => f.nome === this.nome)
       const profissional = this.$store.getters.getProfissionais.find(f => f.nome === this.$store.getters.user.data.displayName)
       //realizando busca para pacientes que só possuem atendimento para determinado (user) parceiro
       //admin e porfissional serão feitos mais a frente

@@ -41,9 +41,9 @@
       </b-collapse>
       <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm">Sair <b-icon icon="door-open-fill"> </b-icon>{{ userEmail }}</b-button>
     </b-navbar>
+
     <b-breadcrumb :items="$route.meta.breadcrumb"></b-breadcrumb>
 <!--router view para mostrar os componentes filhos do Home-->
-
     <router-view></router-view>
 
 <!--    <b-breadcrumb :items=""></b-breadcrumb>-->

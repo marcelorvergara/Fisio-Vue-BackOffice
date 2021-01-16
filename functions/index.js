@@ -3,8 +3,40 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
-exports.setSesssaoAcomDiario = functions.https.onCall((data) => {
-    console.log(data)
+
+//gerando relatório para o financeiro
+exports.getDadosDb = functions.https.onCall(data => {
+    const listSessoes = []
+
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('sessoes')
+            .where('dataFS','>=' ,data.dataIni)
+            .where('dataFS','<=', data.dataFim)
+            .orderBy('dataFS', 'desc')
+            .get()
+            .then(function(querySnapshot) {
+                console.log(querySnapshot.docs.length)
+                querySnapshot.forEach(function(doc) {
+                    const proc = doc.get('procedimento').id
+                    const prof = doc.get('profissional').id
+                    const sessoesObj = {
+                        procUuid: proc,
+                        profUuid: prof,
+                        data: doc.data().data
+                   }
+                    listSessoes.push(sessoesObj)
+                })
+                Promise.all([listSessoes]).then(() => {
+                    console.log('Fim ...')
+                    resolve(listSessoes)
+                })
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
+exports.setSesssaoAcomDiario = functions.https.onCall(data => {
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         data.atualizado = new Date()
@@ -17,7 +49,7 @@ exports.setSesssaoAcomDiario = functions.https.onCall((data) => {
     })
 })
 
-exports.getSessoesAcomDiario = functions.https.onCall((data) => {
+exports.getSessoesAcomDiario = functions.https.onCall(data => {
     const listSessoes = [];
     const profDocRef = admin.firestore()
         .collection('profissionais')
@@ -65,7 +97,7 @@ exports.getSessoesAcomDiario = functions.https.onCall((data) => {
   })
 })
 
-exports.getSessoesRel = functions.https.onCall((data) => {
+exports.getSessoesRel = functions.https.onCall(data => {
     const profDocRef = admin.firestore()
         .collection('profissionais')
         .doc(data.uuid);
@@ -104,7 +136,7 @@ exports.getSessoesRel = functions.https.onCall((data) => {
     })
 })
 //presença atualiza sessão. Falta ou presença
-exports.updateSessoes = functions.https.onCall((data) => {
+exports.updateSessoes = functions.https.onCall(data => {
     return new Promise ((resolve, reject) => {
         const db = admin.firestore()
         let batch = db.batch()
@@ -120,7 +152,7 @@ exports.updateSessoes = functions.https.onCall((data) => {
     })
 })
 
-exports.getSessoesParaPresenca = functions.https.onCall((data) => {
+exports.getSessoesParaPresenca = functions.https.onCall(data => {
     return new Promise((resolve, reject) => {
         const profDocRef = admin.firestore()
             .collection('profissionais')
@@ -175,8 +207,7 @@ exports.getFeriados = functions.https.onCall(() => {
     })
 })
 
-exports.setFeriado = functions.https.onCall((data) => {
-    console.log(data)
+exports.setFeriado = functions.https.onCall(data => {
     let msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -256,7 +287,7 @@ exports.testAgenda = functions.https.onCall((data) => {
 })
 
 
-exports.removeSessao = functions.https.onCall((data) => {
+exports.removeSessao = functions.https.onCall(data => {
     return new Promise((resolve, reject) => {
         const db = admin.firestore()
         db.collection('sessoes')
@@ -311,7 +342,7 @@ exports.getSessoes = functions.https.onCall(async() => {
     })
 })
 
-exports.setSessao = functions.https.onCall((data) => {
+exports.setSessao = functions.https.onCall(data => {
     return new Promise((resolve,reject)=>{
         const db = admin.firestore()
         const uuid = data.paciente
@@ -349,7 +380,7 @@ exports.getSalas = functions.https.onCall(() => {
     })
 })
 
-exports.setSala = functions.https.onCall((data) => {
+exports.setSala = functions.https.onCall(data => {
     let msg = 'atualizada';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -386,7 +417,7 @@ exports.getProcedimentos = functions.https.onCall(() => {
     })
 })
 
-exports.setProcedimento = functions.https.onCall((data) => {
+exports.setProcedimento = functions.https.onCall(data => {
     let msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -423,7 +454,7 @@ exports.getPacientes = functions.https.onCall(() => {
     })
 });
 
-exports.setPaciente = functions.https.onCall((data) => {
+exports.setPaciente = functions.https.onCall(data => {
     let msg = 'atualizado';
     return new Promise((resolve, reject) =>{
         //vamos testar se é para cadastro ou atualização
@@ -444,7 +475,7 @@ exports.setPaciente = functions.https.onCall((data) => {
     })
 })
 
-exports.setStatusProfissional = functions.https.onCall((data) => {
+exports.setStatusProfissional = functions.https.onCall(data => {
     return new Promise((resolve,reject) => {
         admin
             .auth()
@@ -491,7 +522,7 @@ exports.getProfissionais = functions.https.onCall(() => {
     })
 });
 
-exports.updateProfissional = functions.https.onCall((data) => {
+exports.updateProfissional = functions.https.onCall(data => {
     return new Promise((resolve, reject) => {
         admin
             .auth()
@@ -523,7 +554,7 @@ exports.updateProfissional = functions.https.onCall((data) => {
     })
 })
 
-exports.setProfissional = functions.https.onCall((data) => {
+exports.setProfissional = functions.https.onCall(data => {
     //promise para retornar para tela do usuário
     return new Promise((resolve, reject) => {
         const { v4: uuidv4 } = require('uuid');
@@ -532,6 +563,7 @@ exports.setProfissional = functions.https.onCall((data) => {
             .auth()
             .getUser(data.admUid)
             .then((adminRec) => {
+                console.log(adminRec)
                 //***checa se é administrador***
                 if (adminRec.customClaims.funcao === 'Admin') {
                     return admin.auth().createUser({email: data.email, password: data.senha})
