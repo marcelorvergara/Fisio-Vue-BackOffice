@@ -50,13 +50,21 @@ const actions = {
                 //cada sessão no período corresponde a um dado
                 for (let dado of res.data){
                     const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
+                    console.log(proc)
                     const data = new Date(dado.data)
                     //convertendo a data para pegar o mês em português
                     const mes = data.toLocaleString('pt', {month: 'short'})
-                    var val = proc.valor
-                    valList.push({mes: mes,val:val,procedimento:proc.nomeProcedimento})
+                    var val;
+                    var valTabela;
+                    //caso pacote (mais de uma sessão), o valor será dividido pelo número de sessões
+                    if (proc.qtdSessoes !== 1){
+                        val = proc.valor/proc.qtdSessoes
+                        valTabela = (proc.valor/proc.qtdSessoes).toFixed(2).replace('.',',')
+                    }else {
+                        val = proc.valor.toFixed(2).replace('.',',')
+                    }
+                    valList.push({mes: mes,val:val,procedimento:proc.nomeProcedimento,valTab:valTabela})
                 }
-                console.log(valList)
                 context.commit('setRelProcTable', valList)
                 for (let i of valList){
                     //os valores já vem ordenados por mês do db

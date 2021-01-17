@@ -46,7 +46,7 @@
       </b-row>
       <b-row>
         <div class="tabela">
-          <b-table v-if="showTable" striped hover :items="$store.getters.getRelProcTable"></b-table>
+          <b-table v-if="showTable" striped hover :items="$store.getters.getRelProcTable" :fields="fields"></b-table>
         </div>
       </b-row>
     </b-container>
@@ -65,6 +65,11 @@ export default {
   },
   data(){
     return{
+      fields: [
+        {key: 'mes',sortable:true,label: 'Mês'},
+        {key: 'valTab' ,sortable:true,label:'Valor/Sessão em R$'},
+        {key: 'procedimento',sortable:true,label:'Procedimento'}
+      ],
       showTable:false,
       options: { //Chart.js options
         scales: {
@@ -97,7 +102,7 @@ export default {
             // maxBarThickness: 14,
             // minBarLength: 5,
             label:'Total de R$ mensal',
-            backgroundColor:'#a33a3a',
+            backgroundColor:'#42B395',
             data: null
           }
         ],
