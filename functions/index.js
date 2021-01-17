@@ -23,7 +23,8 @@ exports.getDadosDb = functions.https.onCall(data => {
                     const sessoesObj = {
                         procUuid: proc,
                         profUuid: prof,
-                        data: doc.data().data
+                        data: doc.data().data,
+                        presenca: doc.data().presenca
                    }
                     listSessoes.push(sessoesObj)
                 })

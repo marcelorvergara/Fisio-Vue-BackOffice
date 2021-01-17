@@ -1,6 +1,5 @@
 <template>
   <div >
-    {{ $store.getters.getValProc }}
     <b-container fluid class="mt-3">
       <b-row align-h="center">
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
@@ -15,7 +14,7 @@
                               @change="selecionaRelatorio">
                 </b-form-select>
                 <b-input-group-append>
-                  <b-button :disabled="!relatorio" @click="relatorio = ''">Limpar</b-button>
+                  <b-button :disabled="!relatorio" @click="limparTela">Limpar</b-button>
                 </b-input-group-append>
               </b-input-group>
             </b-form-group>
@@ -39,15 +38,34 @@
           </b-card>
         </b-col>
       </b-row>
-      <b-row >
-        <div class="small">
-          <chart v-if="showTable" :options="options" :chartdata="chartData" ></chart>
+      <b-row v-if="showTable" class="d-block">
+        <b-container>
+        <div class="small text-center" style="border: #296154 solid 1px">
+          <chart :options="options" :chartdata="chartData" ></chart>
         </div>
+        <div class="tabela mb-3">
+          <b-table small caption-top
+                   striped hover :items="$store.getters.getRelProcTable"
+                   :fields="fields">
+            <template #table-caption> <span style="color: black" v-html="mediaPeriodo"></span></template>
+          </b-table>
+        </div>
+        </b-container>
       </b-row>
-      <b-row>
-        <div class="tabela">
-          <b-table v-if="showTable" striped hover :items="$store.getters.getRelProcTable" :fields="fields"></b-table>
-        </div>
+
+      <b-row v-if="showTable2" class="d-block">
+        <b-container>
+          <div class="small text-center" style="border: #296154 solid 1px">
+            <chart :options="options" :chartdata="chartData2" ></chart>
+          </div>
+          <div class="tabela mb-3">
+            <b-table small caption-top
+                     striped hover :items="$store.getters.getRelProcTable"
+                     :fields="fields2">
+<!--              <template #table-caption> <span style="color: black" v-html=""></span></template>-->
+            </b-table>
+          </div>
+        </b-container>
       </b-row>
     </b-container>
   </div>
@@ -65,12 +83,19 @@ export default {
   },
   data(){
     return{
+      mediaPeriodo:'',
+      fields2: [
+        {key: 'mes',sortable:true, label: 'Mês'},
+        {key: 'realizdo' ,sortable:true, label:'Realizado R$'},
+        {key: 'naoRealizado',sortable:true, label:'Não Realizado R$'}
+      ],
       fields: [
         {key: 'mes',sortable:true,label: 'Mês'},
         {key: 'valTab' ,sortable:true,label:'Valor/Sessão em R$'},
         {key: 'procedimento',sortable:true,label:'Procedimento'}
       ],
       showTable:false,
+      showTable2:false,
       options: { //Chart.js options
         scales: {
           yAxes: [{
@@ -103,7 +128,37 @@ export default {
             // minBarLength: 5,
             label:'Total de R$ mensal',
             backgroundColor:'#42B395',
-            data: null
+            data: null,
+            order:2
+          },
+          {
+            label: 'Média mensal',
+            data:null,
+            type:'line',
+            order: 1
+          }
+        ],
+      },
+      //segundo relatório
+      chartData2:{
+        labels: null,
+        datasets:[
+          {
+            // barPercentage: 1,
+            // barThickness: 10,
+            // maxBarThickness: 14,
+            // minBarLength: 5,
+            label:'Total de R$ mensal com presença confirmada',
+            backgroundColor:'#42B395',
+            data: null,
+            order:1
+          },
+          {
+            label: 'Sem presença',
+            backgroundColor:'#dc2b2b',
+            data:null,
+            type:'bar',
+            order: 2
           }
         ],
       },
@@ -114,11 +169,23 @@ export default {
       relatorio:null,
       relList:[
         {value: null, text: 'Selecione um relatório'},
-        {value: 1,    text: 'Relatório Financeiro Total' }
+        {value: 1,    text: 'Relatório Financeiro Total' },
+        {value: 2,    text: 'Relatório Financeiro Realizado' }
       ]
     }
   },
   methods:{
+    limparTela(){
+      this.relatorio = ''
+      //zerando os dados da tabela
+      this.$store.commit('resetMesLabel')
+      this.$store.commit('resetValProc')
+      this.$store.commit('resetMediaVal')
+      this.dtfim = ''
+      this.dtini = ''
+      this.showTable = false
+      this.showData = false
+    },
     getRandomInt() {
       return Math.floor(Math.random() * (50 - 5 + 1)) + 5;
     },
@@ -128,17 +195,49 @@ export default {
       const dataFim = new Date(this.dtfim);
       const dataTSFim = firebase.firestore.Timestamp.fromDate(dataFim);
 
-      this.$store.dispatch('getRelatorio',{dataIni:dataTSIni, dataFim: dataTSFim})
+      if (this.relatorio === 1){
+        //zerando os dados da tabela caso nova pesquisa
+        this.$store.commit('resetRelFinTotal')
+        this.showTable = false
+        this.showTable2 = false
+        this.$store.dispatch('getRelatorioTotal',{dataIni:dataTSIni, dataFim: dataTSFim})
+            .then(res => {
+              if (res === 'ok'){
+                //para os valores mensais
+                this.chartData.datasets[0].data = this.$store.getters.getValProc
+                //para a média dos valores
+                this.chartData.datasets[1].data = this.$store.getters.getMediaVal
+                //labels eixo x
+                this.chartData.labels = this.$store.getters.getMesLabel
+                //media para apresentar em cima da tabela
+                const totAtend = this.$store.getters.getRelProcTable.length
+                const mediaVal = this.$store.getters.getMediaVal[0] || 0
+                this.mediaPeriodo = `Média no período selecionado: R$ ${mediaVal.toFixed(2).replace('.',',')}.<br> Total de atendimentos: ${totAtend}`
+                this.showTable = true
+              }
+            })
+            .catch(err => {
+              console.log(err)
+            })
+      } else if (this.relatorio === 2){
+        //zerando os dados caso nova pesquisa
+        this.showTable = false
+        this.$store.commit('resetRelFinTotal')
+        this.showTable2 = false
+        this.$store.commit('resetRealizado')
+        //segundo relatório
+        this.$store.dispatch('getRelatorioRealizado', {dataIni:dataTSIni,dataFim:dataTSFim})
           .then(res => {
             if (res === 'ok'){
-              this.chartData.datasets[0].data = this.$store.getters.getValProc
-              this.chartData.labels = this.$store.getters.getMesLabel
-              this.showTable = true
+              this.chartData2.labels = this.$store.getters.getMeses
+              this.chartData2.datasets[0].data= this.$store.getters.getValMesRealizado
+              this.chartData2.datasets[1].data = this.$store.getters.getValMesNaoRalizado
+
+              this.showTable2 = true
             }
           })
-          .catch(err => {
-            console.log(err)
-          })
+      }
+
     },
     selecionaRelatorio(){
       this.showData = true
@@ -149,8 +248,9 @@ export default {
     this.dtini = new Date().toISOString().split('T')[0]
     this.dtfim = new Date().addDays(3).toISOString().split('T')[0]
     //zerando os dados da tabela
-    this.$store.commit('resetMesLabel')
-    this.$store.commit('resetValProc')
+    this.$store.commit('resetRelFinTotal')
+    //zerando relatório 2 (realizado)
+    this.$store.commit('resetRealizado')
   }
 }
 </script>

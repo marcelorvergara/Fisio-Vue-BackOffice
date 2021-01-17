@@ -210,6 +210,7 @@ export default {
       this.$store.commit('resetSessoesPresenca')
       const profList = this.$store.getters.getProfissionais
       const userEmail = this.$store.getters.user.data.email
+      //tem que ter o nome para Admin na base por causa do orderBy
       //procurando o usuário logado
       const objProf = profList.find(f => f.email === userEmail)
       //obj que será passado para o procura por sessões
