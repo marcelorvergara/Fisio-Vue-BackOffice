@@ -38,12 +38,13 @@
           </b-card>
         </b-col>
       </b-row>
+<!--      relatório 1-->
       <b-row v-if="showTable" class="d-block">
         <b-container>
         <div class="small text-center" style="border: #296154 solid 1px">
           <chart :options="options" :chartdata="chartData" ></chart>
         </div>
-        <div class="tabela mb-3">
+        <div class="tabela mb-5">
           <b-table small caption-top
                    striped hover :items="$store.getters.getRelProcTable"
                    :fields="fields">
@@ -52,15 +53,15 @@
         </div>
         </b-container>
       </b-row>
-
+<!--relatório 2-->
       <b-row v-if="showTable2" class="d-block">
         <b-container>
           <div class="small text-center" style="border: #296154 solid 1px">
             <chart :options="options" :chartdata="chartData2" ></chart>
           </div>
-          <div class="tabela mb-3">
+          <div class="tabela mb-5">
             <b-table small caption-top
-                     striped hover :items="$store.getters.getRelProcTable"
+                     striped hover :items="$store.getters.getValTabela"
                      :fields="fields2">
 <!--              <template #table-caption> <span style="color: black" v-html=""></span></template>-->
             </b-table>
@@ -86,7 +87,7 @@ export default {
       mediaPeriodo:'',
       fields2: [
         {key: 'mes',sortable:true, label: 'Mês'},
-        {key: 'realizdo' ,sortable:true, label:'Realizado R$'},
+        {key: 'realizado' ,sortable:true, label:'Realizado R$'},
         {key: 'naoRealizado',sortable:true, label:'Não Realizado R$'}
       ],
       fields: [
@@ -118,6 +119,7 @@ export default {
         responsive: true,
         maintainAspectRatio: false
       },
+      //primeiro relatório
       chartData:{
         labels: null,
         datasets:[

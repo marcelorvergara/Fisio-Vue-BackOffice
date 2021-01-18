@@ -24,6 +24,9 @@ const mutations = {
         const newVal = state.valMesNaoRalizado[payload.mes] + payload.val
         state.valMesNaoRalizado.splice(payload.mes,1,newVal)
     },
+    setValTabela(state,payload){
+      state.valTabela.push(payload)
+    },
     resetRealizado(state){
         state.valMesRealizado = [0,0,0,0,0,0,0,0,0,0,0,0]
         state.valMesNaoRalizado = [0,0,0,0,0,0,0,0,0,0,0,0]
@@ -66,8 +69,13 @@ const actions = {
                 }
                 //removendo meses vazios
                 context.commit('formatDados', mesesVazios)
-
                 //montar tabela com valores
+                for (let i = 0; i < context.getters.getMeses.length; i++){
+                    context.commit('setValTabela',{mes:context.getters.getMeses[i],
+                        realizado:context.getters.getValMesRealizado[i],
+                        naoRealizado:context.getters.getValMesNaoRalizado[i]})
+                }
+
                 resolve('ok')
             })
                 .catch(err => {
