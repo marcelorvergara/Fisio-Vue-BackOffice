@@ -156,8 +156,8 @@ export default {
             order:1
           },
           {
-            label: 'Sem presença',
-            backgroundColor:'#dc2b2b',
+            label: 'Sem presença confirmada ou falta',
+            backgroundColor:'#d94040',
             data:null,
             type:'bar',
             order: 2
@@ -239,7 +239,6 @@ export default {
             }
           })
       }
-
     },
     selecionaRelatorio(){
       this.showData = true

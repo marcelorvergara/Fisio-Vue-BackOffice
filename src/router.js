@@ -13,6 +13,7 @@ import Relatorio from "@/components/Pacientes/Relatorio";
 import Homologa from "@/components/Administracao/Homologa";
 import Acompanhamento from "@/components/Pacientes/Acompanhamento";
 import Relatorios from "@/components/Financeiro/Relatorios";
+import Custos from "@/components/Financeiro/Custos";
 
 export const routes = [
     {
@@ -38,6 +39,7 @@ export const routes = [
             { path: 'Homologa', component: Homologa, meta: { breadcrumb: [ { text: 'Homologa'}]} },
             { path: 'Acompanhamento', component: Acompanhamento, meta: { breadcrumb: [ { text: 'Acompanhamento Diário dos Pacientes'}]} },
             { path: 'Relatorios', component: Relatorios, meta: { breadcrumb: [ { text: 'Relatórios Financeiros'}]} },
+            { path: 'Custos', component: Custos, meta: { breadcrumb: [ { text: 'Custos Operacionais'}]} },
         ]
     }
     ]

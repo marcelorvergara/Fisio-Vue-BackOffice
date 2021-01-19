@@ -31,16 +31,17 @@
               </b-row>
               <b-row>
                 <b-col sm="12" lg="6">
-                  <b-form-group id="grp-comissao" label="Comissão do prof.:" label-for="comissao">
-                    <b-input-group append="%">
-                      <b-form-input id="comissao" v-model.number="form.comissao" type="number" placeholder="0 a 100" required></b-form-input>
+                  <b-form-group id="grp-valor" label="Valor:" label-for="valor">
+                    <b-input-group>
+                      <b-form-input id="valor" ref="valorRef" v-model="form.valor"
+                                    v-currency="{currency:'BRL',locale:'pt-BR'}" required></b-form-input>
                     </b-input-group>
                   </b-form-group>
                 </b-col>
                 <b-col>
-                  <b-form-group id="grp-valor" label="Valor:" label-for="valor">
-                    <b-input-group prepend="R$">
-                      <b-form-input id="valor" v-model.number="form.valor" type="number" placeholder="Valor" required></b-form-input>
+                  <b-form-group id="grp-comissao" label="Comissão do prof.:" label-for="comissao">
+                    <b-input-group append="%">
+                      <b-form-input id="comissao" v-model.number="form.comissao" type="number" placeholder="0 a 100" required></b-form-input>
                     </b-input-group>
                   </b-form-group>
                 </b-col>
@@ -76,9 +77,13 @@
 </template>
 
 <script>
+import { CurrencyDirective } from 'vue-currency-input'
 
 export default {
   name: "Procedimentos",
+  directives: {
+    currency: CurrencyDirective
+  },
   data(){
     return {
       loading: false,
@@ -113,7 +118,7 @@ export default {
       this.form.qtdPacientes = dados.qtdPacientes
       this.form.qtdSessoes = dados.qtdSessoes
       this.form.comissao = dados.comissao
-      this.form.valor = dados.valor
+      this.form.valor = `R$ ${dados.valor}`
 
       this.submitBtn = 'Atualizar'
       this.uuid = dados.uuid
@@ -131,6 +136,9 @@ export default {
         if (this.submitBtn === 'Atualizar') {
           this.form.uuid = this.uuid
         }
+        //transformar o input de dindin em decimal para armazenar
+        // const valTemp = this.form.valor.toString().replace(',','.')
+        // this.form.valor = parseFloat(valTemp)
         await this.$store.dispatch('setProcedimentoDb', {procedimento: this.form})
             .then((retorno) => {
               this.mensagem = retorno

@@ -53,9 +53,10 @@ const actions = {
                     //convertendo a data para pegar o mês em português
                     const mes = data.toLocaleString('pt', {month: 'short'})
                     //caso pacote (mais de uma sessão), o valor será dividido pelo número de sessões
-                    const val = proc.valor/proc.qtdSessoes
+                    const valorFloat = parseFloat(proc.valor)
+                    const val = valorFloat/proc.qtdSessoes
                     //valor para apresentar na tabela
-                    const valTabela = (proc.valor/proc.qtdSessoes).toFixed(2).replace('.',',')
+                    const valTabela = (valorFloat/proc.qtdSessoes).toFixed(2).replace('.',',')
 
                     valList.push({mes: mes,val:val,procedimento:proc.nomeProcedimento,valTab:valTabela})
                 }

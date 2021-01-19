@@ -24,7 +24,7 @@
           </b-nav-item-dropdown>
 
         <b-nav-item-dropdown class="m-1" text="Financeiro" right v-if="$store.getters.getFuncao === 'Financeiro' || $store.getters.getFuncao === 'Admin'">
-            <b-dropdown-item href="#">Custos</b-dropdown-item>
+            <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Custos`}" replace>Custos Operacionais</b-dropdown-item>
             <b-dropdown-item href="#">Comissões</b-dropdown-item>
             <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Relatorios`}" replace>Relatórios</b-dropdown-item>
           </b-nav-item-dropdown>

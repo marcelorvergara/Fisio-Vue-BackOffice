@@ -27,3 +27,6 @@ npm
     npm i vue-cal --save
     npm install vue-color --save
     npm install echarts vue-echarts
+    npm i decimal.js //para valores de dindin
+    npm i vue-currency-input // formata input dindin
+

@@ -40,4 +40,29 @@ body{
   --cor10: #FFCB35;
   --cor11: #FFF735;
 }
+
+.change::-webkit-input-placeholder {
+  /* WebKit, Blink, Edge */
+  color: #909;
+}
+.change:-moz-placeholder {
+  /* Mozilla Firefox 4 to 18 */
+  color: #909;
+  opacity: 1;
+}
+.change::-moz-placeholder {
+  /* Mozilla Firefox 19+ */
+  color: #909;
+  opacity: 1;
+}
+.change:-ms-input-placeholder {
+  /* Internet Explorer 10-11 */
+  color: #909;
+}
+input[type="date"]{
+  color: #42B395;
+}
+#valor{
+  color: #42B395;
+}
 </style>

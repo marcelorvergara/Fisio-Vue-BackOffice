@@ -51,7 +51,8 @@ const actions = {
             getDadosRelRealizado(payload).then(res => {
                 for (let dado of res.data){
                     const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
-                    const valor = proc.valor/proc.qtdSessoes
+                    const valorFloat = parseFloat(proc.valor)
+                    const valor = valorFloat/proc.qtdSessoes
                     //pegando o mês e adequando ao índice do array
                     const mes = dado.data.split('-')[1] - 1
                     if (dado.presenca === 'confirmada'){
