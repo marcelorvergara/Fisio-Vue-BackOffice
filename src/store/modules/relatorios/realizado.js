@@ -1,5 +1,5 @@
-// eslint-disable-next-line no-unused-vars
 import { connDb } from "@/store/connDb";
+import {Decimal} from 'decimal.js'
 
 const state = {
     valMesRealizado: [0,0,0,0,0,0,0,0,0,0,0,0],
@@ -17,12 +17,12 @@ const getters = {
 
 const mutations = {
     setMesRealizado(state,payload){
-        const newVal = state.valMesRealizado[payload.mes] + payload.val
-        state.valMesRealizado.splice(payload.mes,1,newVal)
+        const newVal = new Decimal(state.valMesRealizado[payload.mes]).add(payload.val)
+        state.valMesRealizado.splice(payload.mes,1,newVal.toDP(2,Decimal.ROUND_DOWN))
     },
     setMesNaoRealizado(state,payload){
-        const newVal = state.valMesNaoRalizado[payload.mes] + payload.val
-        state.valMesNaoRalizado.splice(payload.mes,1,newVal)
+        const newVal = new Decimal(state.valMesNaoRalizado[payload.mes]).add(payload.val)
+        state.valMesNaoRalizado.splice(payload.mes,1,newVal.toDP(2,Decimal.ROUND_DOWN))
     },
     setValTabela(state,payload){
       state.valTabela.push(payload)
@@ -51,14 +51,14 @@ const actions = {
             getDadosRelRealizado(payload).then(res => {
                 for (let dado of res.data){
                     const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
-                    const valorFloat = parseFloat(proc.valor)
-                    const valor = valorFloat/proc.qtdSessoes
+                    const valorFloat = new Decimal(proc.valor.replace(',','.'))
+                    const valor = valorFloat.div(proc.qtdSessoes)
                     //pegando o mês e adequando ao índice do array
                     const mes = dado.data.split('-')[1] - 1
                     if (dado.presenca === 'confirmada'){
-                        context.commit('setMesRealizado',{mes:mes,val:valor})
+                        context.commit('setMesRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
                     }else {
-                        context.commit('setMesNaoRealizado',{mes:mes,val:valor})
+                        context.commit('setMesNaoRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
                     }
                 }
                 //remover meses vazios
@@ -73,8 +73,8 @@ const actions = {
                 //montar tabela com valores
                 for (let i = 0; i < context.getters.getMeses.length; i++){
                     context.commit('setValTabela',{mes:context.getters.getMeses[i],
-                        realizado:context.getters.getValMesRealizado[i],
-                        naoRealizado:context.getters.getValMesNaoRalizado[i]})
+                        realizado:context.getters.getValMesRealizado[i].toFixed(2).replace('.',','),
+                        naoRealizado:context.getters.getValMesNaoRalizado[i].toFixed(2).replace('.',',')})
                 }
 
                 resolve('ok')

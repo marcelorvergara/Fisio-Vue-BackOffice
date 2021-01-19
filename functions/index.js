@@ -3,6 +3,24 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+exports.setCustoDb = functions.https.onCall(data => {
+    return new Promise((resolve,reject) => {
+        console.log(data)
+        const { v4: uuidv4 } = require('uuid');
+        data.uuid = uuidv4()
+        data.cadastroItem = new Date()
+
+        const db = admin.firestore()
+        db.collection('custos')
+            .doc(data.uuid)
+            .set(
+                data
+            ).then(() => {
+            resolve(`Item ${data.produto} registrado em custos operacionais.`)
+        })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
 
 //gerando relatório para o financeiro
 exports.getDadosDb = functions.https.onCall(data => {

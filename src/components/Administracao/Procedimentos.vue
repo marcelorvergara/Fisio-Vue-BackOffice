@@ -34,7 +34,8 @@
                   <b-form-group id="grp-valor" label="Valor:" label-for="valor">
                     <b-input-group>
                       <b-form-input id="valor" ref="valorRef" v-model="form.valor"
-                                    v-currency="{currency:'BRL',locale:'pt-BR'}" required></b-form-input>
+                                    v-currency="{currency:'BRL',locale:'pt-BR'}"
+                                    required></b-form-input>
                     </b-input-group>
                   </b-form-group>
                 </b-col>
@@ -136,9 +137,6 @@ export default {
         if (this.submitBtn === 'Atualizar') {
           this.form.uuid = this.uuid
         }
-        //transformar o input de dindin em decimal para armazenar
-        // const valTemp = this.form.valor.toString().replace(',','.')
-        // this.form.valor = parseFloat(valTemp)
         await this.$store.dispatch('setProcedimentoDb', {procedimento: this.form})
             .then((retorno) => {
               this.mensagem = retorno

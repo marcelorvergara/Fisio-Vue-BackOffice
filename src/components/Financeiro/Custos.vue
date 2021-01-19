@@ -20,13 +20,13 @@
               <b-row>
                 <b-col sm="12" lg="5">
                   <b-form-group id="grp-data" label="Data:" label-for="data">
-                    <b-form-input class="change" id="data" v-model="form.data" type="date"></b-form-input>
+                    <b-form-input id="data" v-model="form.data" type="date"></b-form-input>
                   </b-form-group>
                 </b-col>
                 <b-col sm="12" lg="4">
                   <b-form-group id="grp-valor" label="Valor:" label-for="valor">
                     <b-input-group>
-                      <b-form-input class="change" id="valor" v-model="form.valor" v-currency="{currency:'BRL',locale:'pt-BR'}" required></b-form-input>
+                      <b-form-input id="valor" v-model="form.valor" v-currency="{currency:'BRL',locale:'pt-BR'}" required></b-form-input>
                     </b-input-group>
                   </b-form-group>
                 </b-col>
@@ -41,10 +41,10 @@
               <b-row>
                 <b-col sm="12" lg="12">
                   <b-form-group id="grp-fornecedor" label="Fornecedor:" label-for="fornecedor">
-                    <b-form-input id="fornecedor" v-model.number="form.fornecedor" type="text" placeholder="Nome do fornecedor" required></b-form-input>
+                    <vue-typeahead-bootstrap :data="fornecedores" id="fornecedor" v-model.number="form.fornecedor" type="text" placeholder="Nome do fornecedor" required></vue-typeahead-bootstrap>
                   </b-form-group>
                   <b-form-group id="grp-classificacao" label="Classificação do gasto:" label-for="classificacao">
-                    <b-form-input id="classificacao" v-model.number="form.classificacao" type="text" placeholder="Classificação do tipo de gasto" required></b-form-input>
+                    <vue-typeahead-bootstrap :data="classificacoes" id="classificacao" v-model="form.classificacao" type="text" placeholder="Classificação do tipo de gasto" required></vue-typeahead-bootstrap>
                   </b-form-group>
                 </b-col>
               </b-row>
@@ -59,11 +59,29 @@
         </b-col>
       </b-row>
     </b-container>
+    <!--    modal para alerta erro-->
+    <b-modal ref="modal-err" ok-only>
+      <template #modal-title>
+        <b-icon icon="x-circle" scale="2" variant="danger"></b-icon>
+        <span class="m-3">Custos Operacionais</span>
+      </template>
+      <p v-html="mensagem"></p>
+    </b-modal>
+    <!--    modal para ok ok -->
+    <b-modal ref="modal-ok" ok-only>
+      <template #modal-title>
+        <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
+        <span class="m-3">Custos Operacionais</span>
+      </template>
+      <p v-html="mensagem"></p>
+    </b-modal>
   </div>
 </template>
 
 <script>
 import { CurrencyDirective } from 'vue-currency-input'
+import firebase from 'firebase/app'
+import 'firebase/firestore'
 
 export default {
   name: "Custos",
@@ -75,11 +93,14 @@ export default {
       loading:false,
       show:true,
       nomeProdutos:[],
+      classificacoes:[],
+      fornecedores:[],
       produto:'',
       submitBtn:'Cadastrar',
+      mensagem:'',
       form:{
         data:'',
-        parcelas:'',
+        parcelas:1,
         fornecedor:'',
         classificacao:'',
         valor:0.00,
@@ -87,8 +108,33 @@ export default {
     }
   },
   methods:{
-    cadastrar(){
+    async cadastrar(event){
+      event.preventDefault()
+      this.loading = true
+      if (this.produto === ''){
+        this.mensagem = 'É necessário preencher o nome do produto.'
+        this.loading = false
+        this.$refs['modal-err'].show()
+      }else{
+        this.form.produto = this.produto.trim()
+        //convertendo a data para formato TS do firestore
+        const dataTS = new Date(this.form.data);
+        const dataCusto = firebase.firestore.Timestamp.fromDate(dataTS);
+        this.form.dataTS = dataCusto
 
+        this.$store.dispatch('setCustoOp',this.form)
+            .then((retorno) => {
+              this.mensagem = retorno
+              this.loading = false
+              this.$refs['modal-ok'].show()
+              this.resetar()
+            })
+            .catch(error => {
+              this.mensagem = error
+              this.loading = false
+              this.$refs['modal-err'].show()
+            })
+      }
     },
     resetar(){
 
