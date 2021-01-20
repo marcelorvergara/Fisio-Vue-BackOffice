@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-unused-vars
 import { connDb } from "@/store/connDb";
 import {Decimal} from 'decimal.js'
 

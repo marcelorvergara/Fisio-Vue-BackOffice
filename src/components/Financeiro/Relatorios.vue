@@ -76,14 +76,29 @@
           </div>
           <div class="tabela mb-5">
             <b-table small caption-top
-                     striped hover :items="$store.getters.getCustosTabelaRel"
-                     >
+                     striped hover :fields="fields3" :items="$store.getters.getCustosTabelaRel">
+              <!--<template #table-caption> <span style="color: black" v-html=""></span></template>-->
+            </b-table>
+          </div>
+        </b-container>
+      </b-row>
+      <!--    relatório 4-->
+      <b-row v-if="showTable4" class="d-block">
+        <b-container>
+          <div class="smallPie text-center">
+            <chart-pie :options="optionsPie" :chartdata="chartData4" ></chart-pie>
+          </div>
+          <div class="tabela mb-5">
+            <b-table small caption-top
+                     striped hover :fields="fields4" :items="$store.getters.getClassiTable">
               <!--<template #table-caption> <span style="color: black" v-html=""></span></template>-->
             </b-table>
           </div>
         </b-container>
       </b-row>
     </b-container>
+
+
     <!--    modal para alerta erro-->
     <b-modal ref="modal-err" ok-only>
       <template #modal-title>
@@ -108,10 +123,12 @@
 import firebase from "firebase/app";
 import 'firebase/firestore'
 import chart from '../Chart.vue'
+import chartPie from '../ChartPie'
 export default {
   name: "Relatorios",
   components:{
-    chart
+    chart,
+    chartPie
   },
   data(){
     return{
@@ -129,12 +146,23 @@ export default {
       ],
       fields3: [
         {key: 'mes',sortable:true, label: 'Mês'},
-        {key: 'realizado' ,sortable:true, label:'Realizado R$'},
-        {key: 'naoRealizado',sortable:true, label:'Não Realizado R$'},
+        {key: 'custo' ,sortable:true, label:'Custo Total R$'}
+      ],
+      fields4: [
+        {key: 'classificacao',sortable:true, label: 'Classificação'},
+        {key: 'tabela' ,sortable:true, label:'Custo Total R$'}
       ],
       showTable:false,
       showTable2:false,
       showTable3:false,
+      showTable4:false,
+      optionsPie:{
+        legend: {
+          display: true
+        },
+        responsive: true,
+        maintainAspectRatio: false
+      },
       options: { //Chart.js options
         scales: {
           yAxes: [{
@@ -229,6 +257,33 @@ export default {
           }
         ],
       },
+      //quarto relatório - custos por classificação
+      chartData4:{
+        labels: null,
+        hoverBackgroundColor: "red",
+        hoverBorderWidth: 10,
+        datasets:[
+          {
+            borderWidth: 1,
+            backgroundColor: [
+              'rgba(255,99,132,0.8)',
+              'rgba(54, 162, 235, 0.8)',
+              'rgba(255, 206, 86, 0.8)',
+              'rgba(75,192,137,0.8)',
+              'rgba(75,114,192,0.8)'
+            ],
+            borderColor: [
+              'rgba(255, 99, 132, 1)',
+              'rgba(54, 162, 235, 1)',
+              'rgba(255, 206, 86, 1)',
+              'rgba(75, 192, 192, 1)',
+              'rgba(75,132,192,1)',
+            ],
+            label:"Classificações",
+            data: null,
+          }
+        ],
+      },
       loading:false,
       showData:false,
       dtini:'',
@@ -238,7 +293,8 @@ export default {
         {value: null, text: 'Selecione um relatório'},
         {value: 1,    text: 'Relatório Financeiro Total' },
         {value: 2,    text: 'Relatório Financeiro Realizado' },
-        {value: 3,    text: 'Custos Mensais' }
+        {value: 3,    text: 'Custos Mensais' },
+        {value: 4,    text: 'Custos por Classificação'}
       ]
     }
   },
@@ -266,12 +322,7 @@ export default {
       if (this.relatorio === 1){
         this.loading = true
         //zerando os dados da tabela caso nova pesquisa
-        this.showTable = false
-        this.$store.commit('resetRelFinTotal')
-        this.showTable2 = false
-        this.$store.commit('resetRealizado')
-        this.showTable3 = false
-        this.$store.commit('resetCustosRel')
+        this.resetRelatorios()
         this.$store.dispatch('getRelatorioTotal',{dataIni:dataTSIni, dataFim: dataTSFim})
             .then(res => {
               if (res === 'ok'){
@@ -297,12 +348,7 @@ export default {
       } else if (this.relatorio === 2){
         this.loading = true
         //zerando os dados caso nova pesquisa
-        this.showTable = false
-        this.$store.commit('resetRelFinTotal')
-        this.showTable2 = false
-        this.$store.commit('resetRealizado')
-        this.showTable3 = false
-        this.$store.commit('resetCustosRel')
+        this.resetRelatorios()
         //segundo relatório
         this.$store.dispatch('getRelatorioRealizado', {dataIni:dataTSIni,dataFim:dataTSFim})
           .then(res => {
@@ -323,12 +369,7 @@ export default {
       }else if (this.relatorio === 3){
         this.loading = true
         //zerando os dados caso nova pesquisa
-        this.showTable = false
-        this.$store.commit('resetRelFinTotal')
-        this.showTable2 = false
-        this.$store.commit('resetRealizado')
-        this.showTable3 = false
-        this.$store.commit('resetCustosRel')
+        this.resetRelatorios()
         //terceiro relatório
         this.$store.dispatch('getRelatorioCustos',{dataIni:dataTSIni,dataFim:dataTSFim})
           .then(res => {
@@ -345,10 +386,45 @@ export default {
               this.$refs['modal-err'].show()
               this.loading = false
             })
+      } else if (this.relatorio === 4){
+        this.loading = true
+        //zerando os dados da tabela caso nova pesquisa
+        this.resetRelatorios()
+        this.$store.dispatch('getRelatorioClassificacao',{dataIni:dataTSIni, dataFim: dataTSFim})
+            .then(res => {
+              if (res === 'ok') {
+                const valsArray = this.$store.getters.getClassificacoes
+                const values = []
+                const labels = []
+                for (let i of valsArray){
+                  values.push(parseFloat(i.val))
+                  labels.push(i.classificacao)
+                }
+                this.chartData4.datasets[0].data = values
+                this.chartData4.labels = labels
+                this.showTable4 = true
+                this.loading = false
+              }
+            })
+            .catch(err => {
+              this.mensagem = err
+              this.$refs['modal-err'].show()
+              this.loading = false
+            })
       }
     },
     selecionaRelatorio(){
       this.showData = true
+    },
+    resetRelatorios(){
+      this.showTable = false
+      this.$store.commit('resetRelFinTotal')
+      this.showTable2 = false
+      this.$store.commit('resetRealizado')
+      this.showTable3 = false
+      this.$store.commit('resetCustosRel')
+      this.showTable4 = false
+      this.$store.commit('resetClassificacoes')
     }
   },
   created() {
@@ -366,6 +442,10 @@ export default {
 <style scoped>
 .small {
   max-height: 600px;
+  margin: 20px auto;
+}
+.smallPie {
+  max-height: 550px;
   margin: 20px auto;
 }
 .tabela{

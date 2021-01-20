@@ -6,11 +6,13 @@ import administracao from "./modules/administracao"
 import financeiro from "@/store/modules/financeiro";
 import realizado from "@/store/modules/relatorios/realizado";
 import custos from "@/store/modules/relatorios/custos";
+import classificacaoCustos from "@/store/modules/relatorios/classificacaoCustos";
 
 Vue.use(Vuex);
 
 export const store = new Vuex.Store({
     modules:{
+        classificacaoCustos,
         custos,
         realizado,
         financeiro,
