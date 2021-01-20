@@ -3,9 +3,47 @@ const admin = require('firebase-admin');
 //emulador local
 admin.initializeApp({ projectId: "fisiovue" });
 
+exports.getCustosRel = functions.https.onCall(data => {
+    const listCustos = []
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('custos')
+            .where('dataTS','>=' ,data.dataIni)
+            .where('dataTS','<=', data.dataFim)
+            .orderBy('dataTS', 'desc')
+            .get()
+            .then(function(querySnapshot) {
+                console.log(querySnapshot.docs.length)
+                querySnapshot.forEach(function(doc) {
+                    listCustos.push(doc.data())
+                })
+                Promise.all([listCustos]).then(() => {
+                    console.log('Fim ...')
+                    resolve(listCustos)
+                })
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
+exports.getCustos = functions.https.onCall(() => {
+    const listCustos = [];
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('custos').orderBy('produto')
+            .get()
+            .then(function(querySnapshot){
+                querySnapshot.forEach(function(doc) {
+                    listCustos.push(doc.data())
+                });
+                resolve(listCustos)
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
 exports.setCustoDb = functions.https.onCall(data => {
     return new Promise((resolve,reject) => {
-        console.log(data)
         const { v4: uuidv4 } = require('uuid');
         data.uuid = uuidv4()
         data.cadastroItem = new Date()

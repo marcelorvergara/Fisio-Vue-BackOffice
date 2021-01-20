@@ -53,7 +53,7 @@
         </div>
         </b-container>
       </b-row>
-<!--relatório 2-->
+<!--    relatório 2-->
       <b-row v-if="showTable2" class="d-block">
         <b-container>
           <div class="small text-center" style="border: #296154 solid 1px">
@@ -63,12 +63,43 @@
             <b-table small caption-top
                      striped hover :items="$store.getters.getValTabela"
                      :fields="fields2">
-<!--              <template #table-caption> <span style="color: black" v-html=""></span></template>-->
+              <!--<template #table-caption> <span style="color: black" v-html=""></span></template>-->
+            </b-table>
+          </div>
+        </b-container>
+      </b-row>
+<!--    relatório 3-->
+      <b-row v-if="showTable3" class="d-block">
+        <b-container>
+          <div class="small text-center" style="border: #296154 solid 1px">
+            <chart :options="options" :chartdata="chartData3" ></chart>
+          </div>
+          <div class="tabela mb-5">
+            <b-table small caption-top
+                     striped hover :items="$store.getters.getCustosTabelaRel"
+                     >
+              <!--<template #table-caption> <span style="color: black" v-html=""></span></template>-->
             </b-table>
           </div>
         </b-container>
       </b-row>
     </b-container>
+    <!--    modal para alerta erro-->
+    <b-modal ref="modal-err" ok-only>
+      <template #modal-title>
+        <b-icon icon="x-circle" scale="2" variant="danger"></b-icon>
+        <span class="m-3">Relatórios</span>
+      </template>
+      <p v-html="mensagem"></p>
+    </b-modal>
+    <!--    modal para ok ok -->
+    <b-modal ref="modal-ok" ok-only>
+      <template #modal-title>
+        <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
+        <span class="m-3">Relatórios</span>
+      </template>
+      <p v-html="mensagem"></p>
+    </b-modal>
   </div>
 </template>
 
@@ -85,18 +116,25 @@ export default {
   data(){
     return{
       mediaPeriodo:'',
-      fields2: [
-        {key: 'mes',sortable:true, label: 'Mês'},
-        {key: 'realizado' ,sortable:true, label:'Realizado R$'},
-        {key: 'naoRealizado',sortable:true, label:'Não Realizado R$'}
-      ],
+      mensagem:'',
       fields: [
         {key: 'mes',sortable:true,label: 'Mês'},
         {key: 'valTab' ,sortable:true,label:'Valor/Sessão em R$'},
         {key: 'procedimento',sortable:true,label:'Procedimento'}
       ],
+      fields2: [
+        {key: 'mes',sortable:true, label: 'Mês'},
+        {key: 'realizado' ,sortable:true, label:'Realizado R$'},
+        {key: 'naoRealizado',sortable:true, label:'Não Realizado R$'},
+      ],
+      fields3: [
+        {key: 'mes',sortable:true, label: 'Mês'},
+        {key: 'realizado' ,sortable:true, label:'Realizado R$'},
+        {key: 'naoRealizado',sortable:true, label:'Não Realizado R$'},
+      ],
       showTable:false,
       showTable2:false,
+      showTable3:false,
       options: { //Chart.js options
         scales: {
           yAxes: [{
@@ -164,6 +202,33 @@ export default {
           }
         ],
       },
+      //terceiro relatório - custos
+      chartData3:{
+        labels: null,
+        datasets:[
+          {
+            // barPercentage: 1,
+            // barThickness: 10,
+            // maxBarThickness: 14,
+            // minBarLength: 5,
+            borderColor:'#FC2525',
+            pointBackgroundColor: '#f1b2b2',
+            borderWidth: 1,
+            pointBorderColor:'#c28080',
+            label:'Custo Mensal em R$',
+            backgroundColor:'#c26e6e',
+            data: null,
+            order:1,
+            type:'line'
+          },
+          {
+            label: 'Média Custos por Mês',
+            data:null,
+            type:'line',
+            order: 2
+          }
+        ],
+      },
       loading:false,
       showData:false,
       dtini:'',
@@ -172,7 +237,8 @@ export default {
       relList:[
         {value: null, text: 'Selecione um relatório'},
         {value: 1,    text: 'Relatório Financeiro Total' },
-        {value: 2,    text: 'Relatório Financeiro Realizado' }
+        {value: 2,    text: 'Relatório Financeiro Realizado' },
+        {value: 3,    text: 'Custos Mensais' }
       ]
     }
   },
@@ -198,10 +264,14 @@ export default {
       const dataTSFim = firebase.firestore.Timestamp.fromDate(dataFim);
 
       if (this.relatorio === 1){
+        this.loading = true
         //zerando os dados da tabela caso nova pesquisa
-        this.$store.commit('resetRelFinTotal')
         this.showTable = false
+        this.$store.commit('resetRelFinTotal')
         this.showTable2 = false
+        this.$store.commit('resetRealizado')
+        this.showTable3 = false
+        this.$store.commit('resetCustosRel')
         this.$store.dispatch('getRelatorioTotal',{dataIni:dataTSIni, dataFim: dataTSFim})
             .then(res => {
               if (res === 'ok'){
@@ -217,27 +287,64 @@ export default {
                 this.mediaPeriodo = `Média no período selecionado: R$ ${mediaVal.toFixed(2).replace('.',',')}.<br> Total de atendimentos: ${totAtend}`
                 this.showTable = true
               }
+              this.loading = false
             })
             .catch(err => {
-              console.log(err)
+              this.mensagem = err
+              this.$refs['modal-err'].show()
+              this.loading = false
             })
       } else if (this.relatorio === 2){
+        this.loading = true
         //zerando os dados caso nova pesquisa
         this.showTable = false
         this.$store.commit('resetRelFinTotal')
         this.showTable2 = false
         this.$store.commit('resetRealizado')
+        this.showTable3 = false
+        this.$store.commit('resetCustosRel')
         //segundo relatório
         this.$store.dispatch('getRelatorioRealizado', {dataIni:dataTSIni,dataFim:dataTSFim})
           .then(res => {
             if (res === 'ok'){
               this.chartData2.labels = this.$store.getters.getMeses
-              this.chartData2.datasets[0].data= this.$store.getters.getValMesRealizado
+              this.chartData2.datasets[0].data = this.$store.getters.getValMesRealizado
               this.chartData2.datasets[1].data = this.$store.getters.getValMesNaoRalizado
 
               this.showTable2 = true
             }
+            this.loading = false
           })
+            .catch(err => {
+              this.mensagem = err
+              this.$refs['modal-err'].show()
+              this.loading = false
+            })
+      }else if (this.relatorio === 3){
+        this.loading = true
+        //zerando os dados caso nova pesquisa
+        this.showTable = false
+        this.$store.commit('resetRelFinTotal')
+        this.showTable2 = false
+        this.$store.commit('resetRealizado')
+        this.showTable3 = false
+        this.$store.commit('resetCustosRel')
+        //terceiro relatório
+        this.$store.dispatch('getRelatorioCustos',{dataIni:dataTSIni,dataFim:dataTSFim})
+          .then(res => {
+            if (res === 'ok'){
+              this.chartData3.labels = this.$store.getters.getMesCustosLabel
+              this.chartData3.datasets[0].data = this.$store.getters.getCustosRel
+              this.chartData3.datasets[1].data = this.$store.getters.getMediaCustoMeses
+              this.showTable3 = true
+            }
+            this.loading = false
+          })
+            .catch(err => {
+              this.mensagem = err
+              this.$refs['modal-err'].show()
+              this.loading = false
+            })
       }
     },
     selecionaRelatorio(){

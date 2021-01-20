@@ -51,7 +51,7 @@ const actions = {
             getDadosRelRealizado(payload).then(res => {
                 for (let dado of res.data){
                     const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
-                    const valorFloat = new Decimal(proc.valor.replace(',','.'))
+                    const valorFloat = new Decimal(proc.valor.toString().replace(',','.'))
                     const valor = valorFloat.div(proc.qtdSessoes)
                     //pegando o mês e adequando ao índice do array
                     const mes = dado.data.split('-')[1] - 1

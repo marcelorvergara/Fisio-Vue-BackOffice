@@ -79,7 +79,7 @@
 </template>
 
 <script>
-import { CurrencyDirective } from 'vue-currency-input'
+import {CurrencyDirective} from 'vue-currency-input'
 import firebase from 'firebase/app'
 import 'firebase/firestore'
 
@@ -119,8 +119,7 @@ export default {
         this.form.produto = this.produto.trim()
         //convertendo a data para formato TS do firestore
         const dataTS = new Date(this.form.data);
-        const dataCusto = firebase.firestore.Timestamp.fromDate(dataTS);
-        this.form.dataTS = dataCusto
+        this.form.dataTS = firebase.firestore.Timestamp.fromDate(dataTS)
 
         this.$store.dispatch('setCustoOp',this.form)
             .then((retorno) => {
@@ -128,6 +127,7 @@ export default {
               this.loading = false
               this.$refs['modal-ok'].show()
               this.resetar()
+              this.getFields()
             })
             .catch(error => {
               this.mensagem = error
@@ -137,14 +137,44 @@ export default {
       }
     },
     resetar(){
-
+      this.produto = ''
+      this.form.data = new Date().toISOString().split('T')[0]
+      this.form.parcelas = 1
+      this.form.classificacao = ''
+      this.form.fornecedor = ''
+      this.form.valor = `R$ 0,00`
+      this.$nextTick(() => {
+        this.show = true
+      })
     },
     preencheVal(event){
       console.log(event)
+    },
+    getFields(){
+      //pegar nomes dos produtos, fornecedores e classificação para o autocomplete
+      this.$store.dispatch('getCustosDB').then(res => {
+        if (res === 'ok'){
+          const listCusto = this.$store.getters.getCusto
+          for (let custo of listCusto){
+            this.nomeProdutos.push(custo.produto)
+            this.fornecedores.push(custo.fornecedor)
+            this.classificacoes.push(custo.classificacao)
+          }
+          const uniqPrd = [... new Set(this.nomeProdutos)]
+          const uniqForn = [... new Set(this.fornecedores)]
+          const uniqClass = [... new Set(this.classificacoes)]
+          this.nomeProdutos = uniqPrd
+          this.fornecedores = uniqForn
+          this.classificacoes = uniqClass
+        }
+      })
     }
   },
   mounted() {
     this.form.data = new Date().toISOString().split('T')[0]
+  },
+  created() {
+    this.getFields()
   }
 }
 

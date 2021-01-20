@@ -5,7 +5,8 @@ const state = {
     mesLabel: [],
     valProc: [],
     relProcTable:[],
-    mediaVal:[]
+    mediaVal:[],
+    custos:[]
 }
 
 const getters = {
@@ -13,6 +14,7 @@ const getters = {
     getValProc: state => state.valProc,
     getRelProcTable: state => state.relProcTable,
     getMediaVal:state => state.mediaVal,
+    getCusto:state => state.custos
 }
 
 const mutations = {
@@ -37,10 +39,31 @@ const mutations = {
         state.mesLabel = []
         state.dados = []
         state.relProcTable =[]
+    },
+    setCusto(state,custo){
+        state.custos.push(custo)
+    },
+    resetCustos(state){
+      state.custos = []
     }
 }
 
 const actions = {
+    getCustosDB(context){
+        return new Promise((resolve,reject) => {
+            const getCustos = connDb.methods.connDbFunc().httpsCallable('getCustos')
+            getCustos().then(result => {
+                context.commit('resetCustos')
+                for (let dados of result.data){
+                    context.commit('setCusto',dados)
+                }
+                resolve('ok')
+            })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+    },
     setCustoOp(context,payload){
         return new Promise((resolve,reject) => {
             const setCustoOpDb = connDb.methods.connDbFunc().httpsCallable('setCustoDb')
@@ -95,7 +118,6 @@ const actions = {
                         context.commit('setVal',newVal.toDP(2,Decimal.ROUND_DOWN))
                     }
                 }
-                console.log(context.getters.getValProc)
                 //colocando a média em cada mês para desenhar a linha
                 const media = totVal/context.getters.getMesLabel.length
                 // eslint-disable-next-line no-unused-vars
