@@ -742,3 +742,4 @@ function getSessoesShare(querySnapshot){
             }) .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 }
+

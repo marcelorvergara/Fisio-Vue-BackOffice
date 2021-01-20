@@ -122,8 +122,8 @@
 //firebase para tratar timestamp das sessões
 import firebase from "firebase/app";
 import 'firebase/firestore'
-import chart from '../Chart.vue'
-import chartPie from '../ChartPie'
+import chart from '../Charts/Chart.vue'
+import chartPie from '../Charts/ChartPie'
 export default {
   name: "Relatorios",
   components:{
