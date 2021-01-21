@@ -113,9 +113,25 @@ export default {
 
       auth.signInWithEmailAndPassword(this.form.email, this.form.senha)
           .then((user) => {
-            const token = user.user.refreshToken
-            this.loading = false;
-            this.$router.push({path: `/Home/${token}` })
+            //testar se é o primeiro acesso
+            this.$store.dispatch('priAcessoChk',{email:this.form.email}).then(res => {
+              if (res.resp){
+                //vamos trocar a senha
+                if (user.user.uid === res.uid){
+                  this.$store.commit('setTempCred',{user:this.form.email,pass:this.form.senha})
+                  const token = user.user.refreshToken
+                  this.loading = false;
+                  this.$router.push({path: `/TrocaSenha/${token}` })
+                }
+
+              }else {
+                const token = user.user.refreshToken
+                this.loading = false;
+                this.$router.push({path: `/Home/${token}` })
+              }
+
+            })
+
           })
           .catch((error) => {
             this.loadingRS = false;

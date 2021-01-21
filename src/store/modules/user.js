@@ -1,15 +1,19 @@
+import {connDb} from "@/store/connDb";
+
 const state = {
     user: {
         loggedIn: false,
         data: null,
         uid:null
     },
-    funcao:null
+    funcao:null,
+    tempCred:null,
 }
 
 const getters = {
     user: state => state.user,
-    getFuncao: state => state.funcao
+    getFuncao: state => state.funcao,
+    getTempCred:state => state.tempCred
 }
 
 const mutations = {
@@ -21,6 +25,9 @@ const mutations = {
     },
     setFuncao(state, value){
         state.funcao = value
+    },
+    setTempCred(state,temp){
+        state.tempCred = temp
     }
 }
 
@@ -37,6 +44,17 @@ const actions = {
         } else {
             commit("SET_USER", null);
         }
+    },
+    updatePriAcesso(contexr,payload){
+        return new Promise((resolve, reject) => {
+            const upPriAcesso = connDb.methods.connDbFunc().httpsCallable('upPriAcessoDb')
+            upPriAcesso(payload).then(res => {
+                resolve(res)
+            })
+                .catch(err => {
+                        reject(err)
+                    })
+                })
     }
 }
 

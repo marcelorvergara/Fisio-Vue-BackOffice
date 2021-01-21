@@ -14,6 +14,7 @@ import Homologa from "@/components/Administracao/Homologa";
 import Acompanhamento from "@/components/Pacientes/Acompanhamento";
 import Relatorios from "@/components/Financeiro/Relatorios";
 import Custos from "@/components/Financeiro/Custos";
+import TrocaSenha from "@/components/TrocaSenha";
 
 export const routes = [
     {
@@ -23,6 +24,12 @@ export const routes = [
         path: '',
         name: 'Login',
         component: Login
+    },
+    {
+        path:'/TrocaSenha/:id',
+        name: 'TrocaSenha',
+        component: TrocaSenha,
+        meta: { breadcrumb: [ { text: 'Trocar a Senha'}]}
     },
     {
         path: '/Home/:id', component: Home,

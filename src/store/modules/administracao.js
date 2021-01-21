@@ -178,6 +178,17 @@ const actions = {
                     reject(err)
                 })
         })
+    },
+    async priAcessoChk(context,payload){
+        return await new Promise((resolve,reject) => {
+            const priAcesso = connDb.methods.connDbFunc().httpsCallable('checkPriAcessoDb')
+             priAcesso(payload).then(res => {
+                resolve(res.data)
+            })
+                .catch(err => {
+                    reject(err)
+                })
+        })
     }
 }
 

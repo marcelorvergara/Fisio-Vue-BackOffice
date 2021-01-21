@@ -620,7 +620,6 @@ exports.setProfissional = functions.https.onCall(data => {
             .auth()
             .getUser(data.admUid)
             .then((adminRec) => {
-                console.log(adminRec)
                 //***checa se é administrador***
                 if (adminRec.customClaims.funcao === 'Admin') {
                     return admin.auth().createUser({email: data.email, password: data.senha})
@@ -631,6 +630,8 @@ exports.setProfissional = functions.https.onCall(data => {
                                     //enviando para o banco os dados do profissional
                                     const db = admin.firestore()
                                     data.date = new Date()
+                                    //tocando o uid pelo do usuário criado e não o que criou
+                                    data.admUid = user.uid
                                     db.collection('profissionais')
                                         .doc(data.uuid)
                                         .set(data).then(() =>{
@@ -651,6 +652,57 @@ exports.setProfissional = functions.https.onCall(data => {
             .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 });
+
+exports.checkPriAcessoDb = functions.https.onCall(data => {
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('profissionais')
+            .where('email','==',data.email)
+            .get()
+            .then(qs => {
+                const user = qs.docs.map(doc => doc.data())
+                for (let i of user){
+                    if (i.priAcesso){
+                        //primeiro acesso
+                        resolve ({resp:true,uid:i.admUid})
+                    }else{
+                        resolve (false)
+                    }
+                }
+            })
+            .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
+
+exports.upPriAcessoDb = functions.https.onCall(data => {
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        db.collection('profissionais')
+            .where('admUid','==',data.userId)
+            .get()
+            .then(qs => {
+                const user = qs.docs.map(doc => doc.data())
+                for (let i of user){
+                    if (i.senha === data.pass){
+                        resolve('A nova senha deve ser diferente que a senha temporária.')
+                    }else{
+                        //vamos atualizar o db apagando a senha temp e setando o campo do pri acesso para false
+                        const userRef = db.collection('profissionais').doc(i.uuid)
+                            userRef.update({
+                                senha: 'N/A',
+                                senha2: 'N/A',
+                                priAcesso: false
+                            }).then(r => {
+                                console.log(r)
+                                resolve('Troca realizada com sucesso.')
+                            })
+                              .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+                    }
+                }
+            })
+            .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+})
 
 //*** funções auxiliares ***
 //função para facilitar homologação

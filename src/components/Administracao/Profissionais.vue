@@ -274,7 +274,9 @@ export default {
           }
         }else {
           //criação de profissional
+          this.form.priAcesso = true
           this.form.nome = this.nome.trim()
+          //para checar permissão
           this.form.admUid = this.$store.getters.user.data.uid
           this.form.funcao = this.role
           this.form.disabled = true
