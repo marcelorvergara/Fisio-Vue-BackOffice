@@ -21,7 +21,7 @@
           </b-card>
         </b-col>
       </b-row>
-      <b-row class="mt-4">
+      <b-row class="mt-4 mb-3">
         <b-col>
           <div>
             <b-table v-if="mostrarTabela"
@@ -32,8 +32,14 @@
                      responsive="sm"
                      small
                      :items="$store.getters.getSessoesAcompDia"
-                     :fields="fields">
-
+                     :fields="fields"
+                     :busy="isBusy">
+              <template #table-busy>
+                <div class="text-center text-info my-2">
+                  <b-spinner class="align-middle"></b-spinner>
+                  <strong>Loading...</strong>
+                </div>
+              </template>
               <template #cell(acompanhamento)="row">
                 <b-button variant="outline-info" size="sm" @click="row.toggleDetails" class="mr-2">
                   {{ row.detailsShowing ? 'Ocultar' : 'Mostrar'}}
@@ -117,6 +123,7 @@ export default {
   name: "Acompanhamento",
   data(){
     return {
+      isBusy:false,
       sortBy:'sortData',
       selNome:'',
       sessaoUUid:null,
@@ -174,6 +181,9 @@ export default {
       this.$refs['modal-acpm'].show()
     },
     buscaDados(){
+      //usando o busy da table
+      this.isBusy = true
+      this.mostrarTabela = true
       //atribuição para uso no refresh da table (chamando buscaDados)
       this.selNome = this.nome
       //dados uuid para pegar na query de banco
@@ -187,8 +197,9 @@ export default {
           if (res === 'Vazio'){
             this.mensagem = 'Nenhuma sessão marcada para o paciente ' + this.nome
             this.$refs['modal-ok'].show()
-          }else {
-            this.mostrarTabela = true
+            this.mostrarTabela = false
+          }else{
+            this.isBusy = false
           }
         })
         .catch(err => {
@@ -201,8 +212,9 @@ export default {
               if (res === 'Vazio'){
                 this.mensagem = 'Nenhuma sessão marcada para o paciente ' + this.nome
                 this.$refs['modal-ok'].show()
-              }else {
-                this.mostrarTabela = true
+                this.mostrarTabela = false
+              }else{
+                this.isBusy = false
               }
             })
             .catch(err => {

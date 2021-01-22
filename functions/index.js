@@ -566,7 +566,9 @@ exports.getProfissionais = functions.https.onCall(() => {
     const listProfissionais = [];
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
-        db.collection('profissionais').orderBy('nome')
+        db.collection('profissionais')
+            .where('nome', '!=', '')
+            .orderBy('nome')
             .get()
             .then(function(querySnapshot){
                 querySnapshot.forEach(function(doc) {
@@ -661,6 +663,7 @@ exports.checkPriAcessoDb = functions.https.onCall(data => {
             .then(qs => {
                 const user = qs.docs.map(doc => doc.data())
                 for (let i of user){
+                    console.log(i)
                     if (i.priAcesso){
                         //primeiro acesso
                         resolve ({resp:true,uid:i.admUid})

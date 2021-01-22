@@ -103,7 +103,9 @@ name: "TrocaSenha",
                             headerClass: 'p-2',
                             footerClass: 'p-2',
                             hideHeaderClose: false,
-                            centered: true
+                            centered: true,
+                            headerBgVariant: 'dark',
+                            headerTextVariant: 'white'
                           })
                               .then(() => {
                                 this.loading = false

@@ -237,7 +237,6 @@ export default {
       this.currentPage = 1
     },
     seleciona(nome){
-
       this.produto = nome.value.prod
       this.form.fornecedor = nome.value.forn
       this.form.classificacao = nome.value.class

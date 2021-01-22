@@ -12,7 +12,6 @@
             <b-alert v-if="sucesso" show="5" variant="success" dismissible>{{sucesso}}</b-alert >
             <b-alert v-if="error" show="10" variant="danger" dismissible>{{error}}</b-alert >
             <form action="#" @submit.prevent="logar">
-
               <b-input-group class="" size="">
                 <b-input-group-append>
                   <b-input-group-text>
@@ -28,8 +27,7 @@
                     required
                     autofocus
                     v-model="form.email"
-                    placeholder="Insira o login"
-                />
+                    placeholder="Insira o login"/>
               </b-input-group>
 
               <b-input-group class=" mt-3 mb-4" size="">
@@ -39,6 +37,7 @@
                   </b-input-group-text>
                 </b-input-group-append>
                 <b-form-input
+                    autocomplete="on"
                     id="senha"
                     type="password"
                     class="form-control"
@@ -110,7 +109,6 @@ export default {
       this.error = ''
       this.loading = true
       const auth = this.connDbAuth();
-
       auth.signInWithEmailAndPassword(this.form.email, this.form.senha)
           .then((user) => {
             //testar se é o primeiro acesso
@@ -122,6 +120,8 @@ export default {
                   const token = user.user.refreshToken
                   this.loading = false;
                   this.$router.push({path: `/TrocaSenha/${token}` })
+                }else {
+                  console.warn('Esso de acesso: primeiro acesso')
                 }
 
               }else {
@@ -129,9 +129,7 @@ export default {
                 this.loading = false;
                 this.$router.push({path: `/Home/${token}` })
               }
-
             })
-
           })
           .catch((error) => {
             this.loadingRS = false;

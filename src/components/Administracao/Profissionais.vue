@@ -46,11 +46,11 @@
                 <b-form-input id="dtnasc" v-model="form.nasc" type="date"></b-form-input>
               </b-form-group>
               <b-form-group id="grp-email" label="E-mail/Login do Profissional:" label-for="email">
-                <b-form-input :disabled="inputStatus" id="email" v-model="form.email" type="email" placeholder="O e-mail será o login da ferramenta" required></b-form-input>
+                <b-form-input autocomplete="off" :disabled="inputStatus" id="email" v-model="form.email" type="email" placeholder="O e-mail será o login da ferramenta" required></b-form-input>
               </b-form-group>
               <b-input-group prepend="Senha">
-                <b-form-input :disabled="inputStatus" placeholder="senha" v-model="form.senha" type="password"></b-form-input>
-                <b-form-input :disabled="inputStatus" placeholder="repita a senha" v-model="form.senha2" type="password"></b-form-input>
+                <b-form-input autocomplete="off" :disabled="inputStatus" placeholder="senha" v-model="form.senha" type="password"></b-form-input>
+                <b-form-input autocomplete="off" :disabled="inputStatus" placeholder="repita a senha" v-model="form.senha2" type="password"></b-form-input>
               </b-input-group>
               <div class="text-right mt-3">
                 <b-button variant="outline-success" v-if="senhaBtn" @click="trocaSenha" class="mt-2">Trocar Senha</b-button>
@@ -147,7 +147,7 @@ export default {
   },
   computed:{
     nomesProfs() {
-      var nomes = [];
+      const nomes = [];
       for (let i = 0; i < this.$store.getters.getProfissionais.length; i++) {
         nomes.push(this.$store.getters.getProfissionais[i].nome.trim())
       }
@@ -180,7 +180,7 @@ export default {
     },
     async statusLogin(){
       const dados = this.$store.getters.getProfissionais.find( f => f.nome === this.nome)
-      var dataStatus;
+      let dataStatus;
       if (this.habilitaBtn === 'Habilitar'){
         dataStatus = {nome: dados.nome,
           email: dados.email,
@@ -227,7 +227,7 @@ export default {
       this.form.nasc = dados.nasc
       this.form.email = dados.email
       this.senhaBtn = true
-      this.resetarBtn = false
+      // this.resetarBtn = false
       this.form.uuid = dados.uuid
       this.submitBtn = 'Atualizar'
     },
@@ -297,6 +297,9 @@ export default {
       }
     },
     resetar(){
+      this.submitBtn = 'Cadastrar'
+      this.senhaBtn = false
+      this.desabilitar = false
       //desabilita email e senha na edição do profissional
       this.inputStatus = false
       this.colors = '#00753A'

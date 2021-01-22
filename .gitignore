@@ -26,5 +26,6 @@ pnpm-debug.log*
 src/initBackend.js
 backupData/
 priAcesso
+.firebase/
 # mrv
 
