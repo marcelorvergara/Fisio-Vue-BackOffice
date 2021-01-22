@@ -51,35 +51,40 @@ const actions = {
             context.commit('resetCustosRel')
             const getCustos = connDb.methods.connDbFunc().httpsCallable('getCustosRel')
             getCustos(payload).then(res => {
-                for (let dado of res.data){
-                    const mes = dado.data.split('-')[1] - 1
-                    const valor = dado.valor.toString().replace(',','.')
-                    const val = new Decimal(valor)
-                    context.commit('setCustoRel',{mes:mes, val:val})
-                }
-                //remover meses vazios - pegando os meses sem custo
-                const mesesVazios = [];
-                for (let i=0; i<12;i++){
-                    if (context.getters.getCustosRel[i] === 0 ){
-                        mesesVazios.push(i)
+                if (res.data.length !== 0){
+                    for (let dado of res.data){
+                        const mes = dado.data.split('-')[1] - 1
+                        const valor = dado.valor.toString().replace(',','.')
+                        const val = new Decimal(valor)
+                        context.commit('setCustoRel',{mes:mes, val:val})
                     }
+                    //remover meses vazios - pegando os meses sem custo
+                    const mesesVazios = [];
+                    for (let i=0; i<12;i++){
+                        if (context.getters.getCustosRel[i] === 0 ){
+                            mesesVazios.push(i)
+                        }
+                    }
+                    //removendo meses vazios
+                    context.commit('formatDadosCustos', mesesVazios)
+                    //montar tabela com valores
+                    for (let i = 0; i < context.getters.getCustosRel.length; i++){
+                        context.commit('setValTabelaCustos',{mes:context.getters.getMeses[i],
+                            custo:context.getters.getCustosRel[i].toFixed(2).replace('.',',')})
+                    }
+                    //pegar a média mensal de custos
+                    var totCustoMes = new Decimal(0)
+                    const totMeses = new Decimal(context.getters.getCustosRel.length)
+                    for (let custoMes of context.getters.getCustosRel){
+                        totCustoMes = totCustoMes.add(custoMes)
+                    }
+                    const mediaCustoMes = (totCustoMes/totMeses).toFixed(2)
+                    context.commit('setMediaCustoMes',mediaCustoMes)
+                    resolve('ok')
+                }else{
+                    resolve('Não há dados para o período pesquisado.')
                 }
-                //removendo meses vazios
-                context.commit('formatDadosCustos', mesesVazios)
-                //montar tabela com valores
-                for (let i = 0; i < context.getters.getCustosRel.length; i++){
-                    context.commit('setValTabelaCustos',{mes:context.getters.getMeses[i],
-                        custo:context.getters.getCustosRel[i].toFixed(2).replace('.',',')})
-                }
-                //pegar a média mensal de custos
-                var totCustoMes = new Decimal(0)
-                const totMeses = new Decimal(context.getters.getCustosRel.length)
-                for (let custoMes of context.getters.getCustosRel){
-                    totCustoMes = totCustoMes.add(custoMes)
-                }
-                const mediaCustoMes = (totCustoMes/totMeses).toFixed(2)
-                context.commit('setMediaCustoMes',mediaCustoMes)
-                resolve('ok')
+
             })
                 .catch(err => {
                     reject(err)

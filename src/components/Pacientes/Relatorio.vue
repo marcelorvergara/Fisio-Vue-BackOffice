@@ -72,7 +72,7 @@
         <b-col lg="5">
           <div class="mb-3">
           <b-form-group
-              label="Itens por Página"
+              label="Itens por página"
               label-for="per-page-select"
               label-cols-sm="6"
               label-cols-md="4"

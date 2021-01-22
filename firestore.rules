@@ -9,6 +9,9 @@ service cloud.firestore {
       match /procedimentos {
         allow read, write: if request.auth.token.funcao == 'Admin'
       }
+      match /custos {
+        allow read, write: if request.auth.token.funcao == 'Admin' || request.auth.token.funcao == 'Financeiro'
+      }
     }
   }
 }

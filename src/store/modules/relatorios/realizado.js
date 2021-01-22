@@ -49,35 +49,39 @@ const actions = {
         return new Promise ((resolve,reject) => {
             const getDadosRelRealizado = connDb.methods.connDbFunc().httpsCallable('getDadosDb')
             getDadosRelRealizado(payload).then(res => {
-                for (let dado of res.data){
-                    const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
-                    const valorFloat = new Decimal(proc.valor.toString().replace(',','.'))
-                    const valor = valorFloat.div(proc.qtdSessoes)
-                    //pegando o mês e adequando ao índice do array
-                    const mes = dado.data.split('-')[1] - 1
-                    if (dado.presenca === 'confirmada'){
-                        context.commit('setMesRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
-                    }else {
-                        context.commit('setMesNaoRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
+                if (res.data.length !== 0){
+                    for (let dado of res.data){
+                        const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
+                        const valorFloat = new Decimal(proc.valor.toString().replace(',','.'))
+                        const valor = valorFloat.div(proc.qtdSessoes)
+                        //pegando o mês e adequando ao índice do array
+                        const mes = dado.data.split('-')[1] - 1
+                        if (dado.presenca === 'confirmada'){
+                            context.commit('setMesRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
+                        }else {
+                            context.commit('setMesNaoRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
+                        }
                     }
-                }
-                //remover meses vazios
-                const mesesVazios = [];
-                for (let i=0; i<12;i++){
-                    if (context.getters.getValMesNaoRalizado[i] === 0 && context.getters.getValMesRealizado[i] === 0){
-                        mesesVazios.push(i)
+                    //remover meses vazios
+                    const mesesVazios = [];
+                    for (let i=0; i<12;i++){
+                        if (context.getters.getValMesNaoRalizado[i] === 0 && context.getters.getValMesRealizado[i] === 0){
+                            mesesVazios.push(i)
+                        }
                     }
-                }
-                //removendo meses vazios
-                context.commit('formatDados', mesesVazios)
-                //montar tabela com valores
-                for (let i = 0; i < context.getters.getMeses.length; i++){
-                    context.commit('setValTabela',{mes:context.getters.getMeses[i],
-                        realizado:context.getters.getValMesRealizado[i].toFixed(2).replace('.',','),
-                        naoRealizado:context.getters.getValMesNaoRalizado[i].toFixed(2).replace('.',',')})
+                    //removendo meses vazios
+                    context.commit('formatDados', mesesVazios)
+                    //montar tabela com valores
+                    for (let i = 0; i < context.getters.getMeses.length; i++){
+                        context.commit('setValTabela',{mes:context.getters.getMeses[i],
+                            realizado:context.getters.getValMesRealizado[i].toFixed(2).replace('.',','),
+                            naoRealizado:context.getters.getValMesNaoRalizado[i].toFixed(2).replace('.',',')})
+                    }
+                    resolve('ok')
+                } else {
+                    resolve('Não há dados para o período pesquisado.')
                 }
 
-                resolve('ok')
             })
                 .catch(err => {
                     reject(err)

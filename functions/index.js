@@ -63,7 +63,6 @@ exports.setCustoDb = functions.https.onCall(data => {
 //gerando relatório para o financeiro
 exports.getDadosDb = functions.https.onCall(data => {
     const listSessoes = []
-
     return new Promise((resolve,reject) => {
         const db = admin.firestore()
         db.collection('sessoes')

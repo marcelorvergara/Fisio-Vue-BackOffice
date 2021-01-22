@@ -337,6 +337,10 @@ export default {
                 const mediaVal = this.$store.getters.getMediaVal[0] || 0
                 this.mediaPeriodo = `Média no período selecionado: R$ ${mediaVal.toFixed(2).replace('.',',')}.<br> Total de atendimentos: ${totAtend}`
                 this.showTable = true
+              }else if(res === 'Não há dados para o período pesquisado.'){
+                this.mensagem = res
+                this.$refs['modal-err'].show()
+                this.loading = false
               }
               this.loading = false
             })
@@ -358,6 +362,10 @@ export default {
               this.chartData2.datasets[1].data = this.$store.getters.getValMesNaoRalizado
 
               this.showTable2 = true
+            }else if(res === 'Não há dados para o período pesquisado.'){
+              this.mensagem = res
+              this.$refs['modal-err'].show()
+              this.loading = false
             }
             this.loading = false
           })
@@ -374,10 +382,15 @@ export default {
         this.$store.dispatch('getRelatorioCustos',{dataIni:dataTSIni,dataFim:dataTSFim})
           .then(res => {
             if (res === 'ok'){
+              console.log(res)
               this.chartData3.labels = this.$store.getters.getMesCustosLabel
               this.chartData3.datasets[0].data = this.$store.getters.getCustosRel
               this.chartData3.datasets[1].data = this.$store.getters.getMediaCustoMeses
               this.showTable3 = true
+            } else if(res === 'Não há dados para o período pesquisado.'){
+              this.mensagem = res
+              this.$refs['modal-err'].show()
+              this.loading = false
             }
             this.loading = false
           })
@@ -397,12 +410,18 @@ export default {
                 const values = []
                 const labels = []
                 for (let i of valsArray){
-                  values.push(parseFloat(i.val))
-                  labels.push(i.classificacao)
+                  if (i !== undefined){
+                    values.push(parseFloat(i.val))
+                    labels.push(i.classificacao)
+                  }
                 }
                 this.chartData4.datasets[0].data = values
                 this.chartData4.labels = labels
                 this.showTable4 = true
+                this.loading = false
+              } else if (res === 'Não há dados para o período pesquisado.'){
+                this.mensagem = res
+                this.$refs['modal-err'].show()
                 this.loading = false
               }
             })
