@@ -3,7 +3,7 @@
     <b-container fluid class="mt-3">
       <b-row>
         <b-col style="">
-          <vue-cal v-if="$store.getters.getEvents !== 0"
+          <vue-cal v-if="$store.getters.getEvents.length !== 0"
                    style="height: 600px;background-color: #ecfce7; color: darkslategrey " locale="pt-br"
                    class="vuecal--green-theme mb-5"
                    ref="vuecal"
@@ -19,7 +19,6 @@
                    :on-event-click="sessaoInfo"
                    active-view="month"
                    today-button>
-
                 <template v-slot:activator="{ on }">
                   <b-button v-on="on">
                     <b-icon icon="vinyl">my_location</b-icon>
@@ -27,6 +26,16 @@
                   <span>Go to Today's date</span>
                 </template>
           </vue-cal>
+          <div v-else class="text-center text-info my-2">
+            <b-progress height="2rem"  variant="info" striped animated
+                        :max="$store.getters.getEvents.length"
+                        class="align-middle">
+              <b-progress-bar :value="$store.getters.getEvents.length">
+                <strong style="font-size: 1.3rem">Carregando...</strong>
+              </b-progress-bar>
+
+            </b-progress>
+          </div>
         </b-col>
       </b-row>
 

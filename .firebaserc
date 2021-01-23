@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "fisiovue"
+    "default": "fisiovue",
+    "sys-vue": "sys-vue"
   }
 }

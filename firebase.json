@@ -3,14 +3,15 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+
   "hosting": {
+    "site": "cfra-sys",
     "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "site":"crfa-sys",
     "rewrites": [
       {
         "source": "**",

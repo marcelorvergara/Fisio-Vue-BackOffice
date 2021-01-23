@@ -1,7 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 //emulador local
-admin.initializeApp({ projectId: "fisiovue" });
+// admin.initializeApp({ projectId: "fisiovue" });
+admin.initializeApp()
 
 exports.getCustosRel = functions.https.onCall(data => {
     const listCustos = []
@@ -663,7 +664,6 @@ exports.checkPriAcessoDb = functions.https.onCall(data => {
             .then(qs => {
                 const user = qs.docs.map(doc => doc.data())
                 for (let i of user){
-                    console.log(i)
                     if (i.priAcesso){
                         //primeiro acesso
                         resolve ({resp:true,uid:i.admUid})
@@ -704,6 +704,16 @@ exports.upPriAcessoDb = functions.https.onCall(data => {
             })
             .catch(err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
+})
+
+//função para primeiro acesso
+exports.priAcesso = functions.https.onCall(async () => {
+    admin.auth()
+        .getUserByEmail('marcelorv@gmail.com')
+        .then((userRecord) => {
+            // See the UserRecord reference doc for the contents of userRecord.
+            admin.auth().setCustomUserClaims(userRecord.uid, {funcao: 'Admin'})
+        })
 })
 
 //*** funções auxiliares ***

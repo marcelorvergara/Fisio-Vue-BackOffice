@@ -17,7 +17,7 @@
                   >
               </vue-typeahead-bootstrap>
             </b-form-group>
-            <b-form @submit="cadastrar" @reset="resetar" v-if="show" >
+            <b-form  id="form" @submit="cadastrar" @reset="resetar" v-if="show" >
               <b-form-group id="grp-phone" label="Telefone do Profissional:" label-for="phone">
                 <b-form-input id="phone" v-model="form.phone"  placeholder="Telefone" required></b-form-input>
               </b-form-group>
@@ -49,8 +49,8 @@
                 <b-form-input autocomplete="off" :disabled="inputStatus" id="email" v-model="form.email" type="email" placeholder="O e-mail será o login da ferramenta" required></b-form-input>
               </b-form-group>
               <b-input-group prepend="Senha">
-                <b-form-input autocomplete="off" :disabled="inputStatus" placeholder="senha" v-model="form.senha" type="password"></b-form-input>
-                <b-form-input autocomplete="off" :disabled="inputStatus" placeholder="repita a senha" v-model="form.senha2" type="password"></b-form-input>
+                <b-form-input id="senha1" autocomplete="pass" :disabled="inputStatus" placeholder="senha" v-model="form.senha" type="password"></b-form-input>
+                <b-form-input id="senha2" autocomplete="new-pass" :disabled="inputStatus" placeholder="repita a senha" v-model="form.senha2" type="password"></b-form-input>
               </b-input-group>
               <div class="text-right mt-3">
                 <b-button variant="outline-success" v-if="senhaBtn" @click="trocaSenha" class="mt-2">Trocar Senha</b-button>
@@ -120,7 +120,6 @@ export default {
       submitBtn: 'Cadastrar',
       habilitaBtn: 'Desabilitar',
       uuid:null,
-      dadosPro:[],
       nomes:[],
       nome:null,
       loading: false,
@@ -162,7 +161,7 @@ export default {
       this.form.corProf = `cor`+this.colorsPalette.indexOf(this.colors.hex)
     },
     async trocaSenha(){
-      const dados = this.dadosPro.find( f => f.nome === this.nome)
+      const dados = this.$store.getters.getProfissionais.find( f => f.nome === this.nome)
       firebase
           .auth()
           .sendPasswordResetEmail(dados.email)
@@ -227,6 +226,8 @@ export default {
       this.form.nasc = dados.nasc
       this.form.email = dados.email
       this.senhaBtn = true
+      this.form.senha = ''
+      this.form.senha2 = ''
       // this.resetarBtn = false
       this.form.uuid = dados.uuid
       this.submitBtn = 'Atualizar'

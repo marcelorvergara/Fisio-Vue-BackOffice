@@ -60,18 +60,22 @@ const actions = {
                 })
         })
     },
-    async getFeriadosDB(context){
-        //pegar os nomes dos procedimentos para o autocomplete
-        const getPaciente = connDb.methods.connDbFunc().httpsCallable('getFeriados')
-        await getPaciente().then(result => {
-            context.commit('resetFeriados')
-            for (let dados of result.data){
-                context.commit('setFeriados',dados)
-            }
-        })
-            .catch(err => {
-                console.log(err)
+    getFeriadosDB(context){
+        return new Promise((resolve, reject) => {
+            //pegar os nomes dos procedimentos para o autocomplete
+            const getPaciente = connDb.methods.connDbFunc().httpsCallable('getFeriados')
+            getPaciente().then(result => {
+                context.commit('resetFeriados')
+                for (let dados of result.data){
+                    context.commit('setFeriados',dados)
+                }
+                resolve('ok')
             })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+
     },
     setProcedimentoDb(context,payload){
       return new Promise((resolve,reject) => {
@@ -86,18 +90,21 @@ const actions = {
               })
       })
     },
-    async getProcedimentosDB(context){
-        //pegar os nomes dos procedimentos para o autocomplete
-        const getPaciente = connDb.methods.connDbFunc().httpsCallable('getProcedimentos')
-        await getPaciente().then(result => {
-            context.commit('resetProcedimentos')
-            for (let dados of result.data){
-                context.commit('setProcedimentos',dados)
-            }
-        })
-            .catch(err => {
-                console.log(err)
+    getProcedimentosDB(context){
+        return new Promise((resolve,reject) => {
+            //pegar os nomes dos procedimentos para o autocomplete
+            const getPaciente = connDb.methods.connDbFunc().httpsCallable('getProcedimentos')
+            getPaciente().then(result => {
+                context.commit('resetProcedimentos')
+                for (let dados of result.data){
+                    context.commit('setProcedimentos',dados)
+                }
+                resolve('ok')
             })
+                .catch(err => {
+                    reject(err)
+                })
+        })
     },
     setProfissionalDb(context, payload){
       return new Promise((resolve,reject) => {
@@ -139,32 +146,40 @@ const actions = {
       })
     },
     //tabela de profissionais
-    async getProfissionaisDb(context){
-        //pegar os nomes dos profissionais para autocomplete e join com sessoes
-        //é necessário rever esse método por causa das references
-        const getProfissionais = connDb.methods.connDbFunc().httpsCallable('getProfissionais')
-        await getProfissionais().then(result => {
-            context.commit('resetProfissionais')
-            for (let dados of result.data){
-                context.commit('setProfissionais', dados)
-            }
-        })
-            .catch(err => {
-                console.log(err)
+    getProfissionaisDb(context){
+        return new Promise((resolve,reject) => {
+            //pegar os nomes dos profissionais para autocomplete e join com sessoes
+            //é necessário rever esse método por causa das references
+            const getProfissionais = connDb.methods.connDbFunc().httpsCallable('getProfissionais')
+            getProfissionais().then(result => {
+                context.commit('resetProfissionais')
+                for (let dados of result.data){
+                    context.commit('setProfissionais', dados)
+                }
+                resolve('ok')
             })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+
     },
-    async getSalasDb(context) {
-        //pegar os nomes dos procedimentos para o autocomplete
-        const getSala = connDb.methods.connDbFunc().httpsCallable('getSalas')
-        await getSala().then(result => {
-            context.commit('resetSalas')
-            for (let dados of result.data) {
-                context.commit('setSalas',dados)
-            }
-        })
-            .catch(err => {
-                console.log(err)
+    getSalasDb(context) {
+        return new Promise((resolve,reject) => {
+            //pegar os nomes dos procedimentos para o autocomplete
+            const getSala = connDb.methods.connDbFunc().httpsCallable('getSalas')
+            getSala().then(result => {
+                context.commit('resetSalas')
+                for (let dados of result.data) {
+                    context.commit('setSalas',dados)
+                }
+                resolve ('ok')
             })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+
     },
     setSalasDb(context,payload){
         return new Promise((resolve, reject) => {

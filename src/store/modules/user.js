@@ -57,16 +57,20 @@ const actions = {
                 })
     },
     async priAcessoChk(context,payload){
-    return await new Promise((resolve,reject) => {
-        const priAcesso = connDb.methods.connDbFunc().httpsCallable('checkPriAcessoDb')
-        priAcesso(payload).then(res => {
-            resolve(res.data)
-        })
-            .catch(err => {
-                reject(err)
+        return await new Promise((resolve,reject) => {
+            const priAcesso = connDb.methods.connDbFunc().httpsCallable('checkPriAcessoDb')
+            priAcesso(payload).then(res => {
+                resolve(res.data)
             })
-    })
-}
+                .catch(err => {
+                    reject(err)
+                })
+        })
+    },
+    priAcesso(){
+        const pa = connDb.methods.connDbFunc().httpsCallable('priAcesso')
+        pa()
+    }
 }
 
 export default {

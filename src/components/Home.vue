@@ -1,7 +1,7 @@
 <template>
   <div>
 <!--    menu principal-->
-    <b-navbar toggleable="lg" type="dark" variant="dark">
+    <b-navbar toggleable="lg" type="dark" variant="dark" v-if="sala && procedimento && profissional && feriado">
       <img src="../assets/logo.png" class="d-inline-block align-top mr-3" alt="Kitten">
       <b-navbar-brand :to="{path: `/Home/${$route.params.id}`}" replace class="m-1 mr-3">CFRA</b-navbar-brand>
 
@@ -41,7 +41,15 @@
       </b-collapse>
       <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm">Sair <b-icon icon="door-open-fill"> </b-icon>{{ userEmail }}</b-button>
     </b-navbar>
+    <div v-else class="text-center text-info my-2">
+      <b-progress max="1" height="4.2rem" variant="dark" striped animated
+                  class="align-middle">
+        <b-progress-bar value="1">
+          <strong style="font-size: 1.3rem">Carregando...</strong>
+        </b-progress-bar>
 
+      </b-progress>
+    </div>
     <b-breadcrumb :items="$route.meta.breadcrumb"></b-breadcrumb>
 <!--router view para mostrar os componentes filhos do Home-->
     <router-view></router-view>
@@ -65,7 +73,11 @@ export default {
   data(){
     return {
       breadcrumbList:'',
-      userEmail:''
+      userEmail:'',
+      sala:false,
+      procedimento:false,
+      profissional:false,
+      feriado:false
     }
   },
   methods:{
@@ -103,10 +115,29 @@ export default {
             console.log(error);
           });
       //carregar tabelas para consultas
-      this.$store.dispatch('getProfissionaisDb')
-      this.$store.dispatch('getSalasDb')
-      this.$store.dispatch('getProcedimentosDB')
-      this.$store.dispatch('getFeriadosDB')
+      //colocando async e promisse para só carregar o menu depois que tiver as infos
+      this.$store.dispatch('getProfissionaisDb').then(res => {
+        if (res === 'ok'){
+          this.profissional = true
+        }
+      })
+      this.$store.dispatch('getSalasDb').then(res => {
+        if (res === 'ok'){
+          this.sala = true
+        }
+      })
+      this.$store.dispatch('getProcedimentosDB').then(res => {
+        if (res === 'ok'){
+          this.procedimento = true
+        }
+      })
+      this.$store.dispatch('getFeriadosDB').then(res => {
+        console.log(res)
+        if (res === 'ok'){
+          this.feriado = true
+        }
+      })
+      // this.$store.dispatch('priAcesso')
     }
   }
 }
