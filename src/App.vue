@@ -21,10 +21,11 @@ export default {
 @import '~bootstrap-vue/dist/bootstrap-vue.css';
 @import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@500&display=swap');
 body{
-  background-color: #BDF8A3;
+  background-color: #a4d8f6;
   font-family: 'Work Sans', sans-serif;
 }
 :root{
+  --corDes:#000000;
   --corOk: #ffffff;
   --corFa: #ff0000;
   --cor0: #00753A;

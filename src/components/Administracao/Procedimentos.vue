@@ -6,6 +6,7 @@
           <b-card header="Cadastro de Procedimentos" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome do Procedimento ou Pacote:" label-for="nome">
               <vue-typeahead-bootstrap
+                  :disabled="btnStatus"
                   disableSort
                   id="nome"
                   v-model="nomeProcedimento"
@@ -87,6 +88,7 @@ export default {
   },
   data(){
     return {
+      btnStatus:false,
       loading: false,
       uuid: null,
       show:true,
@@ -115,6 +117,7 @@ export default {
   },
   methods:{
     preencheVal(nome){
+      this.btnStatus = true
       const dados = this.$store.getters.getProcedimentos.find( f => f.nomeProcedimento.trim() === nome)
       this.form.qtdPacientes = dados.qtdPacientes
       this.form.qtdSessoes = dados.qtdSessoes
@@ -152,6 +155,7 @@ export default {
       }
     },
     resetar(){
+      this.btnStatus = false
       this.submitBtn = 'Cadastrar'
       this.nomeProcedimento = ''
       this.form.qtdPacientes = ''

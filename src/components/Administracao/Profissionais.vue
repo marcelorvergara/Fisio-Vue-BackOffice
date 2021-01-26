@@ -6,6 +6,7 @@
           <b-card header="Cadastro de Profissional" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome do Profissional:" label-for="nome">
               <vue-typeahead-bootstrap
+                  :disabled="btnStatus"
                   disableSort
                   id="nome"
                   v-model="nome"
@@ -96,6 +97,7 @@ export default {
   components: {"compact-picker": Compact},
   data() {
     return {
+      btnStatus:false,
       inputStatus:false,
       styleObj:{
         color: ''
@@ -209,6 +211,7 @@ export default {
           })
     },
     preencheVal(nome){
+      this.btnStatus = true
       this.inputStatus = true
       const dados = this.$store.getters.getProfissionais.find( f => f.nome.trim() === nome)
       if (dados.disabled){
@@ -298,6 +301,7 @@ export default {
       }
     },
     resetar(){
+      this.btnStatus = false
       this.submitBtn = 'Cadastrar'
       this.senhaBtn = false
       this.desabilitar = false

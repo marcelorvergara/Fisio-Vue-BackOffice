@@ -1,9 +1,10 @@
+<!--acompanhamento virou evolução diária-->
 <template>
   <div>
     <b-container class="mt-3">
       <b-row align-h="center">
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
-          <b-card header="Acompanhamento Diário" header-bg-variant="dark" header-text-variant="white">
+          <b-card header="Evolução Diária" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome do Paciente:" label-for="nome">
               <b-input-group>
                 <b-form-select autocomplete="off"
@@ -48,7 +49,7 @@
               <template #row-details="row">
                 <b-card>
                   <b-row class="mb-2 text-left">
-                    <b-col sm="3" class="text-sm-right"><b>Acompanhamento:</b></b-col>
+                    <b-col sm="3" class="text-sm-right"><b>Evolução:</b></b-col>
                     <b-col>{{ row.item.acompanhamento }}</b-col>
                   </b-row>
                   <div class="text-right">
@@ -71,7 +72,7 @@
              header-text-variant="white">
       <template #modal-title >
         <b-icon icon="pencil-square" scale="2" variant="white"></b-icon>
-        <span class="m-3">Acompanhamento Diário</span>
+        <span class="m-3">Evolução Diária</span>
       </template>
       <form ref="form" @submit.stop.prevent="handleSubmit">
         <b-form-group :label="labelModal" label-for="acomp-diario">
@@ -102,7 +103,7 @@
     <b-modal ref="modal-err" ok-only>
       <template #modal-title>
         <b-icon icon="x-circle" scale="2" variant="danger"></b-icon>
-        <span class="m-3">Acompanhamento</span>
+        <span class="m-3">Evolução Diária</span>
       </template>
       <p v-html="mensagem"></p>
     </b-modal>
@@ -110,7 +111,7 @@
     <b-modal ref="modal-ok" ok-only>
       <template #modal-title>
         <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
-        <span class="m-3">Acompanhamento</span>
+        <span class="m-3">Evolução Diária</span>
       </template>
       <p v-html="mensagem"></p>
     </b-modal>
@@ -120,7 +121,7 @@
 <script>
 
 export default {
-  name: "Acompanhamento",
+  name: "Evolucao",
   data(){
     return {
       isBusy:false,
@@ -139,7 +140,7 @@ export default {
         {key: 'presenca', label: 'Presença', sortable: true },
         {key: 'procedimento', label: 'Procedimento', sortable: true },
         {key: 'profissional', label: 'Profissional', sortable: true },
-        {key: 'acompanhamento', label: 'Acompanhamento', sortable: true }
+        {key: 'acompanhamento', label: 'Evolução', sortable: true }
       ]
     }
   },

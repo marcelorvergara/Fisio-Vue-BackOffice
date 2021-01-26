@@ -11,7 +11,7 @@ import Feriados from "@/components/Administracao/Feriados";
 import Presenca from "@/components/Pacientes/Presenca";
 import Relatorio from "@/components/Pacientes/Relatorio";
 import Homologa from "@/components/Administracao/Homologa";
-import Acompanhamento from "@/components/Pacientes/Acompanhamento";
+import Evolucao from "@/components/Pacientes/Evolucao";
 import Relatorios from "@/components/Financeiro/Relatorios";
 import Custos from "@/components/Financeiro/Custos";
 import TrocaSenha from "@/components/TrocaSenha";
@@ -44,7 +44,7 @@ export const routes = [
             { path: 'Presenca', component: Presenca, meta: { breadcrumb: [ { text: 'Marcação de Presença dos Pacientes'}]} },
             { path: 'Relatorio', component: Relatorio, meta: { breadcrumb: [ { text: 'Relatório de Presença'}]} },
             { path: 'Homologa', component: Homologa, meta: { breadcrumb: [ { text: 'Homologa'}]} },
-            { path: 'Acompanhamento', component: Acompanhamento, meta: { breadcrumb: [ { text: 'Acompanhamento Diário dos Pacientes'}]} },
+            { path: 'Evolucao', component: Evolucao, meta: { breadcrumb: [ { text: 'Evolução Diária dos Pacientes'}]} },
             { path: 'Relatorios', component: Relatorios, meta: { breadcrumb: [ { text: 'Relatórios Financeiros'}]} },
             { path: 'Custos', component: Custos, meta: { breadcrumb: [ { text: 'Custos Operacionais'}]} },
         ]

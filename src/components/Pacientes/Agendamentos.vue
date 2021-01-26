@@ -3,42 +3,42 @@
     <b-container fluid class="mt-3">
       <b-row>
         <b-col style="">
-          <vue-cal v-if="$store.getters.getEvents.length !== 0"
-                   style="height: 600px;background-color: #ecfce7; color: darkslategrey " locale="pt-br"
-                   class="vuecal--green-theme mb-5"
-                   ref="vuecal"
-                   :time-from="7 * 60" :time-to="22 * 60" :time-step="60"
-                   :hide-weekdays="[7]"
-                   events-on-month-view="short"
-                   show-all-day-events="true"
-                   :events="$store.getters.getEvents"
-                   :disable-views="['years', 'year']"
-                   :editable-events="{ title: false, drag: false, resize: false, delete: false, create: true }"
-                   :drag-to-create-event="false"
-                   @cell-click="criarSessao($event)"
-                   :on-event-click="sessaoInfo"
-                   active-view="month"
-                   today-button>
-                <template v-slot:activator="{ on }">
-                  <b-button v-on="on">
-                    <b-icon icon="vinyl">my_location</b-icon>
-                  </b-button>
-                  <span>Go to Today's date</span>
-                </template>
-          </vue-cal>
+          <div v-if="!loading">
+            <vue-cal
+                     style="height: 600px;background-color: #ecfce7; color: darkslategrey " locale="pt-br"
+                     class="vuecal--blue-theme mb-5"
+                     ref="vuecal"
+                     :time-from="7 * 60" :time-to="22 * 60" :time-step="60"
+                     :hide-weekdays="[7]"
+                     events-on-month-view="short"
+                     show-all-day-events="true"
+                     :events="sessoes"
+                     :disable-views="['years', 'year']"
+                     :editable-events="{ title: false, drag: false, resize: false, delete: false, create: true }"
+                     :drag-to-create-event="false"
+                     @cell-click="criarSessao($event)"
+                     :on-event-click="sessaoInfo"
+                     active-view="month"
+                     today-button>
+                  <template v-slot:activator="{ on }">
+                    <b-button v-on="on">
+                      <b-icon icon="vinyl">my_location</b-icon>
+                    </b-button>
+                    <span>Go to Today's date</span>
+                  </template>
+            </vue-cal>
+          </div>
           <div v-else class="text-center text-info my-2">
-            <b-progress height="2rem"  variant="info" striped animated
-                        :max="$store.getters.getEvents.length"
+            <b-progress height="12rem"  variant="dark" striped animated
+                        :max="1"
                         class="align-middle">
-              <b-progress-bar :value="$store.getters.getEvents.length">
-                <strong style="font-size: 1.3rem">Carregando...</strong>
+              <b-progress-bar :value="1">
+                <strong style="font-size: 3.3rem">Carregando...</strong>
               </b-progress-bar>
-
             </b-progress>
           </div>
         </b-col>
       </b-row>
-
     </b-container>
     <!--    modal para escolher o início e o fim da sessão-->
     <b-modal
@@ -285,6 +285,7 @@ export default {
   },
   data(){
     return{
+      sessoes:[],
       recorrencias: [],
       agendaTab:'',
       selectedEvent: {},
@@ -396,12 +397,12 @@ export default {
       this.loading = true
       if (event.class === 'corOk' || event.class === 'corFa'){
         const status = event.class === 'corOk' ? 'presença' : 'falta'
-        this.mensagemErro = `Sessão já computada com ${status}. Não é possível deletar.`
+        this.mensagemErro = `Sessão já computada com ${status}. Não é possível alterar.`
         this.loading = false
         this.$refs['modal-err'].show()
       }else{
-        //remove do DB
-        await this.$store.dispatch('removeEventDb',{uuid: event.uuid})
+        //alterar a cor da sessão para preto quand o é desmarcado
+        await this.$store.dispatch('desmarcaEventDb',{uuid: event.uuid})
             .then((retorno) => {
               this.mensagem = retorno
               this.loading = false
@@ -876,10 +877,32 @@ export default {
       }
     },
     getSessoesDb(){
-      this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+      this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao}).then(res => {
+        if (res === 'ok'){
+          //cuidado para quando não tiver sessão nenhuma, o loading do vue-cal ficar eterno
+          //e não deixar marcar nenhuma sessão
+          this.loading = false
+          this.sessoes = this.$store.getters.getEvents
+          const salas = []
+          const profissionais = []
+          const pacientes = []
+          for(let sessao of this.sessoes){
+            salas.push(sessao.sala)
+            profissionais.push(sessao.profissional)
+            pacientes.push(sessao.paciente)
+          }
+          //listas de salas , profissionais e pacientes para os filtros
+          //tornar único
+          const uniqSalas = [...new Set(salas)]
+          const uniqProfissionais = [... new Set(profissionais)]
+          const uniqPaciente = [... new Set(pacientes)]
+          console.log(uniqPaciente,uniqProfissionais,uniqSalas)
+        }
+      })
     }
   },
   created() {
+    this.loading = true
     this.getSessoesDb()
     this.getNomesPacientes()
     this.getNomesProfissionais()
@@ -890,6 +913,7 @@ export default {
 </script>
 
 <style>
+
 .vuecal__event-title {
   font-size: 1.2em;
   font-weight: bold;
@@ -911,6 +935,10 @@ export default {
   border: 4px white solid;
   font-size: 0.8em;
 }
+.vuecal__event.corDes {
+  background-color: rgba(196, 193, 193, 0.5);
+  border: 3px solid var(--corDes);
+  color: var(--corDes);}
 .vuecal__event.corOk {
   background-color: rgba(196, 193, 193, 0.5);
   border: 3px solid var(--corOk);

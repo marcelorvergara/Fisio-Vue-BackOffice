@@ -6,6 +6,7 @@
           <b-card header="Cadastro de Salas" header-bg-variant="dark" header-text-variant="white">
             <b-form-group id="grp-nome" label="Nome da Sala:" label-for="nome">
               <vue-typeahead-bootstrap
+                  :disabled="btnStatus"
                   disableSort
                   id="nome"
                   v-model="nomeSala"
@@ -57,6 +58,7 @@ export default {
   name: "Salas",
   data(){
     return {
+      btnStatus:false,
       loading: false,
       uuid: null,
       show:true,
@@ -82,6 +84,7 @@ export default {
   },
   methods:{
     preencheVal(nome){
+      this.btnStatus = true
       const dados = this.$store.getters.getSalas.find( f => f.nomeSala.trim() === nome)
       this.form.qtdPacientes = dados.qtdPacientes
       this.submitBtn = 'Atualizar'
@@ -109,6 +112,7 @@ export default {
           })
     },
     resetar(){
+      this.btnStatus = false
       this.submitBtn = 'Cadastrar'
       this.nomeSala = ''
       this.form.qtdPacientes = ''

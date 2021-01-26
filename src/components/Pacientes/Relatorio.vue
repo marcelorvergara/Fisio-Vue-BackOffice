@@ -60,7 +60,7 @@
               <template #table-busy>
                 <div class="text-center text-info my-2">
                   <b-spinner class="align-middle"></b-spinner>
-                  <strong>Loading...</strong>
+                  <strong>Carregando...</strong>
                 </div>
               </template>
             </b-table>
