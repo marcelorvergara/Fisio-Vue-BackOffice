@@ -4,6 +4,50 @@
       <b-row>
         <b-col style="">
           <div v-if="!loading">
+            <b-row class="mb-3 justify-content-center">
+              <b-col class="mt-1" sm="12" lg="3">
+                <b-input-group>
+                  <b-form-select autocomplete="off"
+                                 id="rel-input" v-model="filtroPac"
+                                 type="search"
+                                 placeholder="Filtro paciente"
+                                 :options="filtroPacientes"
+                                 @change="buscaDados">
+                  </b-form-select>
+                  <b-input-group-append>
+                    <b-button @click="filtroPac = null;buscaDados()">Limpar</b-button>
+                  </b-input-group-append>
+                </b-input-group>
+              </b-col>
+              <b-col class="mt-1" sm="12" lg="3">
+                <b-input-group>
+                  <b-form-select autocomplete="off"
+                                 id="rel-input" v-model="filtroProf"
+                                 type="search"
+                                 placeholder="Filtro profissional"
+                                 :options="filtroProfissionais"
+                                 @change="buscaDados">
+                  </b-form-select>
+                  <b-input-group-append>
+                    <b-button @click="filtroProf = null;buscaDados()">Limpar</b-button>
+                  </b-input-group-append>
+                </b-input-group>
+              </b-col>
+              <b-col class="mt-1" sm="12" lg="3">
+                <b-input-group>
+                  <b-form-select autocomplete="off"
+                                 id="rel-input" v-model="filtroSala"
+                                 type="search"
+                                 placeholder="Filtro salas"
+                                 :options="filtroSalas"
+                                 @change="buscaDados">
+                  </b-form-select>
+                  <b-input-group-append>
+                    <b-button @click="filtroSala = null;buscaDados()">Limpar</b-button>
+                  </b-input-group-append>
+                </b-input-group>
+              </b-col>
+            </b-row>
             <vue-cal
                      style="height: 600px;background-color: #ecfce7; color: darkslategrey " locale="pt-br"
                      class="vuecal--blue-theme mb-5"
@@ -12,7 +56,7 @@
                      :hide-weekdays="[7]"
                      events-on-month-view="short"
                      show-all-day-events="true"
-                     :events="sessoes"
+                     :events="$store.getters.getEvents"
                      :disable-views="['years', 'year']"
                      :editable-events="{ title: false, drag: false, resize: false, delete: false, create: true }"
                      :drag-to-create-event="false"
@@ -285,7 +329,12 @@ export default {
   },
   data(){
     return{
-      sessoes:[],
+      filtroPac:null,
+      filtroProf:null,
+      filtroSala:null,
+      filtroPacientes:[],
+      filtroProfissionais:[],
+      filtroSalas:[],
       recorrencias: [],
       agendaTab:'',
       selectedEvent: {},
@@ -334,6 +383,80 @@ export default {
       return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
           (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
       );
+    },
+    buscaDados(){
+      const pac = this.filtroPac
+      const prof = this.filtroProf
+      const sala = this.filtroSala
+      this.getSessoesDb().then(res => {
+        if (res === 'ok'){
+          //guardando as sessões para resetar o array logo abaixo
+          const listSessoes = this.$store.getters.getEvents
+          //reseta o array de sessões
+          this.$store.commit('resetEvents')
+
+
+          //só paciente
+          if (pac !== null && prof === null && sala === null){
+            for (let sessao of listSessoes){
+              if (sessao.paciente === pac){
+                this.$store.commit('setEvents',sessao)
+              }
+            }
+          }
+          //só profissional
+          else if (pac === null && prof !== null && sala === null){
+            for (let sessao of listSessoes){
+              if (sessao.profissional === prof){
+                this.$store.commit('setEvents',sessao)
+              }
+            }
+          }
+          //só sala
+          else if (pac === null && prof === null && sala !== null){
+            for (let sessao of listSessoes){
+              if (sessao.sala === sala){
+                this.$store.commit('setEvents',sessao)
+              }
+            }
+          }
+          //pac e profissional
+          else if(pac !== null & prof !== null && sala === null){
+            for(let sessao of listSessoes){
+              if (sessao.paciente === pac && sessao.profissional === prof){
+                this.$store.commit('setEvents',sessao)
+              }
+            }
+          }
+          //pac e sala
+          else if (pac !== null && prof === null && sala !== null){
+            for (let sessao of listSessoes){
+              if (sessao.paciente === pac && sessao.sala === sala){
+                this.$store.commit('setEvents', sessao)
+              }
+            }
+          }
+          //prof e sala
+          else if (pac === null && prof !== null && sala !==null){
+            for (let sessao of listSessoes){
+              if (sessao.profissional === prof && sessao.sala === sala){
+                this.$store.commit('setEvents',sessao)
+              }
+            }
+          }
+          //pac, prof e sala
+          else if (pac !== null && prof !== null && sala !== null){
+            for (let sessao of listSessoes){
+              if (sessao.paciente === pac && sessao.profissional === prof && sessao.sala === sala){
+                this.$store.commit('setEvents',sessao)
+              }
+            }
+          }else{
+            this.getSessoesDb()
+          }
+        }
+      })
+
     },
     agendarRec(){
       this.loading = true
@@ -452,6 +575,7 @@ export default {
       })
     },
     async agendar(){
+      console.log(this.profissional, this.sala)
       var date = new Date(this.dataSessao)
       this.dataSessao = date.toISOString().substr(0, 10)
       dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
@@ -494,6 +618,14 @@ export default {
         const prof = this.$store.getters.getProfissionais.find(f => f.nome === this.profissional)
         const sala = this.$store.getters.getSalas.find(f => f.nomeSala === this.sala)
         const proc = this.$store.getters.getProcedimentos.find(f => f.nomeProcedimento === this.procedimento)
+        //testar se perfil parceiro e se esse parceiro possui acesso a sala requisitada
+        if (prof.sala.find(f => f === this.sala) === undefined){
+          //não agendar por causa do conflito
+          this.mensagemErro = 'Agendamento não realizado. Parceiro sem acesso a sala solicitada'
+          this.loading = false
+          this.$refs['modal-err'].show()
+          return
+        }
 
         if ((this.diariamente === 1) && (this.semanalmente === 1)){
           //***agendamento único ***
@@ -877,28 +1009,48 @@ export default {
       }
     },
     getSessoesDb(){
-      this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao}).then(res => {
-        if (res === 'ok'){
+      return new Promise(resolve => {
+        this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao}).then(res => {
           //cuidado para quando não tiver sessão nenhuma, o loading do vue-cal ficar eterno
           //e não deixar marcar nenhuma sessão
-          this.loading = false
-          this.sessoes = this.$store.getters.getEvents
-          const salas = []
-          const profissionais = []
-          const pacientes = []
-          for(let sessao of this.sessoes){
-            salas.push(sessao.sala)
-            profissionais.push(sessao.profissional)
-            pacientes.push(sessao.paciente)
+          if (res === 'ok'){
+            this.loading = false
+            const salas = []
+            const profissionais = []
+            const pacientes = []
+            for(let sessao of this.$store.getters.getEvents){
+              salas.push(sessao.sala)
+              profissionais.push(sessao.profissional)
+              pacientes.push(sessao.paciente)
+            }
+            //listas de salas , profissionais e pacientes para os filtros
+            //tornar único
+            const uniqSalas = [...new Set(salas)]
+            uniqSalas.sort()
+            const uniqProfissionais = [... new Set(profissionais)]
+            uniqProfissionais.sort()
+            const uniqPaciente = [... new Set(pacientes)]
+            uniqPaciente.sort()
+            this.filtroPacientes = []
+            this.filtroPacientes.push({value:null,text:'Filtro de pacientes'})
+            for (let pac of uniqPaciente){
+              this.filtroPacientes.push({value:pac,text:pac})
+            }
+            this.filtroProfissionais = []
+            this.filtroProfissionais.push({value:null,text:'Filtro de profissionais'})
+            for (let prof of uniqProfissionais){
+              this.filtroProfissionais.push({value:prof,text:prof})
+            }
+            this.filtroSalas = []
+            this.filtroSalas.push({value:null,text:'Filtro de salas'})
+            for (let sala of uniqSalas){
+              this.filtroSalas.push({value:sala,text:sala})
+            }
+            resolve('ok')
           }
-          //listas de salas , profissionais e pacientes para os filtros
-          //tornar único
-          const uniqSalas = [...new Set(salas)]
-          const uniqProfissionais = [... new Set(profissionais)]
-          const uniqPaciente = [... new Set(pacientes)]
-          console.log(uniqPaciente,uniqProfissionais,uniqSalas)
-        }
+        })
       })
+
     }
   },
   created() {

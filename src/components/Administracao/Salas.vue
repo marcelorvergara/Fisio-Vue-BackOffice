@@ -123,7 +123,7 @@ export default {
     }
   },
   created() {
-
+    console.log(this.$store.getters.getSalas)
   }
 }
 </script>

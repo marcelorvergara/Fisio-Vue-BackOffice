@@ -165,8 +165,13 @@ const actions = {
             if (payload.funcao === 'Parceiro'){
                 const userEmail = context.getters.user.data.email
                 const prof = context.getters.getProfissionais.find(f => f.email === userEmail)
+                const salas = []
+                for (let sala of prof.sala){
+                    const s = context.getters.getSalas.find((f => f.nomeSala === sala))
+                    salas.push(s.uuid)
+                }
                 const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoesParceiro')
-                getSessoes({uuid:prof.uuid,agendador:prof.nome}).then(result => {
+                getSessoes({uuid:prof.uuid,agendador:prof.nome,sala:salas}).then(result => {
                     context.commit('resetEvents')
                     for (let dados of result.data){
                         const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)

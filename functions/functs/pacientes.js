@@ -15,7 +15,6 @@ exports.setSesssaoAcomDiario = functions.https.onCall(data => {
 })
 
 exports.getSessoesAcomDiario = functions.https.onCall(data => {
-    console.log(data)
     const listSessoes = [];
     const profDocRef = admin.firestore()
         .collection('profissionais')
@@ -198,7 +197,15 @@ exports.getSessoesParceiro = functions.https.onCall(async(data) => {
         const profDocRef = admin.firestore()
             .collection('profissionais')
             .doc(data.uuid);
-        getSessoesParceiroAsync(data,profDocRef)
+        const salas = []
+        for (let s of data.sala){
+            const salasDocRef = admin.firestore()
+                .collection('salas')
+                .doc(s)
+            salas.push(salasDocRef)
+        }
+
+        getSessoesParceiroAsync(data,profDocRef,salas)
             .then((querySnapshot) => {
                 console.warn("tamanho docs ",querySnapshot.length)
                 const tamanhoSnap = querySnapshot.length;
@@ -293,20 +300,26 @@ exports.setPaciente = functions.https.onCall(data => {
 
 //*** aux. funcs ***
 //função para pegar os docs que são do perfil parceiro e docs que o parceiro agendou para outros profissionais/parceiros
-async function getSessoesParceiroAsync(data,prof){
+async function getSessoesParceiroAsync(data,prof,salas){
     const db = admin.firestore().collection('sessoes')
-    const q1 = db.where('profissional', "==", prof).get()
+    // const q1 = db.where('profissional', "==", prof).get()
     const q2 = db
         .where('agendador','==',data.agendador)
         .where('profissional','!=',prof)
         .get()
+    const q3 = db
+        .where('sala','in',salas)
+        .get()
 
-    const [querySnapshot1, querySnapshot2] = await Promise.all([q1,q2])
+    // const [querySnapshot1, querySnapshot2,querySnapshot3] = await Promise.all([q1,q2,q3])
+    const [querySnapshot2,querySnapshot3] = await Promise.all([q2,q3])
 
-    const docArray1 = querySnapshot1.docs
+    // const docArray1 = querySnapshot1.docs
     const docArray2 = querySnapshot2.docs
+    const docArray3 = querySnapshot3.docs
 
-    return docArray1.concat(docArray2)
+    // const concate = docArray1.concat(docArray2)
+    return docArray2.concat(docArray3)
 }
 
 //monta a lista de sessões para retornar ao app

@@ -25,20 +25,29 @@
               <b-form-group id="grp-end" label="Endereço do Profissional:" label-for="end">
                 <b-form-input id="end" v-model="form.end" type="text" placeholder="Endereço" required></b-form-input>
               </b-form-group>
-              <b-form-group id="grp-crefito" label="Crefito do Profissional:" label-for="crefito">
-                <b-form-input id="crefito" v-model="form.crefito" type="text" placeholder="Crefito" ></b-form-input>
-              </b-form-group>
-              <b-form-group>
-                <span class="mr-2">Cor na Agenda:</span>
-                <b-icon icon="person-fill"
-                        v-bind:style="styleObj"
-                        scale="2"
-                        ></b-icon>
-                <compact-picker class="mt-2" v-model="colors"
-                                :palette="colorsPalette"
-                                @input="updateValue">
-                </compact-picker>
-              </b-form-group>
+              <b-row>
+                <b-col sm="12" lg="6">
+                  <b-form-group id="grp-crefito" label="Crefito do Profissional:" label-for="crefito">
+                    <b-form-input id="crefito" v-model="form.crefito" type="text" placeholder="Crefito" ></b-form-input>
+                  </b-form-group>
+                  <b-form-group>
+                    <span class="mr-2">Cor na Agenda:</span>
+                    <b-icon icon="person-fill"
+                            v-bind:style="styleObj"
+                            scale="2"
+                    ></b-icon>
+                    <compact-picker class="mt-2" v-model="colors"
+                                    :palette="colorsPalette"
+                                    @input="updateValue">
+                    </compact-picker>
+                  </b-form-group>
+                </b-col>
+                <b-col sm="12" lg="6">
+                  <b-form-group id="grp-salas" label="Acesso as salas na agenda:" label-for="crefito">
+                    <b-form-select v-b-tooltip.hover title="Infomação para o perfil Parceiro. Profissionais e administradores conseguem ver todas as salas" id="salas" v-model="form.sala" :options="listaSalas" multiple :select-size="5"></b-form-select>
+                  </b-form-group>
+                </b-col>
+              </b-row>
               <b-form-group label="Função do Profissional" v-slot="{ ariaDescribedby }">
                 <b-form-radio-group id="papel-rg" v-model="role" :options="opcoes" :aria-describedby="ariaDescribedby" name="papel-rg">
                 </b-form-radio-group>
@@ -97,6 +106,7 @@ export default {
   components: {"compact-picker": Compact},
   data() {
     return {
+      listaSalas: [],
       btnStatus:false,
       inputStatus:false,
       styleObj:{
@@ -140,9 +150,10 @@ export default {
         nasc:'',
         end:'',
         crefito:'',
-        corProf:'',
+        corProf:'cor0',
         senha:'',
-        senha2:''
+        senha2:'',
+        sala:[]
       }
     }
   },
@@ -158,6 +169,7 @@ export default {
     }
   },
   methods:{
+    //troca as cores para cadastro e update do profissional
     updateValue(){
       this.styleObj.color = this.colors.hex
       this.form.corProf = `cor`+this.colorsPalette.indexOf(this.colors.hex)
@@ -231,6 +243,7 @@ export default {
       this.senhaBtn = true
       this.form.senha = ''
       this.form.senha2 = ''
+      this.form.sala = dados.sala
       // this.resetarBtn = false
       this.form.uuid = dados.uuid
       this.submitBtn = 'Atualizar'
@@ -321,9 +334,15 @@ export default {
       this.$nextTick(() => {
         this.show = true
       })
-    }
+    },
+    getNomeSalas(){
+      for (let i=0; i< this.$store.getters.getSalas.length; i++) {
+        this.listaSalas.push(this.$store.getters.getSalas[i].nomeSala)
+      }
+    },
   },
   created() {
+    this.getNomeSalas()
   }
 }
 </script>
