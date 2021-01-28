@@ -53,27 +53,15 @@ exports.logarWPFunc = functions.https.onCall(data =>{
                     resolve(base64Qimg)
                 },
                 undefined,
-                { logQR: false }
-            ).then((client) => {
-                listenClientes(client)
+                {
+                    disableWelcome: true,
+                    logQR: false,
+                    autoClose: 0}
+            ).then(() => {
+                console.log('Logando user whatsapp...')
         })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
-
-    function listenClientes(client){
-        client.onMessage((message) => {
-            if (message.body === 'Hi' && message.isGroupMsg === false) {
-                client
-                    .sendText(message.from, 'Olá, tudo bem?')
-                    .then((result) => {
-                        console.log('Result: ', result); //return object success
-                    })
-                    .catch((erro) => {
-                        console.error('Error when sending: ', erro); //return object error
-                    });
-            }
-        });
-    }
 })
 
 exports.sendWPMsg = functions.https.onCall((data) =>  {
@@ -83,12 +71,7 @@ exports.sendWPMsg = functions.https.onCall((data) =>  {
             .create(
                 //session
                 data.nomeSessao, //Pass the name of the client you want to start the bot
-                //catchQR
-                //se tiver logado, a imagem não irá voltar
-                (base64Qrimg) => {
-                    // console.log('base64 image string qrcode: ', base64Qrimg);
-                    resolve(base64Qrimg)
-                },
+                undefined,
                 // statusFind
                 (statusSession, session) => {
                     console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
@@ -112,7 +95,7 @@ exports.sendWPMsg = functions.https.onCall((data) =>  {
 
     function sendMsg(client){
         return new Promise((resolve, reject) => {
-            client.sendText('5521997981308@c.us','Teste X')
+            client.sendText('5521997981308@c.us','Teste A')
                 .then((result) => {
                     console.log('Result: ', result); //return object success
                     resolve(result)

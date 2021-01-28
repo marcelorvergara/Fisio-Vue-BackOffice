@@ -208,50 +208,15 @@
       </template>
       <p v-html="mensagem"></p>
     </b-modal>
-<!--    modal para mostrar info das sessões-->
-    <b-modal id="info" ref="info-modal"
-             header-bg-variant="dark"
-             header-text-variant="white"
-              hide-footer>
-      <template #modal-title >
-        <b-icon icon="info-circle" scale="2" variant="white"></b-icon>
-        <span class="m-3">{{ selectedEvent.title  }}</span>
-      </template>
-      <b-card>
-        <b-card-text>
-          <ul>
-            <li>Profissional: {{ selectedEvent.content }}</li>
-            <li>Início: {{ selectedEvent.start && selectedEvent.start.formatTime() }}</li>
-            <li>Fim: {{ selectedEvent.end && selectedEvent.end.formatTime() }}</li>
-          </ul>
-          <p v-if="selectedEvent.contentFull" v-html="selectedEvent.contentFull"/>
-          <p v-show="false"> {{ selectedEvent.uuid }}</p>
-        </b-card-text>
-      </b-card>
-      <div class="text-right mt-3">
-        <!--  //cancelar sessão pelo uuid da sessão-->
-        <b-button variant="outline-danger" @click="cancel(selectedEvent)">
-          Desmarcar
-          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
-        </b-button>
-        <b-button class="ml-2" variant="outline-warning" @click="confirmar(selectedEvent)">
-          Confirmar
-          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
-        </b-button>
-        <b-button class="ml-2" variant="outline-success" @click="ok()">
-          OK
-        </b-button>
-      </div>
-    </b-modal>
-
 <!--    modal para logar no whatsapp-->
     <b-modal ref="modal-logar" ok-only>
       <template #modal-title>
         <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
         <span class="m-3">Logar no Whatsapp</span>
       </template>
-      <div v-if="imagem" class="mt-4">
-        <b-row class="justify-content-center">
+      <div v-if="imagem" class="mt-2">
+        <span >Essa janela se fechará em: </span>{{ segundos }}
+        <b-row class="justify-content-center mt-2">
           <span> Whatsapp:</span>
         </b-row>
         <b-row class="justify-content-center">
@@ -276,7 +241,6 @@
       </template>
       <p v-html="mensagemErro"></p>
     </b-modal>
-
 <!--    modal para mostras recorrência e conflitos-->
     <b-modal size="lg" ref="modal-rec" header-bg-variant="dark" header-text-variant="white">
       <div class="text-right mb-2">
@@ -329,8 +293,41 @@
         </b-button>
       </template>
     </b-modal>
-
-
+    <!--    modal para mostrar info das sessões-->
+    <b-modal id="info" ref="info-modal"
+             header-bg-variant="dark"
+             header-text-variant="white"
+             hide-footer>
+      <template #modal-title >
+        <b-icon icon="info-circle" scale="2" variant="white"></b-icon>
+        <span class="m-3">{{ selectedEvent.title  }}</span>
+      </template>
+      <b-card>
+        <b-card-text>
+          <ul>
+            <li>Profissional: {{ selectedEvent.content }}</li>
+            <li>Início: {{ selectedEvent.start && selectedEvent.start.formatTime() }}</li>
+            <li>Fim: {{ selectedEvent.end && selectedEvent.end.formatTime() }}</li>
+          </ul>
+          <p v-if="selectedEvent.contentFull" v-html="selectedEvent.contentFull"/>
+          <p v-show="false"> {{ selectedEvent.uuid }}</p>
+        </b-card-text>
+      </b-card>
+      <div class="text-right mt-3">
+        <!--  //cancelar sessão pelo uuid da sessão-->
+        <b-button variant="outline-danger" @click="cancel(selectedEvent)">
+          Desmarcar
+          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+        </b-button>
+        <b-button class="ml-2" variant="outline-info" @click="confirmar(selectedEvent)">
+          Confirmar
+          <b-spinner v-if="loadingConfirmar" small label="Carregando..."></b-spinner>
+        </b-button>
+        <b-button class="ml-2" variant="outline-success" @click="ok()">
+          OK
+        </b-button>
+      </div>
+    </b-modal>
   </div>
 </template>
 
@@ -349,6 +346,8 @@ export default {
   },
   data(){
     return{
+      loadingConfirmar: false,
+      segundos: 20,
       imagem:'',
       filtroPac:null,
       filtroProf:null,
@@ -396,7 +395,7 @@ export default {
       dadosPac:[],
       dadosPro:[],
       dadosSalas:[],
-      dadosProcedimentos:[]
+      dadosProcedimentos:[],
     }
   },
   methods:{
@@ -538,26 +537,45 @@ export default {
       this.$refs['info-modal'].hide()
     },
     confirmar(event){
+      this.segundos =20 // para fechar  oqr code do whattsapp
       console.log(event.uuid)
+      this.loadingConfirmar = true
+      // enviando msg
       this.$store.dispatch('sendMsg', {nomeSessao:this.$store.getters.user.data.email}).then(res => {
-        console.log('fora',res.data)
+        //logando na tela
         if (res.data === 'notLogged'){
-          console.log('dentro', res.data)
           this.$store.dispatch('logarWP',{nomeSessao:this.$store.getters.user.data.email}).then((resImg) => {
-            console.log('maid dentro', resImg.data)
+            this.loadingConfirmar = false
             this.imagem = resImg.data
+            //temporizador para fechar a janela, visto que não há retorno para essa função
             this.$refs['modal-logar'].show()
-            //temporizador?
+            this.countDownTimer()
+            var me = this
+            setTimeout(function(){
+              me.closeModal()
+            }, this.segundos * 1000)
           })
         }else {
           if(res.data.ack === 0){
             this.mensagem = 'Pedido de confirmação de sessão enviado com sucesso!'
             this.$refs['modal-ok'].show()
+            this.loadingConfirmar = false
             this.$refs['info-modal'].hide()
           }
         }
       })
       //window.open(`https://api.whatsapp.com/send?phone=`+contatoPac + '?text=confirma')
+    },
+    closeModal(){
+      this.$refs['modal-logar'].hide()
+    },
+    countDownTimer(){
+      if (this.segundos > 0){
+        setTimeout(() => {
+          this.segundos -= 1
+          this.countDownTimer()
+        }, 1000)
+      }
     },
     async cancel(event){
       this.loading = true
