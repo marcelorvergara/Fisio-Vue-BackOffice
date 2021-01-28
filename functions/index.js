@@ -43,6 +43,88 @@ exports.priAcesso = login.priAcesso
 const fin = require('./functs/financeiro')
 exports.setCustoDb = fin.setCustoDb
 
+exports.logarWPFunc = functions.https.onCall(data =>{
+    return new Promise((resolve,reject) => {
+        const venom = require('venom-bot')
+        venom
+            .create(
+                data.nomeSessao,
+                (base64Qimg)=>{
+                    resolve(base64Qimg)
+                },
+                undefined,
+                { logQR: false }
+            ).then((client) => {
+                listenClientes(client)
+        })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+
+    function listenClientes(client){
+        client.onMessage((message) => {
+            if (message.body === 'Hi' && message.isGroupMsg === false) {
+                client
+                    .sendText(message.from, 'Olá, tudo bem?')
+                    .then((result) => {
+                        console.log('Result: ', result); //return object success
+                    })
+                    .catch((erro) => {
+                        console.error('Error when sending: ', erro); //return object error
+                    });
+            }
+        });
+    }
+})
+
+exports.sendWPMsg = functions.https.onCall((data) =>  {
+    return new Promise((resolve, reject) => {
+        const venom = require('venom-bot')
+        venom
+            .create(
+                //session
+                data.nomeSessao, //Pass the name of the client you want to start the bot
+                //catchQR
+                //se tiver logado, a imagem não irá voltar
+                (base64Qrimg) => {
+                    // console.log('base64 image string qrcode: ', base64Qrimg);
+                    resolve(base64Qrimg)
+                },
+                // statusFind
+                (statusSession, session) => {
+                    console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
+                    //Create session wss return "serverClose" case server for close
+                    console.log('Session name: ', session);
+                    if (statusSession === 'notLogged'){
+                        resolve(statusSession)
+                    }
+                }
+            )
+            .then(async (client) => {
+                await sendMsg(client).then(res => {
+                    console.log('client*********************', res)
+                    resolve(res)
+                })
+
+
+            })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+
+    function sendMsg(client){
+        return new Promise((resolve, reject) => {
+            client.sendText('5521997981308@c.us','Teste X')
+                .then((result) => {
+                    console.log('Result: ', result); //return object success
+                    resolve(result)
+                })
+                .catch((erro) => {
+                    console.error('Error when sending: ', erro); //return object error
+                    reject(erro)
+                });
+        })
+
+    }
+})
 
 exports.hotStart =
     functions.pubsub

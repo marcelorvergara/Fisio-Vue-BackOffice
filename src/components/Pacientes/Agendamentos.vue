@@ -234,12 +234,32 @@
           Desmarcar
           <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
         </b-button>
+        <b-button class="ml-2" variant="outline-warning" @click="confirmar(selectedEvent)">
+          Confirmar
+          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+        </b-button>
         <b-button class="ml-2" variant="outline-success" @click="ok()">
           OK
         </b-button>
       </div>
     </b-modal>
-<!--    modal para ok ok -->
+
+<!--    modal para logar no whatsapp-->
+    <b-modal ref="modal-logar" ok-only>
+      <template #modal-title>
+        <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
+        <span class="m-3">Logar no Whatsapp</span>
+      </template>
+      <div v-if="imagem" class="mt-4">
+        <b-row class="justify-content-center">
+          <span> Whatsapp:</span>
+        </b-row>
+        <b-row class="justify-content-center">
+          <img  v-bind:src="imagem" alt="qrCode do whatsapp">
+        </b-row>
+      </div>
+    </b-modal>
+    <!--    modal para ok ok -->
     <b-modal ref="modal-ok" ok-only>
       <template #modal-title>
         <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
@@ -329,6 +349,7 @@ export default {
   },
   data(){
     return{
+      imagem:'',
       filtroPac:null,
       filtroProf:null,
       filtroSala:null,
@@ -516,6 +537,28 @@ export default {
     ok(){
       this.$refs['info-modal'].hide()
     },
+    confirmar(event){
+      console.log(event.uuid)
+      this.$store.dispatch('sendMsg', {nomeSessao:this.$store.getters.user.data.email}).then(res => {
+        console.log('fora',res.data)
+        if (res.data === 'notLogged'){
+          console.log('dentro', res.data)
+          this.$store.dispatch('logarWP',{nomeSessao:this.$store.getters.user.data.email}).then((resImg) => {
+            console.log('maid dentro', resImg.data)
+            this.imagem = resImg.data
+            this.$refs['modal-logar'].show()
+            //temporizador?
+          })
+        }else {
+          if(res.data.ack === 0){
+            this.mensagem = 'Pedido de confirmação de sessão enviado com sucesso!'
+            this.$refs['modal-ok'].show()
+            this.$refs['info-modal'].hide()
+          }
+        }
+      })
+      //window.open(`https://api.whatsapp.com/send?phone=`+contatoPac + '?text=confirma')
+    },
     async cancel(event){
       this.loading = true
       if (event.class === 'corOk' || event.class === 'corFa'){
@@ -542,6 +585,7 @@ export default {
     },
     sessaoInfo(event){
       //mostra o modal da sessão selecionada
+      this.imagem = ''
       this.selectedEvent = event
       this.$refs['info-modal'].show()
     },
@@ -575,7 +619,6 @@ export default {
       })
     },
     async agendar(){
-      console.log(this.profissional, this.sala)
       var date = new Date(this.dataSessao)
       this.dataSessao = date.toISOString().substr(0, 10)
       dtHoraIni = `${this.dataSessao}`+` `+`${this.horaIni}`
@@ -620,7 +663,7 @@ export default {
         const proc = this.$store.getters.getProcedimentos.find(f => f.nomeProcedimento === this.procedimento)
         //testar se perfil parceiro e se esse parceiro possui acesso a sala requisitada
         if (prof.sala.find(f => f === this.sala) === undefined){
-          //não agendar por causa do conflito
+          //não agendar pois o usuário com perfil parceiro não possui acesso a essa sala
           this.mensagemErro = 'Agendamento não realizado. Parceiro sem acesso a sala solicitada'
           this.loading = false
           this.$refs['modal-err'].show()

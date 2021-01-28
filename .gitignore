@@ -27,5 +27,8 @@ src/initBackend.js
 backupData/
 priAcesso
 .firebase/
+functions/out.png
+functions/tokens/
+storage.rules
 # mrv
 

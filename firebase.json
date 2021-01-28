@@ -3,7 +3,6 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-
   "hosting": {
     "site": "cfra-sys",
     "public": "dist",
@@ -38,5 +37,8 @@
     "auth": {
       "port": 9099
     }
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }

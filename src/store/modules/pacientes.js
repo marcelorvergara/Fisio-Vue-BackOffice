@@ -57,6 +57,30 @@ const mutations = {
 }
 
 const actions = {
+    logarWP(context, payload){
+        // eslint-disable-next-line no-unused-vars
+        return new Promise ((resolve,reject) => {
+            const sendMensagem = connDb.methods.connDbFunc().httpsCallable('logarWPFunc')
+            sendMensagem(payload).then(res => {
+                resolve(res)
+            })
+                .catch(error => {
+                    reject(error)
+                })
+        })
+    },
+    sendMsg(context, payload){
+        // eslint-disable-next-line no-unused-vars
+      return new Promise ((resolve,reject) => {
+          const sendMensagem = connDb.methods.connDbFunc().httpsCallable('sendWPMsg')
+          sendMensagem(payload).then(res => {
+              resolve(res)
+          })
+              .catch(error => {
+                  reject(error)
+              })
+      })
+    },
     setSessoesAcompDiaDb(context,payload){
       return new Promise((resolve, reject) => {
           const setAcompanhamento = connDb.methods.connDbFunc().httpsCallable('setSesssaoAcomDiario')
