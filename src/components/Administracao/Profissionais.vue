@@ -4,6 +4,9 @@
       <b-row align-h="center">
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3 d-flex justify-content-center">
           <b-card header="Cadastro de Profissional" header-bg-variant="dark" header-text-variant="white">
+            <b-tooltip placement="topright" target="grp-nome" v-if="$store.getters.getSatusTooltip">
+              Para editar os dados de um profissional, selecione seu nome na lista que aparece em "Nome do Profissional:" ao digitar seu nome
+            </b-tooltip>
             <b-form-group id="grp-nome" label="Nome do Profissional:" label-for="nome">
               <vue-typeahead-bootstrap
                   :disabled="btnStatus"
@@ -44,7 +47,11 @@
                 </b-col>
                 <b-col sm="12" lg="6">
                   <b-form-group id="grp-salas" label="Acesso as salas na agenda:" label-for="crefito">
-                    <b-form-select v-b-tooltip.hover title="Infomação para o perfil Parceiro. Profissionais e administradores conseguem ver todas as salas" id="salas" v-model="form.sala" :options="listaSalas" multiple :select-size="5"></b-form-select>
+                    <b-form-select id="salas" v-model="form.sala" :options="listaSalas" multiple :select-size="5"></b-form-select>
+                    <b-tooltip placement="rightbottom" target="salas" v-if="$store.getters.getSatusTooltip">
+                      Informação para o perfil Parceiro.
+                      Perfis do tipo Profissionais e Administradores conseguem ver todas as salas na agenda.
+                    </b-tooltip>
                   </b-form-group>
                 </b-col>
               </b-row>
@@ -66,7 +73,7 @@
                 <b-button variant="outline-success" v-if="senhaBtn" @click="trocaSenha" class="mt-2">Trocar Senha</b-button>
                 <b-button variant="outline-success" v-if="desabilitar" @click="statusLogin" class="ml-2 mt-2">{{ habilitaBtn }}</b-button>
                 <b-button type="reset" variant="outline-danger" v-if="resetarBtn" class="ml-2 mt-2">Resetar</b-button>
-                <b-button type="submit" variant="outline-success" class="ml-2 mt-2"> {{ submitBtn }}
+                <b-button type="submit" :variant="variante" class="ml-2 mt-2"> {{ submitBtn }}
                   <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
                 </b-button>
               </div>
@@ -106,6 +113,7 @@ export default {
   components: {"compact-picker": Compact},
   data() {
     return {
+      variante:'outline-success',
       listaSalas: [],
       btnStatus:false,
       inputStatus:false,
@@ -247,6 +255,7 @@ export default {
       // this.resetarBtn = false
       this.form.uuid = dados.uuid
       this.submitBtn = 'Atualizar'
+      this.variante = 'outline-warning'
     },
     async cadastrar(event){
       this.mensagem = ''
@@ -316,6 +325,7 @@ export default {
     resetar(){
       this.btnStatus = false
       this.submitBtn = 'Cadastrar'
+      this.variante = 'outline-success'
       this.senhaBtn = false
       this.desabilitar = false
       //desabilita email e senha na edição do profissional

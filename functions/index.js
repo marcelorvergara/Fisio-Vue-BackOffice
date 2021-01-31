@@ -1,8 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 //emulador local
-// admin.initializeApp({ projectId: "fisiovue" });
-admin.initializeApp()
+admin.initializeApp({ projectId: "sys-corp" });
+// admin.initializeApp()
 
 const relatorios = require('./functs/relatorios')
 exports.getCustosRel = relatorios.getCustosRel
@@ -42,6 +42,16 @@ exports.priAcesso = login.priAcesso
 
 const fin = require('./functs/financeiro')
 exports.setCustoDb = fin.setCustoDb
+// *********************************************************** //
+
+//tratar a resposta do cliente
+exports.getConfirmacao = functions.https.onRequest((req,res) => {
+    const uuidSessao = req.query.id
+    const resposta = req.query.resp
+    console.log(uuidSessao, resposta)
+    res.send('ok')
+
+})
 
 exports.logarWPFunc = functions.https.onCall(data =>{
     return new Promise((resolve,reject) => {
@@ -58,13 +68,20 @@ exports.logarWPFunc = functions.https.onCall(data =>{
                     logQR: false,
                     autoClose: 0}
             ).then(() => {
-                console.log('Logando user whatsapp...')
+            console.log('Logando user whatsapp...')
         })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 })
 
-exports.sendWPMsg = functions.https.onCall((data) =>  {
+const runtimeOpts = {
+    timeoutSeconds: 540,
+    memory: '1GB'
+}
+
+exports.sendWPMsg = functions
+    .runWith(runtimeOpts)
+    .https.onCall((data) =>  {
     return new Promise((resolve, reject) => {
         const venom = require('venom-bot')
         venom
@@ -80,34 +97,94 @@ exports.sendWPMsg = functions.https.onCall((data) =>  {
                     if (statusSession === 'notLogged'){
                         resolve(statusSession)
                     }
-                }
+                },
+                {
+                disableWelcome: true,
+                logQR: false,
+                autoClose: 0}
             )
             .then(async (client) => {
-                await sendMsg(client).then(res => {
+                await sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(res => {
                     console.log('client*********************', res)
                     resolve(res)
                 })
-
-
             })
             .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
     })
 
-    function sendMsg(client){
+    function sendMsg(client,phone,sessao,dataMsg,paciente){
         return new Promise((resolve, reject) => {
-            client.sendText('5521997981308@c.us','Teste A')
-                .then((result) => {
-                    console.log('Result: ', result); //return object success
-                    resolve(result)
-                })
+            client.sendText(phone + '@c.us',
+                ` 
+                \`\`\`Mensagem Automática:\`\`\`
+                
+                ${dataMsg}
+                
+                Por favor, responda *sim* ou *ok* para confirmar.
+                
+                Se deseja desmarcar, responda *não* ou *no*.
+                 
+                Atenciodamente,
+                _Equipe CFRA_`
+
+                )
+                .then()
+            client.onMessage(message => {
+                const resp = message.body.toLowerCase()
+                if (resp === 'sim' || resp === 'ok'){
+                    console.log('confirmar presença')
+                    client.sendText(phone + '@c.us', 'Obrigado, aguardamos sua presença.')
+                    const dadoSessao = {
+                        presenca: 'esperada',
+                        uuid: sessao
+                    }
+                    updateSessaoConf(dadoSessao).then(() => {
+                        resolve( `Ok: ${paciente}`)
+                        client.close()
+                    })
+
+                }else if(resp === 'não' || resp === 'no'){
+                    console.log('desmarcar sessão')
+                    client.sendText(phone + '@c.us', 'Obrigado. A sessão será desmarcada.')
+                    const dadoSessao = {
+                        presenca: 'desmarcada',
+                        uuid: sessao
+                    }
+                    updateSessaoConf(dadoSessao).then(() => {
+                        resolve(`Nok: ${paciente}`)
+                        client.close()
+                    })
+
+                }else {
+                    client.sendText(phone + '@c.us', 'Opção inválida. Por favor, tente novamente.')
+                }
+                console.log(message.type) //chat | video | image | ptt
+                console.log(message.body)
+                console.log(message.from)
+                console.log(message.to)
+                console.log(message.chat.contact.pushname)
+                console.log(message.isGroupMsg)
+            })
                 .catch((erro) => {
                     console.error('Error when sending: ', erro); //return object error
                     reject(erro)
                 });
         })
-
     }
 })
+
+function updateSessaoConf(data){
+    return new Promise((resolve,reject) => {
+        const db = admin.firestore()
+        data.atualizado = new Date()
+        db.collection('sessoes')
+            .doc(data.uuid)
+            .set(data, { merge: true }).then(() =>{
+            resolve(`ok.`)
+        })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
+}
 
 exports.hotStart =
     functions.pubsub

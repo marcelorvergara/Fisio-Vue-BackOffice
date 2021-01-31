@@ -40,7 +40,28 @@
 
           </b-navbar-nav>
         </b-collapse>
-        <b-button v-show="user.data" variant="outline-light" @click="signOut" class="m-2" size="sm">Sair <b-icon icon="door-open-fill"> </b-icon>{{ userEmail }}</b-button>
+        <div class="p-0">
+          <b-row >
+            <b-col>
+              <b-button v-show="user.data" variant="outline-light" @click="signOut" class="" size="sm">
+                Sair <b-icon icon="door-open-fill"> </b-icon>{{ userEmail }}
+              </b-button>
+            </b-col>
+          </b-row>
+          <b-row class="mt-1" >
+            <b-col>
+              <b-tooltip placement="auto" target="dicas" v-if="$store.getters.getSatusTooltip">
+                Ajuda na utilização das funções. Apresenta esse quadro com informações relevantes.
+              </b-tooltip>
+              <div id="dicas" >
+                <b-form-checkbox v-model="helper" @change="$store.commit('setTooltipStatus',{root:$root})" name="ajuda-button" switch>
+                  <span class="text-light" v-if="!helper">Dicas desligadas</span>
+                  <span class="text-light" v-else>Dicas ligadas</span>
+                </b-form-checkbox>
+              </div>
+            </b-col>
+          </b-row>
+        </div>
       </b-navbar>
       <b-breadcrumb :items="$route.meta.breadcrumb"></b-breadcrumb>
       <!--router view para mostrar os componentes filhos do Home-->
@@ -75,6 +96,7 @@ export default {
   mixins:[connDb],
   data(){
     return {
+      helper:false,
       breadcrumbList:'',
       userEmail:'',
       sala:false,

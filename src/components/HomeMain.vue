@@ -4,7 +4,7 @@
       <b-row>
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
           <div class="text-left">
-          <p>Perfis de acesso</p>
+          <p class="mt-3">Perfis de acesso</p>
             <div class="mt-2 border border-dark p-2">
               <li >Parceiro</li>
               Perfil com menor nível de acesso. Só possui permissão para visualizar a própria agenda (somente sessões que é o profissional ou sessões que agendou para outro profissional). Consegue enxergar todas as sessões para a(s) sala(s) que possui no seu perfil. Pode de cadastrar, agendar, dar presença e verificar relatório de presença de seus atendimentos.
@@ -26,7 +26,6 @@
               de presença.
               Evolução diária pode ser feita para qualquer paciente com sessão agendada.
             </div>
-
           </div>
         </b-col>
       </b-row>
@@ -37,6 +36,11 @@
 <script>
 export default {
   name: "HomeMain",
+  data(){
+    return{
+
+    }
+  },
   created() {
     this.$store.dispatch('getPacientesDb')
   }

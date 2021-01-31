@@ -4,6 +4,9 @@
       <b-row align-h="center">
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
           <b-card header="Cadastro de Procedimentos" header-bg-variant="dark" header-text-variant="white">
+            <b-tooltip placement="topright" target="grp-nome" v-if="$store.getters.getSatusTooltip">
+              Para editar os dados de um procedimento, selecione seu nome na lista que aparece em "Nome do Procedimento ou Pacote:" ao digitar seu nome
+            </b-tooltip>
             <b-form-group id="grp-nome" label="Nome do Procedimento ou Pacote:" label-for="nome">
               <vue-typeahead-bootstrap
                   :disabled="btnStatus"
@@ -50,7 +53,7 @@
               </b-row>
               <div class="text-right mt-3">
                 <b-button type="reset" variant="outline-danger">Resetar</b-button>
-                <b-button type="submit" variant="outline-success" class="ml-2">
+                <b-button type="submit" :variant="variante" class="ml-2">
                   <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
                   {{ submitBtn}}</b-button>
               </div>
@@ -88,6 +91,7 @@ export default {
   },
   data(){
     return {
+      variante:'outline-success',
       btnStatus:false,
       loading: false,
       uuid: null,
@@ -125,6 +129,7 @@ export default {
       this.form.valor = `R$ ${dados.valor}`
 
       this.submitBtn = 'Atualizar'
+      this.variante = 'outline-warning'
       this.uuid = dados.uuid
     },
     async cadastrar(event){
@@ -157,6 +162,7 @@ export default {
     resetar(){
       this.btnStatus = false
       this.submitBtn = 'Cadastrar'
+      this.variante = 'outline-success'
       this.nomeProcedimento = ''
       this.form.qtdPacientes = ''
       this.form.valor = 0

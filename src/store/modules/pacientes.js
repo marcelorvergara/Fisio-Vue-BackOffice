@@ -206,13 +206,19 @@ const actions = {
                         const obs = dados.observacao || 'N/A'
                         const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
                         //trocar a cor caso a presença ou falta tenha sido dada
-                        var classCor
+                        var classCor = ''
+                        var esperada = ''
                         if (dados.presenca === 'confirmada'){
                             classCor = 'corOk'
                         } else if (dados.presenca === 'falta'){
                             classCor = 'corFa'
-                        } else if (dados.presenca === 'desmarcada'){
+                        }else if (dados.presenca === 'desmarcada'){
                             classCor = 'corDes'
+                            esperada = ' \u2718 '
+                        } else if (dados.presenca === 'esperada'){
+                            //cliente confirmou presença pelo whatsapp
+                            classCor = dadosProf.corProf
+                            esperada = ' \u2714 '
                         }
                         else{
                             classCor = dadosProf.corProf
@@ -221,14 +227,16 @@ const actions = {
                             {start: dados.horaInicio,
                                 end: dados.horaFim,
                                 class: classCor,
-                                title: title,
+                                title: esperada + title + esperada,
                                 content: dadosProf.nome,
                                 contentFull: contentFull,
                                 uuid: dados.uuid,
                                 //dados para filtro
                                 sala:dadosSala.nomeSala,
                                 profissional:dadosProf.nome,
-                                paciente:dadosPac.nome
+                                paciente:dadosPac.nome,
+                                //dados para confirmação
+                                dataHoraSessao: dados.horaInicio
                             })
                     }
                 resolve('ok')
@@ -237,9 +245,12 @@ const actions = {
                         reject(err)
                     })
             }else{
+                //funções (roles) NÃo parceiro
                 const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoes')
                 getSessoes().then(result => {
                     context.commit('resetEvents')
+                    //esperado (paciente confirmou) - '\u2714 '
+                    //cancelado (paciente desmarcou) - '\u2718 '
                     for (let dados of result.data){
                         const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
                         const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
@@ -249,28 +260,37 @@ const actions = {
                         const obs = dados.observacao || 'N/A'
                         const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
                         //trocar a cor caso a presença ou falta tenha sido dada
-                        var classCor
+                        var classCor = ''
+                        var esperada = ''
                         if (dados.presenca === 'confirmada'){
                             classCor = 'corOk'
                         } else if (dados.presenca === 'falta'){
                             classCor = 'corFa'
                         }else if (dados.presenca === 'desmarcada'){
                             classCor = 'corDes'
-                        }else{
+                            esperada = ' \u2718 '
+                        } else if (dados.presenca === 'esperada'){
+                            //cliente confirmou presença pelo whatsapp
+                            classCor = dadosProf.corProf
+                            esperada = ' \u2714 '
+                        }
+                        else{
                             classCor = dadosProf.corProf
                         }
                         context.commit('setEvents',
                             {start: dados.horaInicio,
                                 end: dados.horaFim,
                                 class: classCor,
-                                title: title,
+                                title: esperada + title + esperada,
                                 content: dadosProf.nome,
                                 contentFull: contentFull,
                                 uuid: dados.uuid,
                                 //dados para filtro
                                 sala:dadosSala.nomeSala,
                                 profissional:dadosProf.nome,
-                                paciente:dadosPac.nome
+                                paciente:dadosPac.nome,
+                                //dados para confirmação
+                                dataHoraSessao: dados.horaInicio
                             })
                     }
                     resolve('ok')

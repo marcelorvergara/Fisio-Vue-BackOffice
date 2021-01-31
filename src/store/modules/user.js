@@ -8,12 +8,14 @@ const state = {
     },
     funcao:null,
     tempCred:null,
+    tooltipStatus:false
 }
 
 const getters = {
     user: state => state.user,
     getFuncao: state => state.funcao,
-    getTempCred:state => state.tempCred
+    getTempCred:state => state.tempCred,
+    getSatusTooltip: state => state.tooltipStatus
 }
 
 const mutations = {
@@ -28,6 +30,9 @@ const mutations = {
     },
     setTempCred(state,temp){
         state.tempCred = temp
+    },
+    setTooltipStatus(state){
+        state.tooltipStatus = !state.tooltipStatus
     }
 }
 

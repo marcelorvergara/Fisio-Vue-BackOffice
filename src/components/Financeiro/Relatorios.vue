@@ -382,7 +382,6 @@ export default {
         this.$store.dispatch('getRelatorioCustos',{dataIni:dataTSIni,dataFim:dataTSFim})
           .then(res => {
             if (res === 'ok'){
-              console.log(res)
               this.chartData3.labels = this.$store.getters.getMesCustosLabel
               this.chartData3.datasets[0].data = this.$store.getters.getCustosRel
               this.chartData3.datasets[1].data = this.$store.getters.getMediaCustoMeses

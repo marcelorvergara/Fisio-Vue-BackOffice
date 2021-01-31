@@ -3,7 +3,10 @@
   <b-container class="mt-3">
     <b-row align-h="center">
       <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
-        <b-card header="Cadastro de Paciente" header-bg-variant="dark" header-text-variant="white">
+        <b-card id="card" header="Cadastro de Paciente" header-bg-variant="dark" header-text-variant="white">
+          <b-tooltip placement="topright" target="grp-nome" v-if="$store.getters.getSatusTooltip">
+            Para editar os dados de um paciente, selecione seu nome na lista que aparece em "Nome do Paciente:"
+          </b-tooltip>
           <b-form-group id="grp-nome" label="Nome do Paciente:" label-for="nome">
             <vue-typeahead-bootstrap
                 disableSort
@@ -18,10 +21,10 @@
           </b-form-group>
         <b-form @submit="cadastrar" @reset="resetar" v-if="show" >
           <b-form-group id="grp-email" label="Email do Paciente:" label-for="email">
-            <b-form-input id="email" v-model="form.email" type="email" placeholder="E-mail" required></b-form-input>
+            <b-form-input autocomplete="off" id="email" v-model="form.email" type="email" placeholder="E-mail" required></b-form-input>
           </b-form-group>
-          <b-form-group id="grp-phone" label="Telefone do Paciente:" label-for="phone">
-            <b-form-input id="phone" v-model="form.phone"  placeholder="Telefone" required></b-form-input>
+          <b-form-group id="grp-phone" label="WhatsApp do Paciente - Somente Números:" label-for="phone">
+            <b-form-input id="phone" v-model="form.phone"  placeholder="Ex.: 21 999 989 898" required></b-form-input>
           </b-form-group>
           <b-form-group id="grp-end" label="Endereço do Paciente:" label-for="end">
             <b-form-input id="end" v-model="form.end" type="text" placeholder="Endereço" required></b-form-input>
@@ -35,7 +38,7 @@
 
           <div class="text-right mt-3">
           <b-button type="reset" variant="outline-danger">Resetar</b-button>
-          <b-button type="submit" variant="outline-success" class="ml-2">
+          <b-button type="submit" :variant="variante" class="ml-2">
             <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
             {{ submitBtn}}</b-button>
           </div>
@@ -70,6 +73,7 @@ export default {
   name: "CadastroPaciente",
   data(){
     return {
+      variante:'outline-success',
       loading: false,
       uuid:null,
       submitBtn: 'Cadastrar',
@@ -107,6 +111,7 @@ export default {
       this.form.cpf = dados.cpf
       this.form.nasc = dados.nasc
       this.submitBtn = 'Atualizar'
+      this.variante = 'outline-warning'
       this.uuid = dados.uuid
     },
     async cadastrar(event){
@@ -117,6 +122,11 @@ export default {
       if (this.submitBtn === 'Atualizar') {
         this.form.uuid = this.uuid
       }
+      this.form.phone = '55' + this.form.phone.trim()
+          .replace(/ /g, '')
+          .replace(')', '')
+          .replace('(', '')
+          .replace('-', '')
       await this.$store.dispatch('setPacienteDb',{paciente:this.form})
           .then((retorno) => {
             this.mensagem = retorno
@@ -133,6 +143,7 @@ export default {
     },
     resetar(){
       this.submitBtn = 'Cadastrar'
+      this.variante = 'outline-success'
       this.nome = ''
       this.form.email = ''
       this.form.phone = ''

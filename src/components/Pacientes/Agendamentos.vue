@@ -300,7 +300,7 @@
              hide-footer>
       <template #modal-title >
         <b-icon icon="info-circle" scale="2" variant="white"></b-icon>
-        <span class="m-3">{{ selectedEvent.title  }}</span>
+        <span class="m-3" v-html="selectedEvent.title"></span>
       </template>
       <b-card>
         <b-card-text>
@@ -319,9 +319,13 @@
           Desmarcar
           <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
         </b-button>
-        <b-button class="ml-2" variant="outline-info" @click="confirmar(selectedEvent)">
+        <b-button id="confirmar" class="ml-2" variant="outline-info" @click="confirmar(selectedEvent)">
           Confirmar
           <b-spinner v-if="loadingConfirmar" small label="Carregando..."></b-spinner>
+          <b-tooltip placement="auto" target="confirmar" v-if="$store.getters.getSatusTooltip">
+            Envio de mensagem para o Whatsapp do paciente pedindo confirmação da sessão.
+            É necessário que o celular do consultório com o Whatsapp esteja conectado à uma rede.
+          </b-tooltip>
         </b-button>
         <b-button class="ml-2" variant="outline-success" @click="ok()">
           OK
@@ -536,35 +540,62 @@ export default {
     ok(){
       this.$refs['info-modal'].hide()
     },
+    //feito para enviar msg para o whatsapp do paciente
     confirmar(event){
-      this.segundos =20 // para fechar  oqr code do whattsapp
-      console.log(event.uuid)
+      console.log(event)
       this.loadingConfirmar = true
+      const phonePac = this.$store.getters.getPacientes.find(f => f.nome === event.paciente)
+      this.segundos = 20 // para fechar  o qr code do whattsapp
+      //formatar data e hora para o paciente ler na msg. do whatsapp
+      const data = event.dataHoraSessao.split(' ')[0].split('-')
+      const hora = event.dataHoraSessao.split(' ')[1].split(':')
+      const dataMsg = 'Confirmação da sessão dia: ' + data[2]+'-'+data[1]+'-'+data[0] + ' às '+hora[0]+':'+hora[1]+'h'
+      //criar o nome da sessao whatsapp
+      const waSessao = this.$store.getters.user.data.email.split('@')[0]
       // enviando msg
-      this.$store.dispatch('sendMsg', {nomeSessao:this.$store.getters.user.data.email}).then(res => {
-        //logando na tela
-        if (res.data === 'notLogged'){
-          this.$store.dispatch('logarWP',{nomeSessao:this.$store.getters.user.data.email}).then((resImg) => {
-            this.loadingConfirmar = false
-            this.imagem = resImg.data
-            //temporizador para fechar a janela, visto que não há retorno para essa função
-            this.$refs['modal-logar'].show()
-            this.countDownTimer()
-            var me = this
-            setTimeout(function(){
-              me.closeModal()
-            }, this.segundos * 1000)
+      this.$refs['info-modal'].hide()
+      this.mensagem = 'Pedido de confirmação de sessão enviado.'
+      this.$refs['modal-ok'].show()
+      this.loadingConfirmar = false
+      this.$store.dispatch('sendMsg',
+          {nomeSessao:waSessao,
+                  phone: phonePac.phone,
+                  sessaoId:event.uuid,
+                  dataMsg:dataMsg,
+                  paciente:event.paciente
+                  })
+          .then(res => {
+            //logando na tela por não estar logado
+            if (res.data === 'notLogged'){
+              this.$store.dispatch('logarWP',{nomeSessao:waSessao}).then((resImg) => {
+                this.loadingConfirmar = false
+                this.imagem = resImg.data
+                //temporizador para fechar a janela, visto que não há retorno para função logar no whatsapp web
+                this.$refs['modal-logar'].show()
+                this.countDownTimer()
+                var me = this
+                setTimeout(function(){
+                  me.closeModal()
+                }, this.segundos * 1000)
+              })
+            }else {
+              //já enviou a mensagem e recebeu o akc
+              console.log(res.data)
+              const resp = res.data.split(':')[0]
+              const paciente = res.data.split(':')[1]
+              console.log(paciente)
+                if (resp === 'Ok'){
+                  this.mensagem = 'Sessão confirmada pelo paciente ' + paciente
+                  this.$refs['modal-ok'].show()
+                }else{
+                  this.mensagemErro = 'Sessão desmarcada pelo paciente ' + paciente
+                  this.$refs['modal-err'].show()
+                }
+                this.loadingConfirmar = false
+                this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+            }
           })
-        }else {
-          if(res.data.ack === 0){
-            this.mensagem = 'Pedido de confirmação de sessão enviado com sucesso!'
-            this.$refs['modal-ok'].show()
-            this.loadingConfirmar = false
-            this.$refs['info-modal'].hide()
-          }
-        }
-      })
-      //window.open(`https://api.whatsapp.com/send?phone=`+contatoPac + '?text=confirma')
+          //window.open(`https://api.whatsapp.com/send?phone=`+contatoPac + '?text=confirma')
     },
     closeModal(){
       this.$refs['modal-logar'].hide()
@@ -680,14 +711,15 @@ export default {
         const sala = this.$store.getters.getSalas.find(f => f.nomeSala === this.sala)
         const proc = this.$store.getters.getProcedimentos.find(f => f.nomeProcedimento === this.procedimento)
         //testar se perfil parceiro e se esse parceiro possui acesso a sala requisitada
-        if (prof.sala.find(f => f === this.sala) === undefined){
-          //não agendar pois o usuário com perfil parceiro não possui acesso a essa sala
-          this.mensagemErro = 'Agendamento não realizado. Parceiro sem acesso a sala solicitada'
-          this.loading = false
-          this.$refs['modal-err'].show()
-          return
+        if (prof.funcao === 'parceiro'){
+          if (prof.sala.find(f => f === this.sala) === undefined){
+            //não agendar pois o usuário com perfil parceiro não possui acesso a essa sala
+            this.mensagemErro = 'Agendamento não realizado. Parceiro sem acesso a sala solicitada.'
+            this.loading = false
+            this.$refs['modal-err'].show()
+            return
+          }
         }
-
         if ((this.diariamente === 1) && (this.semanalmente === 1)){
           //***agendamento único ***
           //testar se há conflito no horário
