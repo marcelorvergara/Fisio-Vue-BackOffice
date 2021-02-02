@@ -62,7 +62,7 @@
                      :drag-to-create-event="false"
                      @cell-click="criarSessao($event)"
                      :on-event-click="sessaoInfo"
-                     active-view="month"
+                     active-view="week"
                      today-button>
                   <template v-slot:activator="{ on }">
                     <b-button v-on="on">
@@ -215,11 +215,15 @@
         <span class="m-3">Logar no Whatsapp</span>
       </template>
       <div v-if="imagem" class="mt-2">
+        <span> Se logue uma vez para enviar os pedidos de confirmação. </span>
+        <span> Mantenha o celular conectado à rede para enviar os pedidos de confirmação pelo sistema. </span>
         <span >Essa janela se fechará em: </span>{{ segundos }}
         <b-row class="justify-content-center mt-2">
-          <span> Whatsapp:</span>
+          <span> Whatsapp </span>
+
         </b-row>
         <b-row class="justify-content-center">
+
           <img  v-bind:src="imagem" alt="qrCode do whatsapp">
         </b-row>
       </div>
@@ -342,14 +346,16 @@ import 'vue-cal/dist/vuecal.css'
 //firebase para tratar timestamp das sessões
 import firebase from "firebase/app";
 import 'firebase/firestore'
-
+import { connDb } from "@/store/connDb";
 export default {
   name: "Agendamentos",
+  mixins:[connDb],
   components:{
     VueCal
   },
   data(){
     return{
+      flag:0,
       loadingConfirmar: false,
       segundos: 20,
       imagem:'',
@@ -542,7 +548,6 @@ export default {
     },
     //feito para enviar msg para o whatsapp do paciente
     confirmar(event){
-      console.log(event)
       this.loadingConfirmar = true
       const phonePac = this.$store.getters.getPacientes.find(f => f.nome === event.paciente)
       this.segundos = 20 // para fechar  o qr code do whattsapp
@@ -578,23 +583,29 @@ export default {
                   me.closeModal()
                 }, this.segundos * 1000)
               })
-            }else {
-              //já enviou a mensagem e recebeu o akc
-              console.log(res.data)
-              const resp = res.data.split(':')[0]
-              const paciente = res.data.split(':')[1]
-              console.log(paciente)
-                if (resp === 'Ok'){
-                  this.mensagem = 'Sessão confirmada pelo paciente ' + paciente
-                  this.$refs['modal-ok'].show()
-                }else{
-                  this.mensagemErro = 'Sessão desmarcada pelo paciente ' + paciente
-                  this.$refs['modal-err'].show()
-                }
-                this.loadingConfirmar = false
-                this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+                  .catch((err) => {
+                    console.log('Erro dentro: ', err)
+                  })
             }
+            //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
+            // else {
+            //   //já enviou a mensagem e recebeu o akc
+            //   const resp = res.data.split(':')[0]
+            //   const paciente = res.data.split(':')[1]
+            //     if (resp === 'Ok'){
+            //       this.mensagem = 'Sessão confirmada pelo paciente ' + paciente
+            //       this.$refs['modal-ok'].show()
+            //     }else{
+            //       this.mensagemErro = 'Sessão desmarcada pelo paciente ' + paciente
+            //       this.$refs['modal-err'].show()
+            //     }
+            //     this.loadingConfirmar = false
+            //     this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+            // }
           })
+      .catch((err) => {
+        console.log('Erro: ', err)
+      })
           //window.open(`https://api.whatsapp.com/send?phone=`+contatoPac + '?text=confirma')
     },
     closeModal(){
@@ -1057,7 +1068,7 @@ export default {
             this.loading = false
             this.$refs['modal-ok'].show()
             //atualizar a lista de sessões
-            this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+            this.getSessoesDb()
           })
           .catch((error) => {
             this.mensagem = error
@@ -1070,7 +1081,7 @@ export default {
         this.$store.dispatch('setSessaoDb',{sessao: sessao})
             .then((retorno) => {
               //atualizar a lista de sessões
-              this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+              this.getSessoesDb()
               resolve (retorno)
             })
             .catch((error) => {
@@ -1143,7 +1154,17 @@ export default {
           }
         })
       })
-
+    },
+    //escutar alterações na collection sessoes para alterar a view
+    escutaSessoes(){
+          const vm = this
+          this.connDbFirestore().collection('sessoes')
+            .where('data','!=', null)
+            .onSnapshot((querySnapshot) => {
+                querySnapshot.forEach(function () {
+                  vm.getSessoesDb()
+                })
+            })
     }
   },
   created() {
@@ -1153,6 +1174,7 @@ export default {
     this.getNomesProfissionais()
     this.getNomeSalas()
     this.getNomeProcedimentos()
+    this.escutaSessoes()
   }
 }
 </script>

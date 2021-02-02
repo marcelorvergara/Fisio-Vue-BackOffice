@@ -133,7 +133,7 @@ export default {
           })
           .catch((error) => {
             this.loadingRS = false;
-            console.log(error.message)
+            console.log(error)
             if (error.message === 'There is no user record corresponding to this identifier. The user may have been deleted.'){
               this.error = 'Email ou login não encontrado.'
             } else if (error.message === 'The email address is badly formatted.'){

@@ -69,18 +69,46 @@ const actions = {
                 })
         })
     },
-    sendMsg(context, payload){
-        // eslint-disable-next-line no-unused-vars
-      return new Promise ((resolve,reject) => {
-          const sendMensagem = connDb.methods.connDbFunc().httpsCallable('sendWPMsg')
-          sendMensagem(payload).then(res => {
-              resolve(res)
-          })
-              .catch(error => {
-                  reject(error)
-              })
-      })
-    },
+    sendMsg(context, dadosSessao){
+        const uuidSessao = dadosSessao.sessaoId
+        return new Promise((resolve, reject) => {
+            setAguardando(uuidSessao).then(res => {
+                if (res.data === 'ok'){
+                    return new Promise ((resolve,reject) => {
+                        //timeout de 2 minutos por causa do net::ERR_EMPTY_RESPONSE
+                        const sendMensagem = connDb.methods.connDbFunc().httpsCallable('sendWPMsg', {timeout: 120000})
+                        sendMensagem(dadosSessao).then(res => {
+                            resolve(res)
+                        })
+                            .catch(err => {
+                                reject(err)
+                            })
+                    })
+                }
+            })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+
+
+        function setAguardando(id){
+            return new Promise((resolve,reject) => {
+                const setAguardo = connDb.methods.connDbFunc().httpsCallable('setAguardandoDb')
+                setAguardo(id).then(res => {
+                    //resposta da functions informando que o status aguardando foi inserido na sessão
+                    resolve(res)
+                })
+                    .catch(error => {
+                        console.log(error)
+                        reject(error)
+                    })
+            })
+
+        }
+
+    }
+    ,
     setSessoesAcompDiaDb(context,payload){
       return new Promise((resolve, reject) => {
           const setAcompanhamento = connDb.methods.connDbFunc().httpsCallable('setSesssaoAcomDiario')
@@ -215,10 +243,13 @@ const actions = {
                         }else if (dados.presenca === 'desmarcada'){
                             classCor = 'corDes'
                             esperada = ' \u2718 '
-                        } else if (dados.presenca === 'esperada'){
+                        }else if (dados.presenca === 'esperada'){
                             //cliente confirmou presença pelo whatsapp
                             classCor = dadosProf.corProf
                             esperada = ' \u2714 '
+                        }else if (dados.presenca === 'aguardando'){
+                            classCor = dadosProf.corProf
+                            esperada = ' \u29D7 '
                         }
                         else{
                             classCor = dadosProf.corProf
@@ -273,6 +304,9 @@ const actions = {
                             //cliente confirmou presença pelo whatsapp
                             classCor = dadosProf.corProf
                             esperada = ' \u2714 '
+                        }else if (dados.presenca === 'aguardando'){
+                            classCor = dadosProf.corProf
+                            esperada = ' \u29D7 '
                         }
                         else{
                             classCor = dadosProf.corProf

@@ -1,9 +1,13 @@
 import firebase from "firebase/app";
 import 'firebase/functions'
 import 'firebase/auth'
+import 'firebase/firestore'
 
 export const connDb = {
     methods: {
+        connDbFirestore(){
+            return firebase.firestore()
+        },
         connDbFunc(){
             //emulador local
             if (location.hostname === "localhost") {

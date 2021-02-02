@@ -44,13 +44,19 @@ const fin = require('./functs/financeiro')
 exports.setCustoDb = fin.setCustoDb
 // *********************************************************** //
 
-//tratar a resposta do cliente
-exports.getConfirmacao = functions.https.onRequest((req,res) => {
-    const uuidSessao = req.query.id
-    const resposta = req.query.resp
-    console.log(uuidSessao, resposta)
-    res.send('ok')
-
+//setar estado temporário que o app está aguardando resposta do user
+exports.setAguardandoDb = functions.https.onCall(data => {
+    console.log('dadosss', data)
+    return new Promise((resolve, reject) => {
+        const dadoSessao = {
+            presenca: 'aguardando',
+            uuid: data
+        }
+        updateSessaoConf(dadoSessao).then(() => {
+            resolve(`ok`)
+        })
+            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+    })
 })
 
 exports.logarWPFunc = functions.https.onCall(data =>{
@@ -75,88 +81,95 @@ exports.logarWPFunc = functions.https.onCall(data =>{
 })
 
 const runtimeOpts = {
-    timeoutSeconds: 540,
-    memory: '1GB'
+    timeoutSeconds: 540, //para aguardar a resposta pelo whatsapp
+    memory: '2GB' //abre browser né
 }
 
 exports.sendWPMsg = functions
     .runWith(runtimeOpts)
     .https.onCall((data) =>  {
-    return new Promise((resolve, reject) => {
-        const venom = require('venom-bot')
-        venom
-            .create(
-                //session
-                data.nomeSessao, //Pass the name of the client you want to start the bot
-                undefined,
-                // statusFind
-                (statusSession, session) => {
-                    console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
-                    //Create session wss return "serverClose" case server for close
-                    console.log('Session name: ', session);
-                    if (statusSession === 'notLogged'){
-                        resolve(statusSession)
-                    }
-                },
-                {
-                disableWelcome: true,
-                logQR: false,
-                autoClose: 0}
-            )
-            .then(async (client) => {
-                await sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(res => {
-                    console.log('client*********************', res)
-                    resolve(res)
+        return new Promise((resolve, reject) => {
+            const venom = require('venom-bot')
+            venom
+                .create(
+                    //session
+                    data.nomeSessao, //Pass the name of the client you want to start the bot
+                    undefined,
+                    // statusFind
+                    (statusSession, session) => {
+                        console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
+                        //Create session wss return "serverClose" case server for close
+                        console.log('Session name: ', session);
+                        if (statusSession === 'notLogged'){
+                            resolve(statusSession)
+                        }
+                    },
+                    {
+                        disableWelcome: true,
+                        logQR: false,
+                        autoClose: 0}
+                )
+                .then(async (client) => {
+                    await sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(res => {
+                        console.log('*** reposta enviada para o appp ***', res)
+                        resolve(res)
+                    })
                 })
-            })
-            .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+                .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+        })
     })
 
-    function sendMsg(client,phone,sessao,dataMsg,paciente){
-        return new Promise((resolve, reject) => {
-            client.sendText(phone + '@c.us',
-                ` 
-                \`\`\`Mensagem Automática:\`\`\`
-                
-                ${dataMsg}
-                
-                Por favor, responda *sim* ou *ok* para confirmar.
-                
-                Se deseja desmarcar, responda *não* ou *no*.
-                 
-                Atenciodamente,
-                _Equipe CFRA_`
+function sendMsg(client,phone,sessao,dataMsg,paciente){
+    return new Promise((resolve, reject) => {
+        client.sendText(phone + '@c.us',
+` 
+\`\`\`Mensagem Automática:\`\`\`
 
-                )
-                .then()
-            client.onMessage(message => {
-                const resp = message.body.toLowerCase()
+${dataMsg}
+
+Por favor, responda *sim* ou *ok* para confirmar.
+
+Se deseja desmarcar, responda *não* ou *no*.
+ 
+Atenciosamente,
+_Equipe CFRA_`)
+            .then()
+        client.onMessage(message => {
+            console.log('*** aguardando resposta do paciente ***')
+            const resp = message.body.toLowerCase()
+            const phonePac = phone + '@c.us'
+            if (message.from === phonePac && message.isGroupMsg === false){
                 if (resp === 'sim' || resp === 'ok'){
                     console.log('confirmar presença')
-                    client.sendText(phone + '@c.us', 'Obrigado, aguardamos sua presença.')
-                    const dadoSessao = {
-                        presenca: 'esperada',
-                        uuid: sessao
-                    }
-                    updateSessaoConf(dadoSessao).then(() => {
-                        resolve( `Ok: ${paciente}`)
-                        client.close()
-                    })
-
+                    client.sendText(phonePac, 'Obrigado, aguardamos sua presença.')
+                        .then(() => {
+                            const dadoSessao = {
+                                presenca: 'esperada',
+                                uuid: sessao
+                            }
+                            updateSessaoConf(dadoSessao).then(() => {
+                                resolve( `Ok: ${paciente}`)
+                                client.close()
+                            })
+                        })
                 }else if(resp === 'não' || resp === 'no'){
                     console.log('desmarcar sessão')
                     client.sendText(phone + '@c.us', 'Obrigado. A sessão será desmarcada.')
-                    const dadoSessao = {
-                        presenca: 'desmarcada',
-                        uuid: sessao
-                    }
-                    updateSessaoConf(dadoSessao).then(() => {
-                        resolve(`Nok: ${paciente}`)
-                        client.close()
-                    })
-
+                        .then(() => {
+                            const dadoSessao = {
+                                presenca: 'desmarcada',
+                                uuid: sessao
+                            }
+                            updateSessaoConf(dadoSessao).then(() => {
+                                resolve(`Nok: ${paciente}`)
+                                client.close()
+                            })
+                        })
                 }else {
                     client.sendText(phone + '@c.us', 'Opção inválida. Por favor, tente novamente.')
+                        .then((res) => {
+                            console.log('paciente enviou texto inválido: ', res)
+                        })
                 }
                 console.log(message.type) //chat | video | image | ptt
                 console.log(message.body)
@@ -164,14 +177,15 @@ exports.sendWPMsg = functions
                 console.log(message.to)
                 console.log(message.chat.contact.pushname)
                 console.log(message.isGroupMsg)
-            })
-                .catch((erro) => {
-                    console.error('Error when sending: ', erro); //return object error
-                    reject(erro)
-                });
+            }
+
         })
-    }
-})
+            .catch((erro) => {
+                console.error('Error when sending: ', erro); //return object error
+                reject(erro)
+            });
+    })
+}
 
 function updateSessaoConf(data){
     return new Promise((resolve,reject) => {
