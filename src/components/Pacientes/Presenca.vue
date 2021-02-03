@@ -31,6 +31,10 @@
                 Shift + click seleciona um intervalo contínuo de sessões.
                 Ctrl + click alterna a seleção da sessão clicada."
                 :busy="isBusy">
+              <template v-slot:cell(status)="data">
+                <span v-if="$store.getters.getSatusTooltip" v-b-tooltip.hover :title=data.item.statusDesc>{{ data.value}}</span>
+                <span v-else>{{ data.value }}</span>
+              </template>
               <template #table-busy>
                 <div class="text-center text-info my-2">
                   <b-spinner class="align-middle"></b-spinner>

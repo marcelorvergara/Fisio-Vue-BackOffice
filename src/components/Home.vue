@@ -51,7 +51,7 @@
           <b-row class="mt-1" >
             <b-col>
               <b-tooltip placement="auto" target="dicas" v-if="$store.getters.getSatusTooltip">
-                Ajuda na utilização das funções. Apresenta esse quadro com informações relevantes.
+                Ajuda na utilização das funções da página. Apresenta um quadro com informações sobre o item.
               </b-tooltip>
               <div id="dicas" >
                 <b-form-checkbox v-model="helper" @change="$store.commit('setTooltipStatus',{root:$root})" name="ajuda-button" switch>

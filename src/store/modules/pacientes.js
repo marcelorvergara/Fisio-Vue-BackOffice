@@ -200,6 +200,23 @@ const actions = {
                     agendador: sessao.agendador,
                     dataAgendamento:sessao.dataAgendamento
                 }
+                //colocar uma descrição de status para apresentar em dicas na tabela
+                var statusDesc = ''
+                if (sessao.presenca === 'confirmada'){
+                    statusDesc = 'A presença já foi confirmada pelo profissional'
+                } else if (sessao.presenca === 'falta'){
+                    statusDesc = 'O paciente não compareceu'
+                }else if (sessao.presenca === 'desmarcada'){
+                    statusDesc = 'O paciente desmarcou a sessão'
+                }else if (sessao.presenca === 'esperada'){
+                    //cliente confirmou presença pelo whatsapp
+                    statusDesc = 'O paciente confirmou a presença'
+                }else if (sessao.presenca === 'aguardando'){
+                    statusDesc = 'Solicitação de confirmação foi enviada ao paciente'
+                }
+                else{
+                    statusDesc = 'Sem informações sobre o status'
+                }
                 context.commit('setSessoesPresenca',{
                     uuid: sessao.uuid,
                     paciente: dadosPac.nome,
@@ -207,7 +224,8 @@ const actions = {
                     inicio: sessao.horaInicio.split(' ')[1],
                     fim: sessao.horaFim.split(' ')[1],
                     detalhesSessao: sessaoObj,
-                    status:sessao.presenca})
+                    status:sessao.presenca,
+                    statusDesc:statusDesc})
             }
         })
     },
