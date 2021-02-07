@@ -97,7 +97,7 @@ export default {
       if (this.submitBtn === 'Atualizar') {
         this.form.uuid = this.uuid
       }
-      await this.$store.dispatch('setFeriadoDb',{feriado:this.form})
+      await this.$store.dispatch('setFeriadoDb',this.form)
           .then((retorno) => {
             this.mensagem = retorno
             this.loading = false

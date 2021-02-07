@@ -3,15 +3,17 @@ import Vuex from 'vuex';
 import user from "./modules/user"
 import pacientes from "./modules/pacientes"
 import administracao from "./modules/administracao"
-import financeiro from "@/store/modules/financeiro";
-import realizado from "@/store/modules/relatorios/realizado";
-import custos from "@/store/modules/relatorios/custos";
-import classificacaoCustos from "@/store/modules/relatorios/classificacaoCustos";
+import financeiro from "./modules/financeiro";
+import relatorioFinTotal from "@/store/modules/relatorios/relatorioFinTotal";
+import realizado from "./modules/relatorios/realizado";
+import custos from "./modules/relatorios/custos";
+import classificacaoCustos from "./modules/relatorios/classificacaoCustos";
 
 Vue.use(Vuex);
 
 export const store = new Vuex.Store({
     modules:{
+        relatorioFinTotal,
         classificacaoCustos,
         custos,
         realizado,

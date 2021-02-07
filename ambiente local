@@ -1,6 +1,9 @@
 sudo apt-get install openjdk-8-jre
 
+//sdk firebase
 export FIRESTORE_EMULATOR_HOST="localhost:8090"
+export FIREBASE_AUTH_EMULATOR_HOST="localhost:9099"
+
 export GOOGLE_APPLICATION_CREDENTIALS=
 
 firebase emulators:export <export-directory>

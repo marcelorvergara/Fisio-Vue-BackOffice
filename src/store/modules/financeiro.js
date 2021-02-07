@@ -1,45 +1,14 @@
-import {connDb} from "@/store/connDb";
-import {Decimal} from 'decimal.js'
+import {connDb} from "../connDb";
 
 const state = {
-    mesLabel: [],
-    valProc: [],
-    relProcTable:[],
-    mediaVal:[],
     custos:[]
 }
 
 const getters = {
-    getMesLabel: state => state.mesLabel,
-    getValProc: state => state.valProc,
-    getRelProcTable: state => state.relProcTable,
-    getMediaVal:state => state.mediaVal,
     getCusto:state => state.custos
 }
 
 const mutations = {
-    setMesLabel(state,mes){
-        state.mesLabel.unshift(mes)
-    },
-    setValProc(state,val){
-        state.valProc.unshift(val)
-    },
-    setVal(state,val){
-        state.valProc[0] = val
-    },
-    setRelProcTable(state,lista){
-        state.relProcTable = lista
-    },
-    setMediaVal(state,media){
-        state.mediaVal.push(media)
-    },
-    resetRelFinTotal(state){
-        state.mediaVal = []
-        state.valProc = []
-        state.mesLabel = []
-        state.dados = []
-        state.relProcTable =[]
-    },
     setCusto(state,custo){
         state.custos.push(custo)
     },
@@ -51,14 +20,15 @@ const mutations = {
 const actions = {
     getCustosDB(context){
         return new Promise((resolve,reject) => {
-            const getCustos = connDb.methods.connDbFunc().httpsCallable('getCustos')
-            getCustos().then(result => {
-                context.commit('resetCustos')
-                for (let dados of result.data){
-                    context.commit('setCusto',dados)
-                }
-                resolve('ok')
-            })
+            connDb.methods.connDbFirestore().collection('custos').orderBy('produto')
+                .get()
+                .then(function(querySnapshot){
+                    context.commit('resetCustos')
+                    querySnapshot.forEach(function(doc) {
+                        context.commit('setCusto',doc.data())
+                    })
+                    resolve('ok')
+                })
                 .catch(err => {
                     reject(err)
                 })
@@ -66,76 +36,21 @@ const actions = {
     },
     setCustoOp(context,payload){
         return new Promise((resolve,reject) => {
-            const setCustoOpDb = connDb.methods.connDbFunc().httpsCallable('setCustoDb')
-            setCustoOpDb(payload).then(result => {
-                resolve(result.data)
+            const data = payload
+            const { v4: uuidv4 } = require('uuid');
+            data.uuid = uuidv4()
+            data.cadastroItem = new Date()
+            connDb.methods.connDbFirestore().collection('custos')
+                .doc(data.uuid)
+                .set(
+                    data
+                ).then(() => {
+                resolve(`Item ${data.produto} registrado em custos operacionais.`)
             })
-                .catch(err => {
-                    reject(err)
-                })
+                .catch( err => reject(err))
         })
     },
-    //primeiro relatório total
-    getRelatorioTotal(context,payload){
-        Decimal.set({precision:5,rounding:2})
-        return new Promise((resolve,reject) => {
-            const getDadosRel = connDb.methods.connDbFunc().httpsCallable('getDadosDb')
-            getDadosRel(payload).then(res => {
-                if (res.data.length !== 0){
-                    const valList = []
-                    //cada sessão no período corresponde a um dado
-                    for (let dado of res.data){
-                        const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
-                        const data = new Date(dado.data)
-                        //convertendo a data para pegar o mês em português
-                        const mes = data.toLocaleString('pt', {month: 'short'})
-                        //caso pacote (mais de uma sessão), o valor será dividido pelo número de sessões
-                        const valorFloat = new Decimal(proc.valor.replace(',','.'))
-                        const qtdSessoes = new Decimal(proc.qtdSessoes)
-                        const val = valorFloat.div(qtdSessoes)
-                        const valFloat = val.toDP(2, Decimal.ROUND_DOWN)
-                        //valor para apresentar na tabela
-                        const valTabela = (val).toFixed(2).replace('.',',')
 
-                        valList.push({mes: mes,val:valFloat,procedimento:proc.nomeProcedimento,valTab:valTabela})
-                    }
-                    context.commit('setRelProcTable', valList)
-                    var totVal = new Decimal(0) //para realizar a média
-                    for (let i of valList){
-                        const val = new Decimal(i.val)
-                        totVal = totVal.add(val)
-                        //os valores já vem ordenados por mês do db
-                        //compara o mês de i com o mês guardado
-                        if (context.getters.getMesLabel[0] !== i.mes){
-                            //se diferente, cria uma nova entrada no array
-                            context.commit('setMesLabel',i.mes)
-                            //colocar o val do procedimento na primeira posição do array de valores
-                            context.commit('setValProc',i.val)
-                        }else {
-                            //aqui o mês é o mesmo. Só acumular valor na primeira
-                            const valOld = new Decimal(context.getters.getValProc[0])
-                            const newVal = valOld.add(new Decimal(i.val))
-                            //colocar o novo valor desse mês na posição 0 do array de valores
-                            context.commit('setVal',newVal.toDP(2,Decimal.ROUND_DOWN))
-                        }
-                    }
-                    //colocando a média em cada mês para desenhar a linha
-                    const media = totVal/context.getters.getMesLabel.length
-                    // eslint-disable-next-line no-unused-vars
-                    for (let mes of context.getters.getMesLabel){
-                        context.commit('setMediaVal',(media))
-                    }
-                    resolve('ok')
-                } else {
-                    resolve('Não há dados para o período pesquisado.')
-                }
-
-            })
-            .catch(err => {
-                reject(err)
-            })
-        })
-    }
 }
 
 export default {

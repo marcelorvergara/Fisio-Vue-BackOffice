@@ -1,4 +1,4 @@
-import { connDb } from "@/store/connDb";
+import { connDb } from "../../connDb";
 import {Decimal} from 'decimal.js'
 
 const state = {
@@ -46,48 +46,66 @@ const mutations = {
 const actions = {
     //segundo relatório realizado
     getRelatorioRealizado(context,payload){
-        return new Promise ((resolve,reject) => {
-            const getDadosRelRealizado = connDb.methods.connDbFunc().httpsCallable('getDadosDb')
-            getDadosRelRealizado(payload).then(res => {
-                if (res.data.length !== 0){
-                    for (let dado of res.data){
-                        const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
-                        const valorFloat = new Decimal(proc.valor.toString().replace(',','.'))
-                        const valor = valorFloat.div(proc.qtdSessoes)
-                        //pegando o mês e adequando ao índice do array
-                        const mes = dado.data.split('-')[1] - 1
-                        if (dado.presenca === 'confirmada'){
-                            context.commit('setMesRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
-                        }else {
-                            context.commit('setMesNaoRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
-                        }
-                    }
-                    //remover meses vazios
-                    const mesesVazios = [];
-                    for (let i=0; i<12;i++){
-                        if (context.getters.getValMesNaoRalizado[i] === 0 && context.getters.getValMesRealizado[i] === 0){
-                            mesesVazios.push(i)
-                        }
-                    }
-                    //removendo meses vazios
-                    context.commit('formatDados', mesesVazios)
-                    //montar tabela com valores
-                    for (let i = 0; i < context.getters.getMeses.length; i++){
-                        context.commit('setValTabela',{mes:context.getters.getMeses[i],
-                            realizado:context.getters.getValMesRealizado[i].toFixed(2).replace('.',','),
-                            naoRealizado:context.getters.getValMesNaoRalizado[i].toFixed(2).replace('.',',')})
-                    }
-                    resolve('ok')
-                } else {
-                    resolve('Não há dados para o período pesquisado.')
-                }
-
+            const data = payload
+            const listSessoes = []
+            return new Promise((resolve,reject) => {
+                connDb.methods.connDbFirestore().collection('sessoes')
+                    .where('dataFS','>=' ,data.dataIni)
+                    .where('dataFS','<=', data.dataFim)
+                    .orderBy('dataFS', 'desc')
+                    .get()
+                    .then(function(querySnapshot) {
+                        console.log(querySnapshot.docs.length)
+                        querySnapshot.forEach(function(doc) {
+                            const proc = doc.get('procedimento').id
+                            const prof = doc.get('profissional').id
+                            const sessoesObj = {
+                                procUuid: proc,
+                                profUuid: prof,
+                                data: doc.data().data,
+                                presenca: doc.data().presenca
+                            }
+                            listSessoes.push(sessoesObj)
+                        })
+                        Promise.all([listSessoes]).then(() => {
+                            if (listSessoes.length !== 0){
+                                for (let dado of listSessoes){
+                                    const proc = context.getters.getProcedimentos.find(f => f.uuid === dado.procUuid)
+                                    const valorFloat = new Decimal(proc.valor.toString().replace(',','.'))
+                                    const valor = valorFloat.div(proc.qtdSessoes)
+                                    //pegando o mês e adequando ao índice do array
+                                    const mes = dado.data.split('-')[1] - 1
+                                    if (dado.presenca === 'confirmada'){
+                                        context.commit('setMesRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
+                                    }else {
+                                        context.commit('setMesNaoRealizado',{mes:mes,val:valor.toDP(2,Decimal.ROUND_DOWN)})
+                                    }
+                                }
+                                //remover meses vazios
+                                const mesesVazios = [];
+                                for (let i=0; i<12;i++){
+                                    if (context.getters.getValMesNaoRalizado[i] === 0 && context.getters.getValMesRealizado[i] === 0){
+                                        mesesVazios.push(i)
+                                    }
+                                }
+                                //removendo meses vazios
+                                context.commit('formatDados', mesesVazios)
+                                //montar tabela com valores
+                                for (let i = 0; i < context.getters.getMeses.length; i++){
+                                    context.commit('setValTabela',{mes:context.getters.getMeses[i],
+                                        realizado:context.getters.getValMesRealizado[i].toFixed(2).replace('.',','),
+                                        naoRealizado:context.getters.getValMesNaoRalizado[i].toFixed(2).replace('.',',')})
+                                }
+                                resolve('ok')
+                            } else {
+                                resolve('Não há dados para o período pesquisado.')
+                            }
+                        })
+                        .catch(err => reject(err))
+                    })
+                    .catch(err => reject(err))
             })
-                .catch(err => {
-                    reject(err)
-                })
-        })
-    },
+    }
 }
 
 export default {

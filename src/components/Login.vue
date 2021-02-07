@@ -93,7 +93,6 @@ export default {
         this.loadingRS = false;
       }).catch((error) => {
         this.loadingRS = false;
-        console.log(error.message)
         if (error.message === 'There is no user record corresponding to this identifier. The user may have been deleted.'){
           this.error = 'Email ou login não encontrado.'
         } else if (error.message === 'The email address is badly formatted.'){
@@ -112,7 +111,7 @@ export default {
       auth.signInWithEmailAndPassword(this.form.email, this.form.senha)
           .then((user) => {
             //testar se é o primeiro acesso
-            this.$store.dispatch('priAcessoChk',{email:this.form.email}).then(res => {
+            this.$store.dispatch('priAcessoChk',this.form.email).then(res => {
               if (res.resp){
                 //vamos trocar a senha
                 if (user.user.uid === res.uid){
@@ -121,7 +120,7 @@ export default {
                   this.loading = false;
                   this.$router.push({path: `/TrocaSenha/${token}` })
                 }else {
-                  console.warn('Esso de acesso: primeiro acesso')
+                  console.warn('Erro de acesso: primeiro acesso')
                 }
 
               }else {
@@ -130,10 +129,12 @@ export default {
                 this.$router.push({path: `/Home/${token}` })
               }
             })
+            .catch(erro => {
+              console.error(erro)
+            })
           })
           .catch((error) => {
             this.loadingRS = false;
-            console.log(error)
             if (error.message === 'There is no user record corresponding to this identifier. The user may have been deleted.'){
               this.error = 'Email ou login não encontrado.'
             } else if (error.message === 'The email address is badly formatted.'){

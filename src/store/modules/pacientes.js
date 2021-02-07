@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-unused-vars
-import { connDb } from "@/store/connDb";
+import {connDb} from "@/store/connDb";
+import axios from "axios";
 
 const state = {
     //array de sessões(events)
@@ -26,9 +27,6 @@ const mutations = {
     // reseta o state events para não apresentar duplicado na tela
     resetEvents(state){
         state.events = []
-    },
-    removeEvent(state,event){
-        state.events.splice(event,1)
     },
     setPacientes(state,pacientes){
         state.pacientes.push(pacientes)
@@ -60,8 +58,8 @@ const actions = {
     logarWP(context, payload){
         // eslint-disable-next-line no-unused-vars
         return new Promise ((resolve,reject) => {
-            const sendMensagem = connDb.methods.connDbFunc().httpsCallable('logarWPFunc')
-            sendMensagem(payload).then(res => {
+            payload.func = 'logarWA'
+            axios.post(process.env.VUE_APP_SEVER + '/zap', payload).then(res => {
                 resolve(res)
             })
                 .catch(error => {
@@ -70,164 +68,208 @@ const actions = {
         })
     },
     sendMsg(context, dadosSessao){
-        const uuidSessao = dadosSessao.sessaoId
         return new Promise((resolve, reject) => {
+            const uuidSessao = dadosSessao.sessaoId
+            dadosSessao.func = 'sendMsg'
             setAguardando(uuidSessao).then(res => {
-                if (res.data === 'ok'){
-                    return new Promise ((resolve,reject) => {
-                        //timeout de 2 minutos por causa do net::ERR_EMPTY_RESPONSE
-                        const sendMensagem = connDb.methods.connDbFunc().httpsCallable('sendWPMsg', {timeout: 120000})
-                        sendMensagem(dadosSessao).then(res => {
-                            resolve(res)
-                        })
-                            .catch(err => {
-                                reject(err)
-                            })
+                if (res === 'ok'){
+                    //timeout de 2 minutos por causa do net::ERR_EMPTY_RESPONSE
+                    axios.post(process.env.VUE_APP_SEVER + '/zap', dadosSessao)
+                        .then(res => {
+
+                            resolve(res.data)
                     })
+                        .catch(err => {
+                            console.error(err.response)
+                            reject(err.response.data)
+                        })
                 }
             })
                 .catch(err => {
+                    console.error(err)
                     reject(err)
                 })
         })
 
-
         function setAguardando(id){
-            return new Promise((resolve,reject) => {
-                const setAguardo = connDb.methods.connDbFunc().httpsCallable('setAguardandoDb')
-                setAguardo(id).then(res => {
-                    //resposta da functions informando que o status aguardando foi inserido na sessão
-                    resolve(res)
+            return new Promise((resolve, reject) => {
+                const dadoSessao = {
+                    presenca: 'aguardando',
+                    uuid: id
+                }
+                updateSessaoConf(dadoSessao).then(() => {
+                    resolve(`ok`)
                 })
-                    .catch(error => {
-                        console.log(error)
-                        reject(error)
-                    })
+                    .catch( err => reject(err))
             })
-
         }
 
-    }
-    ,
-    setSessoesAcompDiaDb(context,payload){
-      return new Promise((resolve, reject) => {
-          const setAcompanhamento = connDb.methods.connDbFunc().httpsCallable('setSesssaoAcomDiario')
-          setAcompanhamento(payload).then(res => {
-              resolve(res)
-          })
-              .catch(error => {
-                  reject(error)
-              })
-      })
     },
-    getSessoesAcompDiaDb(context,payload){
-        return new Promise((resolve, reject) => {
-            context.commit('resetSessoesAcompDia')
-            const getSessAcDia = connDb.methods.connDbFunc().httpsCallable('getSessoesAcomDiario')
-            getSessAcDia(payload).then(result => {
-                if (result.data.length === 0){
-                    resolve('Vazio')
-                }else {
-                    for (let i=0; i < result.data.length; i++){
-                        //formatar os campos para apresentar na tabela de acompanhamento do paciente
-                        const dados = result.data[i]
-                        const dia = dados.horaInicio.split(' ')[0].split('-')
-                        const data = dia[2]+'-'+dia[1]+'-'+dia[0]
-                        const presenca = dados.presenca || 'Não marcada'
-                        const proc = context.getters.getProcedimentos.find(f => f.uuid === dados.proc)
-                        const procedimento = proc.nomeProcedimento
-                        const prof = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
-                        const profissional = prof.nome
-                        const pac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
-                        const paciente = pac.nome
-                        const acompanhamento = dados.acompanhamento || 'Sem acompanhamento nesta data'
-                        const uuid = dados.uuid
-                        const sortData = dados.sortData
-                        const sessObj = {
-                            data,presenca,procedimento,profissional,acompanhamento,uuid,paciente,sortData
-                        }
-                        context.commit('setSessoesAcompDia',sessObj)
-                    }
-                    resolve('Ok')
-                }
+    setSessoesAcompDiaDb(context,payload){
+        return new Promise((resolve,reject) => {
+            const data = payload
+            data.atualizado = new Date()
+            connDb.methods.connDbFirestore().collection('sessoes')
+                .doc(data.uuid)
+                .set(data, { merge: true }).then(() =>{
+                resolve(`Acompanhamento atualizado com sucesso.`)
             })
                 .catch(error => {
                     reject(error)
                 })
         })
     },
-    getSessoesRelDb(context,payload){
-        return new Promise ((resolve, reject) => {
-            context.commit('resetSessaoRelatorio')
-            const getSessRel = connDb.methods.connDbFunc().httpsCallable('getSessoesRel')
-            getSessRel(payload).then(result => {
+    getSessoesAcompDiaDb(context,payload){
+        const data = payload
+        const profDocRef = connDb.methods.connDbFirestore()
+            .collection('profissionais')
+            .doc(data.profissionalUuid);
+        const pacienteDocRef = connDb.methods.connDbFirestore()
+            .collection('pacientes')
+            .doc(data.pacienteUuid);
+        return new Promise ((resolve,reject) => {
+            //testar se a busca é para perfil admin ou profissional
+            const db = connDb.methods.connDbFirestore()
+            if (data.profissionalUuid === 'ProfAdmin'){
+                db.collection('sessoes')
+                    .where('paciente','==',pacienteDocRef)
+                    .get()
+                    .then((querySnapshot) => {
+                        // console.warn("tamanho docs ",querySnapshot.docs.length)
+                        getSessoesShare(querySnapshot).then(listSess => {
+                            resolve(formatListSessoes(listSess))
+                        })
+                    })
+                    .catch(error => {
+                        reject(error)
+                    })
+            } else {
+                //aqui o where pega somente pacientes do profissional do perfil parceiro
+                db.collection('sessoes')
+                    .where('profissional', "==", profDocRef)
+                    .where('paciente','==',pacienteDocRef)
+                    .get()
+                    .then(function(querySnapshot) {
+                        console.warn("tamanho docs ",querySnapshot.docs.length)
+                        getSessoesShare(querySnapshot).then(listSess => {
+                            resolve(formatListSessoes(listSess))
+                        })
+                    })
+                    .catch(error => {
+                        reject(error)
+                    })
+            }
+        })
+
+       function formatListSessoes(result){
+           context.commit('resetSessoesAcompDia')
+           if (result.length === 0){
+               return('Vazio')
+           }else {
+               for (let i=0; i < result.length; i++){
+                   //formatar os campos para apresentar na tabela de acompanhamento do paciente
+                   const dados = result[i]
+                   const dia = dados.horaInicio.split(' ')[0].split('-')
+                   const data = dia[2]+'-'+dia[1]+'-'+dia[0]
+                   const presenca = dados.presenca || 'Não marcada'
+                   const proc = context.getters.getProcedimentos.find(f => f.uuid === dados.proc)
+                   const procedimento = proc.nomeProcedimento
+                   const prof = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
+                   const profissional = prof.nome
+                   const pac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
+                   const paciente = pac.nome
+                   const acompanhamento = dados.acompanhamento || 'Sem acompanhamento nesta data'
+                   const uuid = dados.uuid
+                   const sortData = dados.sortData
+                   const sessObj = {
+                       data,presenca,procedimento,profissional,acompanhamento,uuid,paciente,sortData
+                   }
+                   context.commit('setSessoesAcompDia',sessObj)
+               }
+               return('Ok')
+           }
+       }
+
+    },
+    async getSessoesRelDb(context,payload){
+        payload.func = 'getSessRel'
+        context.commit('resetSessaoRelatorio')
+        await axios.post(process.env.VUE_APP_SEVER + '/relatorio', payload)
+            .then(result => {
                 context.commit('setSessoesRelatorio', result)
-                resolve('Ok')
+                return('Ok')
             })
                 .catch(error => {
                     console.error(error)
-                    reject(error)
+                    return (error)
                 })
-        })
-
     },
     updateSessoesDb(context,payload){
-        return new Promise((resolve,reject) => {
-            const updateSessoes = connDb.methods.connDbFunc().httpsCallable('updateSessoes')
-            updateSessoes(payload).then(result => {
-                resolve (result)
-            })
-                .catch(err => {
-                    reject(err)
+        const data = payload
+        return new Promise ((resolve, reject) => {
+            const db = connDb.methods.connDbFirestore()
+            let batch = db.batch()
+            for (let sessao of data){
+                batch.set(db.collection('sessoes').doc(sessao.uuid),sessao,{merge: true})
+            }
+            batch.commit()
+                // eslint-disable-next-line no-unused-vars
+                .then(() => {
+                    resolve('Atualização realizada com sucesso.')
                 })
+                .catch(err => reject(err))
         })
     },
     async getSessoesPresencaDb(context,payload){
-        const getSessoesPres = connDb.methods.connDbFunc().httpsCallable('getSessoesParaPresenca')
-        await getSessoesPres(payload).then(result => {
-            context.commit('resetSessoesPresenca')
-            for (let sessao of result.data){
-                const dadosProf = context.getters.getProfissionais.find(f => f.uuid === sessao.profissional)
-                const dadosPac = context.getters.getPacientes.find(f => f.uuid === sessao.paciente)
-                const dadosSala = context.getters.getSalas.find(f =>f.uuid === sessao.sala)
-                const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === sessao.proc)
-                const dataBr = sessao.horaInicio.split(' ')[0].split('-')
-                const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
-                const sessaoObj = {
-                    profissional: dadosProf.nome,
-                    procedimento: dadosProc.nomeProcedimento,
-                    sala: dadosSala.nomeSala,
-                    agendador: sessao.agendador,
-                    dataAgendamento:sessao.dataAgendamento
+        payload.func = 'getPresenca'
+        axios.post(process.env.VUE_APP_SEVER + '/sessao', payload)
+            .then(function (response) {
+                context.commit('resetSessoesPresenca')
+                for (let sessao of response.data){
+                    const dadosProf = context.getters.getProfissionais.find(f => f.uuid === sessao.profissional)
+                    const dadosPac = context.getters.getPacientes.find(f => f.uuid === sessao.paciente)
+                    const dadosSala = context.getters.getSalas.find(f =>f.uuid === sessao.sala)
+                    const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === sessao.proc)
+                    const dataBr = sessao.horaInicio.split(' ')[0].split('-')
+                    const dataBr2 = dataBr[2]+'-'+dataBr[1]+'-'+dataBr[0]
+                    const sessaoObj = {
+                        profissional: dadosProf.nome,
+                        procedimento: dadosProc.nomeProcedimento,
+                        sala: dadosSala.nomeSala,
+                        agendador: sessao.agendador,
+                        dataAgendamento:sessao.dataAgendamento
+                    }
+                    //colocar uma descrição de status para apresentar em dicas na tabela
+                    var statusDesc = ''
+                    if (sessao.presenca === 'confirmada'){
+                        statusDesc = 'A presença já foi confirmada pelo profissional'
+                    } else if (sessao.presenca === 'falta'){
+                        statusDesc = 'O paciente não compareceu'
+                    }else if (sessao.presenca === 'desmarcada'){
+                        statusDesc = 'O paciente desmarcou a sessão'
+                    }else if (sessao.presenca === 'esperada'){
+                        //cliente confirmou presença pelo whatsapp
+                        statusDesc = 'O paciente confirmou a presença'
+                    }else if (sessao.presenca === 'aguardando'){
+                        statusDesc = 'Solicitação de confirmação foi enviada ao paciente'
+                    }
+                    else{
+                        statusDesc = 'Sem informações sobre o status'
+                    }
+                    context.commit('setSessoesPresenca',{
+                        uuid: sessao.uuid,
+                        paciente: dadosPac.nome,
+                        data:dataBr2,
+                        inicio: sessao.horaInicio.split(' ')[1],
+                        fim: sessao.horaFim.split(' ')[1],
+                        detalhesSessao: sessaoObj,
+                        status:sessao.presenca,
+                        statusDesc:statusDesc})
                 }
-                //colocar uma descrição de status para apresentar em dicas na tabela
-                var statusDesc = ''
-                if (sessao.presenca === 'confirmada'){
-                    statusDesc = 'A presença já foi confirmada pelo profissional'
-                } else if (sessao.presenca === 'falta'){
-                    statusDesc = 'O paciente não compareceu'
-                }else if (sessao.presenca === 'desmarcada'){
-                    statusDesc = 'O paciente desmarcou a sessão'
-                }else if (sessao.presenca === 'esperada'){
-                    //cliente confirmou presença pelo whatsapp
-                    statusDesc = 'O paciente confirmou a presença'
-                }else if (sessao.presenca === 'aguardando'){
-                    statusDesc = 'Solicitação de confirmação foi enviada ao paciente'
-                }
-                else{
-                    statusDesc = 'Sem informações sobre o status'
-                }
-                context.commit('setSessoesPresenca',{
-                    uuid: sessao.uuid,
-                    paciente: dadosPac.nome,
-                    data:dataBr2,
-                    inicio: sessao.horaInicio.split(' ')[1],
-                    fim: sessao.horaFim.split(' ')[1],
-                    detalhesSessao: sessaoObj,
-                    status:sessao.presenca,
-                    statusDesc:statusDesc})
-            }
         })
+            .catch(err => {
+                console.err(err)
+            })
     },
     //mostras as sessões na agenda
     getSessoesDb(context,payload){
@@ -240,140 +282,124 @@ const actions = {
                     const s = context.getters.getSalas.find((f => f.nomeSala === sala))
                     salas.push(s.uuid)
                 }
-                const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoesParceiro')
-                getSessoes({uuid:prof.uuid,agendador:prof.nome,sala:salas}).then(result => {
-                    context.commit('resetEvents')
-                    for (let dados of result.data){
-                        const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
-                        const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
-                        const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
-                        const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
-                        const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
-                        const obs = dados.observacao || 'N/A'
-                        const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
-                        //trocar a cor caso a presença ou falta tenha sido dada
-                        var classCor = ''
-                        var esperada = ''
-                        if (dados.presenca === 'confirmada'){
-                            classCor = 'corOk'
-                        } else if (dados.presenca === 'falta'){
-                            classCor = 'corFa'
-                        }else if (dados.presenca === 'desmarcada'){
-                            classCor = 'corDes'
-                            esperada = ' \u2718 '
-                        }else if (dados.presenca === 'esperada'){
-                            //cliente confirmou presença pelo whatsapp
-                            classCor = dadosProf.corProf
-                            esperada = ' \u2714 '
-                        }else if (dados.presenca === 'aguardando'){
-                            classCor = dadosProf.corProf
-                            esperada = ' \u29D7 '
-                        }
-                        else{
-                            classCor = dadosProf.corProf
-                        }
-                        context.commit('setEvents',
-                            {start: dados.horaInicio,
-                                end: dados.horaFim,
-                                class: classCor,
-                                title: esperada + title + esperada,
-                                content: dadosProf.nome,
-                                contentFull: contentFull,
-                                uuid: dados.uuid,
-                                //dados para filtro
-                                sala:dadosSala.nomeSala,
-                                profissional:dadosProf.nome,
-                                paciente:dadosPac.nome,
-                                //dados para confirmação
-                                dataHoraSessao: dados.horaInicio
-                            })
-                    }
-                resolve('ok')
-                })
-                    .catch(err => {
-                        reject(err)
+                const dadosSoli = {
+                    uuid:prof.uuid,
+                    agendador:prof.nome,
+                    sala:salas,
+                    func:'some'
+                }
+                axios.post(process.env.VUE_APP_SEVER + '/sessao', dadosSoli)
+                    .then(function (response) {
+                        resolve(returnSessoes(response))
                     })
-            }else{
+                        .catch(err => {
+                            reject(err)
+                        })
+            }else if(payload.funcao === 'Admin'){
                 //funções (roles) NÃo parceiro
-                const getSessoes = connDb.methods.connDbFunc().httpsCallable('getSessoes')
-                getSessoes().then(result => {
-                    context.commit('resetEvents')
-                    //esperado (paciente confirmou) - '\u2714 '
-                    //cancelado (paciente desmarcou) - '\u2718 '
-                    for (let dados of result.data){
-                        const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
-                        const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
-                        const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
-                        const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
-                        const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
-                        const obs = dados.observacao || 'N/A'
-                        const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
-                        //trocar a cor caso a presença ou falta tenha sido dada
-                        var classCor = ''
-                        var esperada = ''
-                        if (dados.presenca === 'confirmada'){
-                            classCor = 'corOk'
-                        } else if (dados.presenca === 'falta'){
-                            classCor = 'corFa'
-                        }else if (dados.presenca === 'desmarcada'){
-                            classCor = 'corDes'
-                            esperada = ' \u2718 '
-                        } else if (dados.presenca === 'esperada'){
-                            //cliente confirmou presença pelo whatsapp
-                            classCor = dadosProf.corProf
-                            esperada = ' \u2714 '
-                        }else if (dados.presenca === 'aguardando'){
-                            classCor = dadosProf.corProf
-                            esperada = ' \u29D7 '
-                        }
-                        else{
-                            classCor = dadosProf.corProf
-                        }
-                        context.commit('setEvents',
-                            {start: dados.horaInicio,
-                                end: dados.horaFim,
-                                class: classCor,
-                                title: esperada + title + esperada,
-                                content: dadosProf.nome,
-                                contentFull: contentFull,
-                                uuid: dados.uuid,
-                                //dados para filtro
-                                sala:dadosSala.nomeSala,
-                                profissional:dadosProf.nome,
-                                paciente:dadosPac.nome,
-                                //dados para confirmação
-                                dataHoraSessao: dados.horaInicio
-                            })
-                    }
-                    resolve('ok')
-                })
-                    .catch(err => {
-                        reject(err)
+                payload.func = 'all'
+                axios.post(process.env.VUE_APP_SEVER + '/sessao', payload)
+                    .then(function (response) {
+                        resolve(returnSessoes(response))
                     })
-
+                        .catch(err => {
+                            reject(err)
+                        })
+            }else{
+                reject('Erro no sistema')
             }
-
         })
-
+        function returnSessoes(listaSessoes){
+            context.commit('resetEvents')
+            for (let dados of listaSessoes.data){
+                const dadosProf = context.getters.getProfissionais.find(f => f.uuid === dados.profissional)
+                const dadosPac = context.getters.getPacientes.find(f => f.uuid === dados.paciente)
+                const dadosSala = context.getters.getSalas.find(f =>f.uuid === dados.sala)
+                const dadosProc = context.getters.getProcedimentos.find(f=>f.uuid === dados.proc)
+                const title = `${dadosPac.nome} - ${dadosSala.nomeSala}`
+                const obs = dados.observacao || 'N/A'
+                const contentFull = `Procedimento: ${dadosProc.nomeProcedimento} - Observaçao: ${obs}`
+                //trocar a cor caso a presença ou falta tenha sido dada
+                var classCor = ''
+                var esperada = ''
+                if (dados.presenca === 'confirmada'){
+                    classCor = 'corOk'
+                } else if (dados.presenca === 'falta'){
+                    classCor = 'corFa'
+                }else if (dados.presenca === 'desmarcada'){
+                    classCor = 'corDes'
+                    esperada = ' \u2718 '
+                }else if (dados.presenca === 'esperada'){
+                    //cliente confirmou presença pelo whatsapp
+                    classCor = dadosProf.corProf
+                    esperada = ' \u2611 '
+                }else if (dados.presenca === 'aguardando'){
+                    classCor = dadosProf.corProf
+                    esperada = ' \u29D7 '
+                }
+                else{
+                    classCor = dadosProf.corProf
+                }
+                context.commit('setEvents',
+                    {start: dados.horaInicio,
+                        end: dados.horaFim,
+                        class: classCor,
+                        title: esperada + title + esperada,
+                        content: dadosProf.nome,
+                        contentFull: contentFull,
+                        uuid: dados.uuid,
+                        //dados para filtro
+                        sala:dadosSala.nomeSala,
+                        profissional:dadosProf.nome,
+                        paciente:dadosPac.nome,
+                        //dados para confirmação
+                        dataHoraSessao: dados.horaInicio
+                    })
+            }
+            return('ok')
+        }
     },
     setSessaoDb(context,payload){
-      return new Promise((resolve,reject) => {
-          const setSessao = connDb.methods.connDbFunc().httpsCallable('setSessao')
-          setSessao(payload.sessao).then(result => {
-              resolve(result.data)
-          })
-              .catch(err => {
-                  reject(err)
-              })
-      })
+        return new Promise((resolve,reject)=>{
+            const data = payload
+            const db = connDb.methods.connDbFirestore()
+            const uuid = data.paciente
+            data.paciente = db.doc('pacientes/' + uuid)
+            const uuidProf = data.profissional
+            data.profissional = db.doc('profissionais/'+ uuidProf)
+            const uuidSala = data.sala
+            data.sala = db.doc('salas/'+ uuidSala)
+            const uuidProc = data.procedimento
+            data.procedimento = db.doc('procedimentos/'+ uuidProc)
+            db.collection('sessoes')
+                .doc(data.uuid)
+                .set(
+                    data
+                ).then(() => {
+                resolve(`Sessão(ões) marcada(s) com sucesso.`)
+            })
+                .catch(err => {
+                    reject(err)
+                })
+        })
     },
     setPacienteDb(context,payload){
-        return new Promise((resolve, reject) => {
-            const setPaciente = connDb.methods.connDbFunc().httpsCallable('setPaciente')
-            setPaciente(payload.paciente).then(result => {
-                //atualizar a lista de pacientes no app
+        let msg = 'atualizado';
+        return new Promise((resolve, reject) =>{
+            const data = payload
+            //vamos testar se é para cadastro ou atualização
+            if (data.uuid === undefined){
+                const { v4: uuidv4 } = require('uuid');
+                data.uuid = uuidv4()
+                msg = 'cadastrado'
+            }
+            connDb.methods.connDbFirestore().collection('pacientes')
+                .doc(data.uuid)
+                .set(
+                    data
+                ).then(() => {
                 context.dispatch('getPacientesDb')
-                resolve(result.data)
+                resolve(`Paciente ${data.nome} ${msg} com sucesso.`)
             })
                 .catch(err => {
                     reject(err)
@@ -381,24 +407,28 @@ const actions = {
         })
     },
     async getPacientesDb(context) {
-        //pegar os pacientes
-        const getPaciente = connDb.methods.connDbFunc().httpsCallable('getPacientes')
-        await getPaciente().then(result => {
-            context.commit('resetPacientes')
-            for (let dados of result.data) {
-                context.commit('setPacientes',dados)
-            }
+        //listar os pacientes
+        return new Promise(() => {
+            connDb.methods.connDbFirestore().collection('pacientes').orderBy('nome')
+                .get()
+                .then(function(querySnapshot){
+                    context.commit('resetPacientes')
+                    querySnapshot.forEach(function(doc) {
+                        context.commit('setPacientes',doc.data())
+                    });
+                })
+                .catch(err => {
+                    console.error(err)
+                })
         })
-            .catch(err => {
-                console.error(err)
-            })
+
     },
     desmarcaEventDb(context,payload){
-        //deletar sessão
+        //desmarcar sessão
         return new Promise((resolve, reject) => {
-            const removeSessao = connDb.methods.connDbFunc().httpsCallable('desmarcaSessao')
-            removeSessao(payload.uuid).then(result =>{
-                resolve (result.data)
+            connDb.methods.connDbFirestore().collection('sessoes')
+                .doc(payload).set({presenca:'desmarcada'}, { merge: true }).then(() => {
+                resolve(`Sessão desmarcada com sucesso.`)
             })
                 .catch(err => {
                     reject(err)
@@ -407,15 +437,74 @@ const actions = {
     },
     testAgendaDb(context,payload){
         return new Promise((resolve,reject) => {
-            const testAgenda = connDb.methods.connDbFunc().httpsCallable('testAgenda')
-            testAgenda(payload).then(result =>{
-                resolve (result.data)
-            })
+            const data = payload
+            //vamos executar a query para data e sala
+            const db = connDb.methods.connDbFirestore()
+            //monta o objeto sala reference para a query
+            const salaDocRef = db
+                .collection('salas')
+                .doc(data.sala.uuid);
+            //executa a query
+            db.collection('sessoes')
+                .where('sala', '==', salaDocRef)
+                .where('data','==', data.data)
+                .get()
+                .then( function (querySnapshot) {
+                    let sessoes = 0;
+                    const docs = [];
+                    querySnapshot.forEach( function(doc) {
+                        //horas em segundos agendadas no banco
+                        const horaIni = doc.data().horaInicio.split(' ')[1].split(':')
+                        const segundosIni = (+horaIni[0]) * 60 * 60 + (horaIni[1] * 60)
+                        //hora em segundos solicitadas para agendamento
+                        const horaIniSolc = data.dtHoraIni.split(' ')[1].split(':')
+                        const segundosSolc = (+horaIniSolc[0] * 60 * 60 + (horaIniSolc[1] * 60))
+                        //testa o horário. Já foi pego data (where) e sala (where)
+                        if (segundosSolc >= segundosIni-1800 && segundosSolc <= segundosIni+1800){
+                            //aqui temos um agendamento na mesma sala e horário
+                            sessoes++;
+                            //responder com campos específicos
+                            const res = {
+                                horaInicio: doc.data().horaInicio,
+                                horaFim:doc.data().horaFim,
+                                prof:doc.get('profissional').id,
+                                proc:doc.get('procedimento').id,
+                                sala:doc.get('sala').id,
+                                uuid:doc.data().uuid
+                            }
+                            docs.push(res)
+                        }
+                    })
+                    //se sessoes 0, só há o agendamento corrente. Caso um, há dois agendamentos. Um no db e esse
+                    if (sessoes >= 1){
+                        const resp = {
+                            msg: 'Possível conflito de horário e sala com o profissional',
+                            docs: docs
+                        }
+                        //com conflito
+                        resolve(resp)
+                    } else {
+                        //sem conflito
+                        resolve(false)
+                    }
+
+                })
                 .catch(err => {
                     reject(err)
                 })
         })
     }
+}
+function updateSessaoConf(data){
+    return new Promise((resolve,reject) => {
+        data.atualizado = new Date()
+        connDb.methods.connDbFirestore().collection('sessoes')
+            .doc(data.uuid)
+            .set(data, { merge: true }).then(() =>{
+            resolve(`ok.`)
+        })
+            .catch( err => reject(err))
+    })
 }
 
 export default {
@@ -423,4 +512,58 @@ export default {
     getters,
     mutations,
     actions
+}
+
+//monta a lista de sessões para retornar ao app
+function getSessoesShare(querySnapshot){
+    return new Promise((resolve,reject) => {
+        const listSessoes = [];
+        querySnapshot.forEach(async function(doc) {
+            const sessao = {
+                uuid: null,
+                horaInicio: null,
+                horaFim: null,
+                observacao: null,
+                paciente: null,
+                proc: null,
+                sala: null
+            };
+            //começã a buscar os 'collection' de outras 'collections'
+            sessao.paciente = doc.get('paciente').id
+            // paciente =  doc.get('paciente').get().then((resPac)=>{
+            //     sessao.paciente = resPac.data().nome
+            //     console.log(doc.get('paciente').id)
+            // })
+            sessao.profissional = doc.get('profissional').id
+
+            // profissional = doc.get('profissional').get().then((resProf)=>{
+            //     sessao.profClass = resProf.data().corProf
+            //     sessao.profNome = resProf.data().nome
+            // })
+            sessao.proc = doc.get('procedimento').id
+            // procedimento =  doc.get('procedimento').get().then((resProc)=>{
+            //     sessao.proc = resProc.data().nomeProcedimento
+            // })
+            sessao.sala = doc.get('sala').id
+            // sala =  doc.get('sala').get().then((resSala)=>{
+            //     sessao.sala = resSala.data().nomeSala
+            // })
+            sessao.uuid = doc.data().uuid
+            sessao.horaInicio = doc.data().horaInicio
+            sessao.horaFim = doc.data().horaFim
+            sessao.observacao = doc.data().observacao
+            sessao.presenca = doc.data().presenca
+            sessao.agendador = doc.data().agendador
+            sessao.dataAgendamento = doc.data().dataDoAgendamento
+            sessao.sortData = doc.data().data
+            sessao.acompanhamento = doc.data().acompanhamento
+            listSessoes.push(sessao)
+        })
+        // tem que aguardar na disciplina II
+        return Promise.all([listSessoes])
+            .then(() => {
+                // console.warn('tamanho enviado',listSessoes.length)
+                resolve(listSessoes)
+            }) .catch( err => reject(err))
+    })
 }

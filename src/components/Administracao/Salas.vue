@@ -103,7 +103,7 @@ export default {
       if (this.submitBtn === 'Atualizar') {
         this.form.uuid = this.uuid
       }
-      await this.$store.dispatch('setSalasDb',{sala:this.form})
+      await this.$store.dispatch('setSalasDb',this.form)
           .then((retorno) => {
             this.mensagem = retorno
             this.loading = false

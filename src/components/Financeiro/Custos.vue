@@ -250,16 +250,19 @@ export default {
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
+      //acertando o valor quando for R$ 0,00 por causa da formatação
+      if (this.form.valor === 'R$ 0,00'){
+        this.form.valor = 0
+      }
       if (this.produto === ''){
         this.mensagem = 'É necessário preencher o nome do produto.'
         this.loading = false
         this.$refs['modal-err'].show()
-      }else{
+      } else{
         this.form.produto = this.produto.trim()
         //convertendo a data para formato TS do firestore
         const dataTS = new Date(this.form.data);
         this.form.dataTS = firebase.firestore.Timestamp.fromDate(dataTS)
-
         this.$store.dispatch('setCustoOp',this.form)
             .then((retorno) => {
               this.mensagem = retorno

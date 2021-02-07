@@ -50,7 +50,7 @@
 
 <script>
 import {mapGetters} from "vuex";
-import { connDb } from "@/store/connDb";
+import { connDb } from "../store/connDb";
 
 export default {
 name: "TrocaSenha",
@@ -94,7 +94,7 @@ name: "TrocaSenha",
                           this.mensagem = res.data
                           this.$refs['modal-err'].show()
                           this.loading = false
-                        } else if(res.data === 'Troca realizada com sucesso.'){
+                        } else if(res.data === 'Troca de senha realizada com sucesso.'){
                           this.mensagem = 'Troca de senha realizada com sucesso. Utilize a nova senha para entrar no sistema.'
                           this.$bvModal.msgBoxOk(this.mensagem, {
                             title: 'Confirmação da Troca de Senha',

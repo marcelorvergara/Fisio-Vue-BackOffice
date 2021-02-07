@@ -293,7 +293,7 @@
         </b-button>
         <b-button variant="outline-success" @click="agendarRec()">
           Agendar
-          <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+          <b-spinner v-show="loadingConflito" small label="Carregando..."></b-spinner>
         </b-button>
       </template>
     </b-modal>
@@ -328,7 +328,7 @@
           <b-spinner v-if="loadingConfirmar" small label="Carregando..."></b-spinner>
           <b-tooltip placement="auto" target="confirmar" v-if="$store.getters.getSatusTooltip">
             Envio de mensagem para o Whatsapp do paciente pedindo confirmação da sessão.
-            É necessário que o celular do consultório com o Whatsapp esteja conectado à uma rede.
+            É necessário que o celular do consultório com o Whatsapp esteja conectado à internet.
           </b-tooltip>
         </b-button>
         <b-button class="ml-2" variant="outline-success" @click="ok()">
@@ -346,7 +346,7 @@ import 'vue-cal/dist/vuecal.css'
 //firebase para tratar timestamp das sessões
 import firebase from "firebase/app";
 import 'firebase/firestore'
-import { connDb } from "@/store/connDb";
+import { connDb } from "../../store/connDb";
 export default {
   name: "Agendamentos",
   mixins:[connDb],
@@ -355,6 +355,7 @@ export default {
   },
   data(){
     return{
+      loadingConflito: false,
       flag:0,
       loadingConfirmar: false,
       segundos: 20,
@@ -563,48 +564,46 @@ export default {
       this.$refs['modal-ok'].show()
       this.loadingConfirmar = false
       this.$store.dispatch('sendMsg',
-          {nomeSessao:waSessao,
-                  phone: phonePac.phone,
-                  sessaoId:event.uuid,
-                  dataMsg:dataMsg,
-                  paciente:event.paciente
-                  })
-          .then(res => {
-            //logando na tela por não estar logado
-            if (res.data === 'notLogged'){
-              this.$store.dispatch('logarWP',{nomeSessao:waSessao}).then((resImg) => {
-                this.loadingConfirmar = false
-                this.imagem = resImg.data
-                //temporizador para fechar a janela, visto que não há retorno para função logar no whatsapp web
-                this.$refs['modal-logar'].show()
-                this.countDownTimer()
-                var me = this
-                setTimeout(function(){
-                  me.closeModal()
-                }, this.segundos * 1000)
-              })
-                  .catch((err) => {
-                    console.log('Erro dentro: ', err)
-                  })
-            }
-            //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
-            // else {
-            //   //já enviou a mensagem e recebeu o akc
-            //   const resp = res.data.split(':')[0]
-            //   const paciente = res.data.split(':')[1]
-            //     if (resp === 'Ok'){
-            //       this.mensagem = 'Sessão confirmada pelo paciente ' + paciente
-            //       this.$refs['modal-ok'].show()
-            //     }else{
-            //       this.mensagemErro = 'Sessão desmarcada pelo paciente ' + paciente
-            //       this.$refs['modal-err'].show()
-            //     }
-            //     this.loadingConfirmar = false
-            //     this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
-            // }
+          {nomeSessao:waSessao, phone: phonePac.phone, sessaoId:event.uuid,
+                  dataMsg:dataMsg, paciente:event.paciente
+                  }).then((res) => {
+              //logando na tela por não estar logado
+              if (res.data === 'notLogged'){
+                this.$store.dispatch('logarWP',{nomeSessao:waSessao}).then((resImg) => {
+                  this.loadingConfirmar = false
+                  this.imagem = resImg.data
+                  //temporizador para fechar a janela, visto que não há retorno para função logar no whatsapp web
+                  this.$refs['modal-logar'].show()
+                  this.countDownTimer()
+                  var me = this
+                  setTimeout(function(){
+                    me.closeModal()
+                  }, this.segundos * 1000)
+                })
+                    .catch((err) => {
+                      console.log('Erro: ', err)
+                    })
+              }
+              //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
+              else {
+                //já enviou a mensagem e recebeu o akc
+                const resp = res.split(':')[0]
+                const paciente = res.split(':')[1]
+                  if (resp === 'Ok'){
+                    this.mensagem = 'Sessão confirmada pelo paciente ' + paciente
+                    this.$refs['modal-ok'].show()
+                  }else{
+                    this.mensagemErro = 'Sessão desmarcada pelo paciente ' + paciente
+                    this.$refs['modal-err'].show()
+                  }
+                  this.loadingConfirmar = false
+                  this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+              }
           })
-      .catch((err) => {
-        console.log('Erro: ', err)
+            .catch((err) => {
+              console.log('Erro: ', err)
+              this.mensagemErro = err
+              this.$refs['modal-err'].show()
       })
           //window.open(`https://api.whatsapp.com/send?phone=`+contatoPac + '?text=confirma')
     },
@@ -620,6 +619,7 @@ export default {
       }
     },
     async cancel(event){
+      //desmarcar sessão
       this.loading = true
       if (event.class === 'corOk' || event.class === 'corFa'){
         const status = event.class === 'corOk' ? 'presença' : 'falta'
@@ -627,8 +627,8 @@ export default {
         this.loading = false
         this.$refs['modal-err'].show()
       }else{
-        //alterar a cor da sessão para preto quand o é desmarcado
-        await this.$store.dispatch('desmarcaEventDb',{uuid: event.uuid})
+        //alterar a cor da sessão para preto quando é desmarcado
+        await this.$store.dispatch('desmarcaEventDb',event.uuid)
             .then((retorno) => {
               this.mensagem = retorno
               this.loading = false
@@ -688,29 +688,29 @@ export default {
       if (this.nome === '' || this.nomes.indexOf(this.nome) === -1){
         this.mensagemErro = 'Nome do paciente não cadastrado'
         this.$refs['modal-err'].show()
-        return
+
       } else if (this.profissional === '' || this.profissionais.indexOf(this.profissional) === -1){
         this.mensagemErro = 'Nome do profissional não cadastrado'
         this.$refs['modal-err'].show()
-        return
+
       } else if (this.sala === '' || this.salas.indexOf(this.sala) === -1){
         this.mensagemErro = 'Nome da sala não cadastrada'
         this.$refs['modal-err'].show()
-        return
+
       } else if (this.procedimento === '' || this.procedimentos.indexOf(this.procedimento) === -1){
         this.mensagemErro = 'Nome do procedimento não cadastrado'
         this.$refs['modal-err'].show()
-        return
+
       } else if(feriado !== undefined){
         const feriadoBr = feriado.dtFeriado.split('-')
         const feriadoBr2 = feriadoBr[2]+'-'+feriadoBr[1]+'-'+feriadoBr[0]
         this.mensagemErro =  `Dia ${feriadoBr2} é feriado. ${feriado.nomeFeriado}`
         this.$refs['modal-err'].show()
-        return
+
       } else {
         //ação de Agendar as sessões. Gravar no DB
         const dataAtual = new Date().toLocaleDateString()
-        const agendador = this.$store.getters.user.data.displayName
+        const agendador = this.$store.getters.user.data.displayName || this.$store.getters.user.data.email
         this.loading = true
         var dates = [];
         var dtHoraIni
@@ -761,6 +761,7 @@ export default {
               }
               //gravando direto quando não há conflito de agenda
               this.gravarDB(sessao)
+              this.$refs['modal-ag'].hide()
             }else{
               //aqui há conflito de agenda
               // refazer o array res.docs para pegar as referências
@@ -826,11 +827,13 @@ export default {
                         acompanhamento:null
                       }
                       this.gravarDB(sessao)
+                      this.$refs['modal-ag'].hide()
                     }else {
                       //não agendar por causa do conflito
                       this.mensagemErro = 'Agendamento não realizado.'
                       this.loading = false
                       this.$refs['modal-err'].show()
+                      this.$refs['modal-ag'].hide()
                     }
                   })
                   .catch(err => {
@@ -943,6 +946,7 @@ export default {
           })
           }
           Promise.all([novaAgenda]).then(() => {
+            this.loading = false
             this.agendaTab = novaAgenda
             //modal da recorrência
             this.$refs['modal-rec'].show()
@@ -1047,22 +1051,22 @@ export default {
                 }
                 novaAgenda.push(sessao)
               }
-
             })
           }
           Promise.all([novaAgenda]).then(() => {
+            this.loading = false
             this.agendaTab = novaAgenda
             //modal da recorrência
             this.$refs['modal-rec'].show()
             this.$refs['modal-ag'].hide()
           })
         }
-        this.loading = false
+        // this.loading = false
+        // this.$refs['modal-ag'].hide()
       }
-      this.$refs['modal-ag'].hide()
     },
     async gravarDB(sessao){
-      await this.$store.dispatch('setSessaoDb',{sessao: sessao})
+      await this.$store.dispatch('setSessaoDb',sessao)
           .then((retorno) => {
             this.mensagem = retorno
             this.loading = false
@@ -1077,11 +1081,13 @@ export default {
           })
     },
     gravarRecDB(sessao){
+      this.loadingConflito = true
       return new Promise((resolve,reject) => {
-        this.$store.dispatch('setSessaoDb',{sessao: sessao})
+        this.$store.dispatch('setSessaoDb', sessao)
             .then((retorno) => {
               //atualizar a lista de sessões
               this.getSessoesDb()
+              this.loadingConflito = false
               resolve (retorno)
             })
             .catch((error) => {
@@ -1117,6 +1123,7 @@ export default {
         this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao}).then(res => {
           //cuidado para quando não tiver sessão nenhuma, o loading do vue-cal ficar eterno
           //e não deixar marcar nenhuma sessão
+
           if (res === 'ok'){
             this.loading = false
             const salas = []
@@ -1160,10 +1167,8 @@ export default {
           const vm = this
           this.connDbFirestore().collection('sessoes')
             .where('data','!=', null)
-            .onSnapshot((querySnapshot) => {
-                querySnapshot.forEach(function () {
-                  vm.getSessoesDb()
-                })
+            .onSnapshot(() => {
+              vm.getSessoesDb()
             })
     }
   },

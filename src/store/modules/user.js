@@ -1,4 +1,5 @@
-import {connDb} from "@/store/connDb";
+import {connDb} from "../connDb";
+import axios from 'axios'
 
 const state = {
     user: {
@@ -52,29 +53,52 @@ const actions = {
     },
     updatePriAcesso(contexr,payload){
         return new Promise((resolve, reject) => {
-            const upPriAcesso = connDb.methods.connDbFunc().httpsCallable('upPriAcessoDb')
-            upPriAcesso(payload).then(res => {
-                resolve(res)
-            })
-                .catch(err => {
-                        reject(err)
-                    })
+            payload.func = 'upPriAcesso'
+            axios.post(process.env.VUE_APP_SEVER + '/users',payload)
+                .then(function (response) {
+                    resolve(response)
                 })
+                .catch(function (error) {
+                    reject(error);
+                });
+        })
     },
     async priAcessoChk(context,payload){
+        const data = payload
         return await new Promise((resolve,reject) => {
-            const priAcesso = connDb.methods.connDbFunc().httpsCallable('checkPriAcessoDb')
-            priAcesso(payload).then(res => {
-                resolve(res.data)
-            })
+            connDb.methods.connDbFirestore().collection('profissionais')
+                .where('email','==',data)
+                .get()
+                .then(qs => {
+                    const user = qs.docs.map(doc => doc.data())
+                    for (let i of user) {
+                        if (i.priAcesso) {
+                            //primeiro acesso
+                            resolve({resp: true, uid: i.admUid})
+                        } else {
+                            resolve(false)
+                        }
+                    }
+                })
                 .catch(err => {
                     reject(err)
                 })
         })
     },
     priAcesso(){
-        const pa = connDb.methods.connDbFunc().httpsCallable('priAcesso')
-        pa()
+        //script para setar custom claims
+        const payload = {
+            func: 'priAcesso'
+        }
+        return new Promise((resolve, reject) => {
+            axios.post(process.env.VUE_APP_SEVER + '/users',payload)
+                .then(function (response) {
+                    console.log(response)
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        })
     }
 }
 

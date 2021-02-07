@@ -284,7 +284,7 @@ export default {
             //envia o uid do user logado para verificar se é admin
             this.form.admUid = this.$store.getters.user.data.uid
             this.form.funcao = this.role
-            this.$store.dispatch('updateProfissionaisDb',{profissonal: this.form})
+            this.$store.dispatch('updateProfissionaisDb',this.form)
                 .then((retorno) => {
                   //retorno do backend sobre atualização do usuário (permissão)
                   this.mensagem = retorno
@@ -306,7 +306,7 @@ export default {
           this.form.admUid = this.$store.getters.user.data.uid
           this.form.funcao = this.role
           this.form.disabled = true
-          this.$store.dispatch('setProfissionalDb', {profissional: this.form})
+          this.$store.dispatch('setProfissionalDb',  this.form)
               .then((retorno) => {
                 //retorno do backend sobre criar o usuário (permissão)
                 this.mensagem = retorno

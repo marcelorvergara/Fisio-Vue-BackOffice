@@ -84,7 +84,7 @@
 
 <script>
 import {mapGetters} from "vuex";
-import { connDb } from "@/store/connDb";
+import { connDb } from "../store/connDb";
 
 export default {
   name: "Home",

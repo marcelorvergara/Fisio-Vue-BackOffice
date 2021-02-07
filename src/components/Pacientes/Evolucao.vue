@@ -149,6 +149,7 @@ export default {
 
     },
     enviar(){
+      this.loading = true
       this.presenca //confirmada ou falta
       var presencaSesssao
       if (this.presenca){
@@ -159,15 +160,17 @@ export default {
       this.$store.dispatch('setSessoesAcompDiaDb',
           {uuid:this.sessaoUUid,acompanhamento:this.textAcomp,presenca:presencaSesssao})
           .then(res => {
-            this.mensagem = res.data
+            this.mensagem = res
             this.$refs['modal-acpm'].hide()
             this.buscaDados(this.nome)
             this.$refs['modal-ok'].show()
+            this.loading = false
           })
           .catch(error => {
             this.mensagem = error
             this.$refs['modal-acpm'].hide()
             this.$refs['modal-err'].show()
+            this.loading = false
           })
     },
     editar(sessaoUuid,text,data,paciente,presenca){

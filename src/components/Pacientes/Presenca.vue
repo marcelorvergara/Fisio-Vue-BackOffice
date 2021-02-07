@@ -163,15 +163,15 @@ export default {
         }
         upSessaoList.push(upSessao)
       }
-      this.$store.dispatch('updateSessoesDb',{sessao: upSessaoList})
+      this.$store.dispatch('updateSessoesDb',upSessaoList)
           .then(result => {
-            if (result.data === 'Atualização realizada com sucesso.'){
+            if (result === 'Atualização realizada com sucesso.'){
               this.mensagem = false
               this.loading = false
               this.$refs['modal-ok'].show()
               this.getSessoesInit()
             }else{
-              this.mensagemErro = result.data
+              this.mensagemErro = result
               this.loading = false
               this.$refs['modal-err'].show()
             }
@@ -187,15 +187,15 @@ export default {
         }
         upSessaoList.push(upSessao)
       }
-      this.$store.dispatch('updateSessoesDb',{sessao: upSessaoList})
+      this.$store.dispatch('updateSessoesDb', upSessaoList)
         .then(result => {
-          if (result.data === 'Atualização realizada com sucesso.'){
+          if (result === 'Atualização realizada com sucesso.'){
             this.mensagem = true
             this.loading = false
             this.$refs['modal-ok'].show()
             this.getSessoesInit()
           }else{
-            this.mensagemErro = result.data
+            this.mensagemErro = result
             this.loading = false
             this.$refs['modal-err'].show()
           }

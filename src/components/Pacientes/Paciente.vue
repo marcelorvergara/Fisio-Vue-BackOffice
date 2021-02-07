@@ -121,13 +121,19 @@ export default {
       //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {
         this.form.uuid = this.uuid
+        this.form.phone = this.form.phone.trim()
+            .replace(/ /g, '')
+            .replace(')', '')
+            .replace('(', '')
+            .replace('-', '')
+      }else {
+        this.form.phone = '55' + this.form.phone.trim()
+            .replace(/ /g, '')
+            .replace(')', '')
+            .replace('(', '')
+            .replace('-', '')
       }
-      this.form.phone = '55' + this.form.phone.trim()
-          .replace(/ /g, '')
-          .replace(')', '')
-          .replace('(', '')
-          .replace('-', '')
-      await this.$store.dispatch('setPacienteDb',{paciente:this.form})
+      await this.$store.dispatch('setPacienteDb',this.form)
           .then((retorno) => {
             this.mensagem = retorno
             this.loading = false

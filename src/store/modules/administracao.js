@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
-import { connDb } from "@/store/connDb";
-
+import { connDb } from "../connDb";
+import axios from 'axios'
 const state = {
     procedimentos:[],
     profissionais: [],
@@ -43,33 +43,80 @@ const mutations = {
 }
 
 const actions = {
-    limpaSessoesDb(){
-        const limpaSessoesDb = connDb.methods.connDbFunc().httpsCallable('limpaSessoes')
-        limpaSessoesDb()
+    async limpaSessoesDb() {
+        const sessoesList = [];
+        await connDb.methods.connDbFirestore().collection('sessoes').get().then(function(querySnapshot) {
+            querySnapshot.forEach(function(doc) {
+                sessoesList.push(doc.data().uuid)
+            });
+        })
+        Promise.all([sessoesList]).then(() => {
+            for (let i of sessoesList){
+                connDb.methods.connDbFirestore().collection('sessoes').doc(i).delete().then(function() {
+                    console.log("Document successfully deleted!");
+                }).catch(function(error) {
+                    console.error("Error removing document: ", error);
+                });
+            }
+        })
     },
-    setFeriadoDb(context,payload){
-        return new Promise((resolve,reject) => {
-            const setFeriados = connDb.methods.connDbFunc().httpsCallable('setFeriado')
-            setFeriados(payload.feriado).then(result => {
-                //atualizar a lista de procedimento no app
+    setFeriadoDb(context, payload) {
+        const data = payload
+        let msg = 'atualizado';
+        return new Promise((resolve, reject) =>{
+            //vamos testar se é para cadastro ou atualização
+            if (data.uuid === undefined){
+                const { v4: uuidv4 } = require('uuid');
+                data.uuid = uuidv4()
+                msg = 'cadastrado'
+            }
+            connDb.methods.connDbFirestore().collection('feriados')
+                .doc(data.uuid)
+                .set(
+                    data
+                ).then(() => {
                 context.dispatch('getFeriadosDB')
-                resolve(result.data)
+                resolve(`Feriado ${data.nomeFeriado} ${msg} com sucesso.`)
             })
                 .catch(err => {
                     reject(err)
                 })
         })
     },
-    getFeriadosDB(context){
-        return new Promise((resolve, reject) => {
-            //pegar os nomes dos procedimentos para o autocomplete
-            const getPaciente = connDb.methods.connDbFunc().httpsCallable('getFeriados')
-            getPaciente().then(result => {
-                context.commit('resetFeriados')
-                for (let dados of result.data){
-                    context.commit('setFeriados',dados)
-                }
-                resolve('ok')
+    getFeriadosDB(context) {
+        return new Promise((resolve,reject) => {
+            connDb.methods.connDbFirestore().collection('feriados').orderBy('nomeFeriado')
+                .get()
+                .then(function(querySnapshot){
+                    context.commit('resetFeriados')
+                    querySnapshot.forEach(function(doc) {
+                        context.commit('setFeriados', doc.data())
+                    });
+                    resolve('ok')
+                })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+    },
+    setProcedimentoDb(context, payload) {
+        const data = payload
+        let msg = 'atualizado';
+        return new Promise((resolve, reject) =>{
+            //vamos testar se é para cadastro ou atualização
+            if (data.uuid === undefined){
+                const { v4: uuidv4 } = require('uuid');
+                data.uuid = uuidv4()
+                msg = 'cadastrado'
+            }
+            connDb.methods.connDbFirestore().collection('procedimentos')
+                .doc(data.uuid)
+                .set(
+                    data
+                ).then(() => {
+                //atualizar a lista de procedimento no app
+                context.dispatch('getProcedimentosDB')
+                resolve(`Procedimento ${data.nomeProcedimento} ${msg} com sucesso.`)
             })
                 .catch(err => {
                     reject(err)
@@ -77,117 +124,116 @@ const actions = {
         })
 
     },
-    setProcedimentoDb(context,payload){
-      return new Promise((resolve,reject) => {
-          const setProcedimento = connDb.methods.connDbFunc().httpsCallable('setProcedimento')
-          setProcedimento(payload.procedimento).then(result => {
-              //atualizar a lista de procedimento no app
-              context.dispatch('getProcedimentosDB')
-              resolve(result.data)
-          })
-              .catch(err => {
-                  reject(err)
-              })
-      })
-    },
-    getProcedimentosDB(context){
+    getProcedimentosDB(context) {
         return new Promise((resolve,reject) => {
-            //pegar os nomes dos procedimentos para o autocomplete
-            const getPaciente = connDb.methods.connDbFunc().httpsCallable('getProcedimentos')
-            getPaciente().then(result => {
-                context.commit('resetProcedimentos')
-                for (let dados of result.data){
-                    context.commit('setProcedimentos',dados)
-                }
-                resolve('ok')
-            })
+            connDb.methods.connDbFirestore().collection('procedimentos').orderBy('nomeProcedimento')
+                .get()
+                .then(function(querySnapshot){
+                    context.commit('resetProcedimentos')
+                    querySnapshot.forEach(function(doc) {
+                        context.commit('setProcedimentos', doc.data())
+                    });
+                    resolve('ok')
+                })
                 .catch(err => {
                     reject(err)
                 })
         })
     },
-    setProfissionalDb(context, payload){
-      return new Promise((resolve,reject) => {
-          const setProfissional = connDb.methods.connDbFunc().httpsCallable('setProfissional')
-          setProfissional(payload.profissional).then(result => {
-              //atualizar a lista de profissionais no app
-              context.dispatch('getProfissionaisDb')
-              resolve(result.data)
-          })
-              .catch(err => {
-                  reject(err)
-              })
-      })
+    setProfissionalDb(context, payload) {
+        return new Promise((resolve, reject) => {
+            payload.func = 'set'
+            axios.post(process.env.VUE_APP_SEVER + '/users',payload)
+                .then(function (response) {
+                //atualizar a lista de profissionais no app
+                context.dispatch('getProfissionaisDb')
+                resolve(response.data)
+            })
+                .catch(function (error) {
+                    reject(error);
+                });
+        })
     },
-    updateProfissionaisDb(context, payload){
-      return new Promise((resolve,reject) => {
-          const atualizaProfissional = connDb.methods.connDbFunc().httpsCallable('updateProfissional')
-          atualizaProfissional(payload.profissonal).then(result => {
-              //atualizar a lista de profissionais no app
-              context.dispatch('getProfissionaisDb')
-              resolve(result.data)
-          })
-              .catch(err => {
-                  reject(err)
-              })
-      })
+    updateProfissionaisDb(context, payload) {
+        return new Promise((resolve,reject) => {
+            payload.func = 'update'
+            axios.post(process.env.VUE_APP_SEVER + '/users',payload,{
+            })
+                .then(function (response) {
+                    context.dispatch('getProfissionaisDb')
+                    resolve(response.data)
+                })
+                .catch(function (error) {
+                    reject(error);
+                });
+        })
     },
-    setStatusProfissinalDb(context,payload){
-      return new Promise((resolve,reject) => {
-          const setStatusProf = connDb.methods.connDbFunc().httpsCallable('setStatusProfissional')
-          setStatusProf(payload.status).then(result => {
-              //atualizar a lista de profissionais no app para pegar o status atualizado (hab/desab)
-              context.dispatch('getProfissionaisDb')
-              resolve(result.data)
-          })
-              .catch(err => {
-                  reject(err)
-              })
-      })
+    setStatusProfissinalDb(context, payload) {
+        return new Promise((resolve, reject) => {
+            payload.func = 'setStatus'
+            axios.post(process.env.VUE_APP_SEVER + '/users',payload)
+                .then(function (response){
+                //atualizar a lista de profissionais no app para pegar o status atualizado (hab/desab)
+                context.dispatch('getProfissionaisDb')
+                resolve(response.data)
+            })
+                .catch(function (error) {
+                    reject(error);
+                });
+        })
     },
     //tabela de profissionais
-    getProfissionaisDb(context){
+    getProfissionaisDb(context) {
         return new Promise((resolve,reject) => {
-            //pegar os nomes dos profissionais para autocomplete e join com sessoes
-            //é necessário rever esse método por causa das references
-            const getProfissionais = connDb.methods.connDbFunc().httpsCallable('getProfissionais')
-            getProfissionais().then(result => {
-                context.commit('resetProfissionais')
-                for (let dados of result.data){
-                    context.commit('setProfissionais', dados)
-                }
-                resolve('ok')
-            })
+            connDb.methods.connDbFirestore().collection('profissionais')
+                .where('nome','!=','')
+                .orderBy('nome')
+                .get()
+                .then(function (querySnapshot){
+                    context.commit('resetProfissionais')
+                    querySnapshot.forEach(function (doc){
+                        context.commit('setProfissionais',doc.data())
+                    })
+                    resolve('ok')
+                })
                 .catch(err => {
                     reject(err)
                 })
         })
-
     },
     getSalasDb(context) {
         return new Promise((resolve,reject) => {
-            //pegar os nomes dos procedimentos para o autocomplete
-            const getSala = connDb.methods.connDbFunc().httpsCallable('getSalas')
-            getSala().then(result => {
-                context.commit('resetSalas')
-                for (let dados of result.data) {
-                    context.commit('setSalas',dados)
-                }
-                resolve ('ok')
-            })
+            connDb.methods.connDbFirestore().collection('salas').orderBy('nomeSala')
+                .get()
+                .then(function(querySnapshot){
+                    context.commit('resetSalas')
+                    querySnapshot.forEach(function(doc) {
+                        context.commit('setSalas', doc.data())
+                    });
+                    resolve('ok')
+                })
                 .catch(err => {
                     reject(err)
                 })
         })
-
     },
-    setSalasDb(context,payload){
+    setSalasDb(context, payload) {
+        const data = payload
+        let msg = 'atualizada';
         return new Promise((resolve, reject) => {
-            const cadSala = connDb.methods.connDbFunc().httpsCallable('setSala')
-            cadSala(payload.sala).then(result => {
-                //atualizar a lista de salas no app
+            //vamos testar se é para cadastro ou atualização
+            if (data.uuid === undefined) {
+                const {v4: uuidv4} = require('uuid');
+                data.uuid = uuidv4()
+                msg = 'cadastrada'
+            }
+            connDb.methods.connDbFirestore().collection('salas')
+                .doc(data.uuid)
+                .set(
+                    data
+                ).then(() => {
                 context.dispatch('getSalasDb')
-                resolve (result.data)
+                resolve(`Sala ${data.nomeSala} ${msg} com sucesso.`)
             })
                 .catch(err => {
                     reject(err)
