@@ -115,6 +115,7 @@
 
 <script>
 import {mapGetters} from "vuex";
+import {Decimal} from 'decimal.js'
 
 export default {
   name: "Relatorio",
@@ -138,14 +139,12 @@ export default {
         { key: 'fim', sortable: true },
         { key: 'agendador', sortable: true },
         { key: 'status', sortable: true },
-        { key: 'profissional', sortable: true}
+        { key: 'profissional', sortable: true},
+        { key: 'comissao', label:'Comissão (R$)', sortable: true}
       ],
       mensagemErro:'',
       lista: []
     }
-  },
-  mounted() {
-    this.getSessoesRel()
   },
   methods:{
     onFiltered(filteredItems){
@@ -173,6 +172,13 @@ export default {
             const agendador = sessao.agendador
             const status = sessao.presenca
             const sortData = sessao.sortData
+            //cálculo da comissão é valor comissão/100 * valor da sessão
+            const comissao = new Decimal(procedimento.comissao).div(100)
+            console.log('comissao', comissao)
+            const valorSessao = new Decimal(procedimento.valor.toString().replace(',','.'))
+            console.log('valor sessao', valorSessao)
+            const valComissao = comissao.times(valorSessao)
+            console.log('total', valComissao)
             const sessaoObj = {
                 data: dia,
                 inicio: horaIni,
@@ -182,6 +188,7 @@ export default {
                 agendador: agendador,
                 status,
                 profissional:profissional.nome,
+                comissao: valComissao.toDP(2,Decimal.ROUND_DOWN).toString().replace('.',','),
                 sortData}
             this.lista.push(sessaoObj)
 
@@ -203,6 +210,9 @@ export default {
   },
   created() {
     this.isBusy = true
+  },
+  mounted() {
+    this.getSessoesRel()
   }
 }
 </script>

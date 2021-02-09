@@ -218,7 +218,6 @@ const actions = {
                return('Ok')
            }
        }
-
     },
     async getSessoesRelDb(context,payload){
         payload.func = 'getSessRel'
