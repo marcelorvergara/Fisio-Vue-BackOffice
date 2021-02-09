@@ -1,2 +1,3 @@
 runtime: nodejs14
 service: server
+instance_class: F4

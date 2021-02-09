@@ -565,45 +565,40 @@ export default {
       this.loadingConfirmar = false
       this.$store.dispatch('sendMsg',
           {nomeSessao:waSessao, phone: phonePac.phone, sessaoId:event.uuid,
-                  dataMsg:dataMsg, paciente:event.paciente
-                  }).then((res) => {
-              //logando na tela por não estar logado
-              if (res.data === 'notLogged'){
-                this.$store.dispatch('logarWP',{nomeSessao:waSessao}).then((resImg) => {
-                  this.loadingConfirmar = false
-                  this.imagem = resImg.data
-                  //temporizador para fechar a janela, visto que não há retorno para função logar no whatsapp web
-                  this.$refs['modal-logar'].show()
-                  this.countDownTimer()
-                  var me = this
-                  setTimeout(function(){
-                    me.closeModal()
-                  }, this.segundos * 1000)
-                })
+                  dataMsg:dataMsg, paciente:event.paciente})
+                .then((res) => {
+                      //logando na tela por não estar logado
+                      if (res.status === 'notLogged'){
+                          this.loadingConfirmar = false
+                          this.imagem = res.img
+                          //temporizador para fechar a janela, visto que não há retorno para função logar no whatsapp web
+                          this.$refs['modal-logar'].show()
+                          this.countDownTimer()
+                          var me = this
+                          setTimeout(function(){
+                            me.closeModal()
+                          }, this.segundos * 1000)
+                      }
+                      //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
+                      else {
+                        //já enviou a mensagem e recebeu o akc
+                        const resp = res.data.split(':')[0]
+                        const paciente = res.data.split(':')[1]
+                          if (resp === 'Ok'){
+                            this.mensagem = 'Sessão confirmada pelo paciente ' + paciente
+                            this.$refs['modal-ok'].show()
+                          }else{
+                            this.mensagemErro = 'Sessão desmarcada pelo paciente ' + paciente
+                            this.$refs['modal-err'].show()
+                          }
+                          this.loadingConfirmar = false
+                          this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+                      }
+                  })
                     .catch((err) => {
                       console.log('Erro: ', err)
-                    })
-              }
-              //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
-              else {
-                //já enviou a mensagem e recebeu o akc
-                const resp = res.split(':')[0]
-                const paciente = res.split(':')[1]
-                  if (resp === 'Ok'){
-                    this.mensagem = 'Sessão confirmada pelo paciente ' + paciente
-                    this.$refs['modal-ok'].show()
-                  }else{
-                    this.mensagemErro = 'Sessão desmarcada pelo paciente ' + paciente
-                    this.$refs['modal-err'].show()
-                  }
-                  this.loadingConfirmar = false
-                  this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
-              }
-          })
-            .catch((err) => {
-              console.log('Erro: ', err)
-              this.mensagemErro = err
-              this.$refs['modal-err'].show()
+                      this.mensagemErro = err
+                      this.$refs['modal-err'].show()
       })
           //window.open(`https://api.whatsapp.com/send?phone=`+contatoPac + '?text=confirma')
     },

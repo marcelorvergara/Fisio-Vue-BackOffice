@@ -11,40 +11,49 @@ exports.post = (req, res, next) => {
     const data = req.body
     console.log(data)
     if (data.func === 'sendMsg'){
-            const venom = require('venom-bot')
-            venom
-                .create(
-                    //session
-                    data.nomeSessao, //Pass the name of the client you want to start the bot
-                    undefined,
-                    // statusFind
-                    (statusSession, session) => {
-                        console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
-                        //Create session wss return "serverClose" case server for close
-                        console.log('Session name: ', session);
-                        if (statusSession === 'notLogged'){
-                            res.status(200).send(statusSession)
-                        }
+        const venom = require('venom-bot')
+        venom
+            .create(
+                //session
+                data.nomeSessao, //Pass the name of the client you want to start the bot
+                undefined,
+                // statusFind
+                (statusSession, session) => {
+                    console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
+                    //Create session wss return "serverClose" case server for close
+                    console.log('Session name: ', session);
+                    if (statusSession === 'notLogged'){
+                        res.status(200).send(statusSession)
+                    }
+                },
+                {
+                    folderNameToken: '/tmp/', //folder name when saving tokens
+                    mkdirFolderToken:'',
+                    puppeteerOptions: {
+                        args: [
+                            '--no-sandbox',
+                            '--disable-setuid-sandbox'
+                        ]
                     },
-                    {
-                        disableWelcome: true,
-                        logQR: false,
-                        autoClose: 0}
-                )
-                .then(async (client) => {
-                    await sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(resp => {
-                        console.log('*** reposta enviada para o app ***', resp)
-                        res.status(200).send(resp)
-                    })
+                    disableWelcome: true,
+                    logQR: false,
+                    autoClose: 0},
+                data.token
+            )
+            .then(async (client) => {
+                await sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(resp => {
+                    console.log('*** reposta enviada para o app ***', resp)
+                    res.status(200).send(resp)
+                })
                     .catch(err => {
                         console.log(err)
                         res.status(500).send(err)
                     })
-                })
-                .catch(err => {
-                    console.error('2',err)
-                    res.status(500).send(err)
-                })
+            })
+            .catch(err => {
+                console.error('2',err)
+                res.status(500).send(err)
+            })
     } else if(data.func === 'logarWA'){
         return new Promise(() => {
             const venom = require('venom-bot')
@@ -56,11 +65,24 @@ exports.post = (req, res, next) => {
                     },
                     undefined,
                     {
+                        folderNameToken: '/tmp/', //folder name when saving tokens
+                        mkdirFolderToken:'',
+                        puppeteerOptions: {
+                            args: [
+                                '--no-sandbox',
+                                '--disable-setuid-sandbox'
+                            ]
+                        },
                         disableWelcome: true,
                         logQR: false,
-                        autoClose: 0}
-                ).then(() => {
-                console.log('Logando user whatsapp...')
+                        autoClose: 0},
+                    data.token
+                ).then((cli) => {
+                    getToken(cli).then(resp => {
+                        console.log(resp)
+                        setTokenDb(resp)
+                    })
+                    console.log('Logando user whatsapp...')
             })
                 .catch(err => {
                     console.error(err)
@@ -71,20 +93,27 @@ exports.post = (req, res, next) => {
         res.status(200).send('Erro no sistema.')
     }
 
+    async function setTokenDb(token){
+        const db = admin.firestore()
+        await db.collection('tokens').doc(data.nomeSessao).set(token)
+    }
+
+    async function getToken(cli){
+        return await cli.getSessionTokenBrowser()
+    }
 
     function sendMsg(client,phone,sessao,dataMsg,paciente){
         return new Promise((resolve, reject) => {
             client.sendText(phone + '@c.us',` 
 \`\`\`Mensagem Automática:\`\`\`
 
-${dataMsg}
+    ${dataMsg}
 
 Por favor, responda *sim* ou *ok* para confirmar.
-
 Se deseja desmarcar, responda *não* ou *no*.
  
 Atenciosamente,
-_Equipe CFRA_`).then(res => {
+    _Equipe CFRA_`).then(res => {
                 if (!res){
                     reject('Erro ao enviar mensagem. Verifique o número do whatsapp.')
                 }
@@ -155,7 +184,7 @@ _Equipe CFRA_`).then(res => {
                 .set(data, { merge: true }).then(() =>{
                 resolve(`ok.`)
             })
-                .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+                .catch( err => reject(err))
         })
     }
 }

@@ -9,12 +9,11 @@ exports.get = (req, res, next) => {
 // eslint-disable-next-line no-unused-vars
 exports.post = (req, res, next) => {
     const data = req.body
-    console.log(data)
     if (data.func === 'getSessRel'){
         const profDocRef = admin.firestore()
             .collection('profissionais')
             .doc(data.uuid);
-        return new Promise((resolve,reject) => {
+        return new Promise(() => {
             admin
                 .auth()
                 .getUser(data.admUid)
@@ -103,6 +102,6 @@ function getSessoesShare(querySnapshot){
             .then(() => {
                 console.warn('tamanho enviado',listSessoes.length)
                 resolve(listSessoes)
-            }) .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+            }) .catch( err => reject(err))
     })
 }

@@ -73,16 +73,36 @@ const actions = {
             dadosSessao.func = 'sendMsg'
             setAguardando(uuidSessao).then(res => {
                 if (res === 'ok'){
-                    //timeout de 2 minutos por causa do net::ERR_EMPTY_RESPONSE
-                    axios.post(process.env.VUE_APP_SEVER + '/zap', dadosSessao)
-                        .then(res => {
+                    //pegar o token para enviar no create()
+                    getToken(dadosSessao.nomeSessao).then(token => {
+                        //timeout de 2 minutos por causa do net::ERR_EMPTY_RESPONSE
+                        dadosSessao.token = token || 'sem token'
+                        axios.post(process.env.VUE_APP_SEVER + '/zap', dadosSessao)
+                            .then(res => {
+                                if (res.data === 'notLogged'){
+                                    context.dispatch('logarWP',dadosSessao).then(resp => {
+                                        const respObj = {
+                                            img: resp.data,
+                                            status: 'notLogged'
+                                        }
+                                        resolve(respObj)
+                                    })
+                                }else {
+                                    resolve(res)
+                                }
 
-                            resolve(res.data)
+                            })
+                            .catch(err => {
+                                console.error(err.response)
+                                reject(err.response.data)
+                            })
                     })
                         .catch(err => {
-                            console.error(err.response)
-                            reject(err.response.data)
+                            console.error(err)
+                            reject(err)
                         })
+
+
                 }
             })
                 .catch(err => {
@@ -90,7 +110,16 @@ const actions = {
                     reject(err)
                 })
         })
-
+        async function getToken(sessao){
+            const tokenRef = connDb.methods.connDbFirestore().collection('tokens').doc(sessao);
+            const doc = await tokenRef.get();
+            if (!doc.exists) {
+                console.log('Sem tokens');
+                return false
+            } else {
+                return doc.data()
+            }
+        }
         function setAguardando(id){
             return new Promise((resolve, reject) => {
                 const dadoSessao = {

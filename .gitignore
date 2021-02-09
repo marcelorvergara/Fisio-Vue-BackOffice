@@ -6,6 +6,7 @@ node_modules
 # local env files
 .env.local
 .env.*.local
+.env*
 
 # Log files
 npm-debug.log*
@@ -31,5 +32,7 @@ functions/out.png
 functions/tokens/
 storage.rules
 ui-debug.log
+server/config.js
+server/sys-corp.json
 # mrv
 
