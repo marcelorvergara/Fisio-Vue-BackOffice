@@ -7,6 +7,7 @@ import financeiro from "./modules/financeiro";
 import relatorioFinTotal from "@/store/modules/relatorios/relatorioFinTotal";
 import realizado from "./modules/relatorios/realizado";
 import custos from "./modules/relatorios/custos";
+import custosII from "./modules/relatorios/custosII"
 import classificacaoCustos from "./modules/relatorios/classificacaoCustos";
 
 Vue.use(Vuex);
@@ -16,6 +17,7 @@ export const store = new Vuex.Store({
         relatorioFinTotal,
         classificacaoCustos,
         custos,
+        custosII,
         realizado,
         financeiro,
         administracao,

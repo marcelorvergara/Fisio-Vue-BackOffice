@@ -57,6 +57,10 @@
                 small
                 @filtered="onFiltered"
                 :busy="isBusy">
+              <template v-slot:cell(comissao)="data">
+                <span v-if="$store.getters.getSatusTooltip" v-b-tooltip.hover :title=data.item.descricaoComissao>{{ data.value}}</span>
+                <span v-else>{{ data.value }}</span>
+              </template>
               <template #table-busy>
                 <div class="text-center text-info my-2">
                   <b-spinner class="align-middle"></b-spinner>
@@ -64,7 +68,9 @@
                 </div>
               </template>
             </b-table>
-
+          </div>
+          <div class="text-right mr-2">
+            <span class="text-black-75">Comissão R$ {{ valorComissaoTot }}</span>
           </div>
         </b-col>
       </b-row>
@@ -121,6 +127,7 @@ export default {
   name: "Relatorio",
   data(){
     return {
+      valorComissaoTot: 0,
       isBusy: false,
       pageOptions: [5, 10, 15, { value: 100, text: "Mostrar o máximo por página" }],
       perPage:10,
@@ -147,9 +154,18 @@ export default {
     }
   },
   methods:{
+    somaValFiltro(filteredItems){
+      //somar as comissões
+      var valor = 0
+      for (let item of filteredItems){
+        valor += parseFloat(item.comissao)
+      }
+      this.valorComissaoTot = valor.toFixed(2).toString().replace('.',',')
+    },
     onFiltered(filteredItems){
       this.totalRows = filteredItems.length
       this.currentPage = 1
+      this.somaValFiltro(filteredItems)
     },
     getSessoesRel(){
       const profUuid = this.$store.getters.getProfissionais.find(f => f.email === this.user.data.email)
@@ -170,15 +186,13 @@ export default {
             const procedimento = this.$store.getters.getProcedimentos.find(f => f.uuid === sessao.proc)
             const profissional = this.$store.getters.getProfissionais.find(f => f.uuid === sessao.profissional)
             const agendador = sessao.agendador
-            const status = sessao.presenca
+            const status = sessao.presenca || 'sem status'
             const sortData = sessao.sortData
             //cálculo da comissão é valor comissão/100 * valor da sessão
             const comissao = new Decimal(procedimento.comissao).div(100)
-            console.log('comissao', comissao)
             const valorSessao = new Decimal(procedimento.valor.toString().replace(',','.'))
-            console.log('valor sessao', valorSessao)
-            const valComissao = comissao.times(valorSessao)
-            console.log('total', valComissao)
+            const valComissaoInt = comissao.times(valorSessao)
+            const valComissao = valComissaoInt.toFixed(2)
             const sessaoObj = {
                 data: dia,
                 inicio: horaIni,
@@ -188,11 +202,12 @@ export default {
                 agendador: agendador,
                 status,
                 profissional:profissional.nome,
-                comissao: valComissao.toDP(2,Decimal.ROUND_DOWN).toString().replace('.',','),
+                comissao: valComissao.toString().replace('.',','),
+                descricaoComissao: 'Valor sessão: '+ parseFloat(procedimento.valor).toFixed(2).toString().replace('.',',') + '. Comissão: ' +procedimento.comissao + '%',
                 sortData}
             this.lista.push(sessaoObj)
-
           }
+          this.somaValFiltro(this.lista)
           this.totalRows = this.$store.getters.getSessoesRelatorio.data.length
           this.isBusy = false
         }).catch(error => {

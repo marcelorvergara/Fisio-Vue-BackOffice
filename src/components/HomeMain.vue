@@ -7,7 +7,7 @@
           <p class="mt-3">Perfis de acesso</p>
             <div class="mt-2 border border-dark p-2">
               <li >Parceiro</li>
-              Perfil com menor nível de acesso. Só possui permissão para visualizar a própria agenda (somente sessões que é o profissional ou sessões que agendou para outro profissional). Consegue enxergar todas as sessões para a(s) sala(s) que possui no seu perfil. Pode de cadastrar, agendar, dar presença e verificar relatório de presença de seus atendimentos.
+              Perfil com menor nível de acesso. Só possui permissão para visualizar a própria agenda (somente sessões que é o profissional ou sessões que agendou para outro profissional). Consegue enxergar todas as sessões para a(s) sala(s) que seu perfil possui acesso. Pode de cadastrar, agendar, dar presença e verificar relatório de presença de seus atendimentos.
               A evolução diária só pode ser feita para pacientes que estão agendados para seu próprio atendimento.
             </div>
             <div class="mt-2 border border-dark p-2">

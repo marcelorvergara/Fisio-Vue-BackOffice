@@ -179,7 +179,7 @@ const actions = {
                     .where('paciente','==',pacienteDocRef)
                     .get()
                     .then(function(querySnapshot) {
-                        console.warn("tamanho docs ",querySnapshot.docs.length)
+                        // console.warn("tamanho docs ",querySnapshot.docs.length)
                         getSessoesShare(querySnapshot).then(listSess => {
                             resolve(formatListSessoes(listSess))
                         })
@@ -282,6 +282,7 @@ const actions = {
                         statusDesc = 'Solicitação de confirmação foi enviada ao paciente'
                     }
                     else{
+                        sessao.presenca = 'sem status'
                         statusDesc = 'Sem informações sobre o status'
                     }
                     context.commit('setSessoesPresenca',{

@@ -47,6 +47,7 @@ const mutations = {
 
 const actions = {
     getRelatorioCustos(context,payload){
+        console.log('custos mensais')
         const listCustos = []
         return new Promise((resolve,reject) => {
             const data = payload
@@ -68,20 +69,26 @@ const actions = {
                                 const val = new Decimal(valor)
                                 context.commit('setCustoRel',{mes:mes, val:val})
                             }
+
                             //remover meses vazios - pegando os meses sem custo
-                            const mesesVazios = [];
-                            for (let i=0; i<12;i++){
-                                if (context.getters.getCustosRel[i] === 0 ){
-                                    mesesVazios.push(i)
-                                }
-                            }
-                            //removendo meses vazios
-                            context.commit('formatDadosCustos', mesesVazios)
+                            // const mesesVazios = [];
+                            // for (let i=0; i<12;i++){
+                            //     if (context.getters.getCustosRel[i] === 0 ){
+                            //         mesesVazios.push(i)
+                            //     }
+                            // }
+
                             //montar tabela com valores
                             for (let i = 0; i < context.getters.getCustosRel.length; i++){
-                                context.commit('setValTabelaCustos',{mes:context.getters.getMeses[i],
-                                    custo:context.getters.getCustosRel[i].toFixed(2).replace('.',',')})
+                                context.commit('setValTabelaCustos',
+                                    {mes:context.getters.getMeses[i],
+                                        custo:context.getters.getCustosRel[i].toFixed(2).replace('.',',')})
                             }
+
+                            //removendo meses vazios
+                            // context.commit('formatDadosCustos', mesesVazios)
+
+
                             //pegar a média mensal de custos
                             var totCustoMes = new Decimal(0)
                             const totMeses = new Decimal(context.getters.getCustosRel.length)

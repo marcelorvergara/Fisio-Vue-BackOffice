@@ -85,12 +85,27 @@
       <!--    relatório 4-->
       <b-row v-if="showTable4" class="d-block">
         <b-container>
+          <div class="small text-center">
+            <chart :options="options" :chartdata="chartData4" ></chart>
+          </div>
+          <div class="tabela mb-5">
+           valor {{$store.getters.custoTabela2 }}
+            <b-table small caption-top
+                     striped hover :fields="fields4" :items="$store.getters.getCustoTabela2">
+              <!--<template #table-caption> <span style="color: black" v-html=""></span></template>-->
+            </b-table>
+          </div>
+        </b-container>
+      </b-row>
+      <!--    relatório 5 PIE-->
+      <b-row v-if="showTable5" class="d-block">
+        <b-container>
           <div class="smallPie text-center">
-            <chart-pie :options="optionsPie" :chartdata="chartData4" ></chart-pie>
+            <chart-pie :options="optionsPie" :chartdata="chartData5" ></chart-pie>
           </div>
           <div class="tabela mb-5">
             <b-table small caption-top
-                     striped hover :fields="fields4" :items="$store.getters.getClassiTable">
+                     striped hover :fields="fields5" :items="$store.getters.getClassiTable">
               <!--<template #table-caption> <span style="color: black" v-html=""></span></template>-->
             </b-table>
           </div>
@@ -149,6 +164,10 @@ export default {
         {key: 'custo' ,sortable:true, label:'Custo Total R$'}
       ],
       fields4: [
+      {key: 'mes',sortable:true, label: 'Mês'},
+      {key: 'valor' ,sortable:true, label:'Custo Total Mensal em R$'}
+    ],
+      fields5: [
         {key: 'classificacao',sortable:true, label: 'Classificação'},
         {key: 'tabela' ,sortable:true, label:'Custo Total R$'}
       ],
@@ -156,6 +175,7 @@ export default {
       showTable2:false,
       showTable3:false,
       showTable4:false,
+      showTable5:false,
       optionsPie:{
         legend: {
           display: true
@@ -257,8 +277,27 @@ export default {
           }
         ],
       },
-      //quarto relatório - custos por classificação
+      //quarto relatório - custos 2
       chartData4:{
+        labels: null,
+        datasets:[
+          {
+            label:'Custo Mensal em R$',
+            backgroundColor:'#4c9e99',
+            data: null,
+            order:1,
+            type:'bar'
+          },
+          {
+            label: 'Média Mensal de Custos',
+            data:null,
+            type:'line',
+            order: 2
+          }
+        ],
+      },
+      //quinto relatório - custos por classificação
+      chartData5:{
         labels: null,
         hoverBackgroundColor: "red",
         hoverBorderWidth: 10,
@@ -294,7 +333,8 @@ export default {
         {value: 1,    text: 'Relatório Financeiro Total' },
         {value: 2,    text: 'Relatório Financeiro Realizado' },
         {value: 3,    text: 'Custos Mensais' },
-        {value: 4,    text: 'Custos por Classificação'}
+        {value: 4,    text: 'Custos Mensais II'},
+        {value: 5,    text: 'Custos por Classificação'}
       ]
     }
   },
@@ -302,11 +342,17 @@ export default {
     limparTela(){
       this.relatorio = ''
       //zerando os dados da tabela
-      this.$store.commit('resetMesLabel')
-      this.$store.commit('resetValProc')
-      this.$store.commit('resetMediaVal')
-      this.dtfim = ''
-      this.dtini = ''
+      this.$store.commit('resetRelFinTotal')
+      this.$store.commit('resetRealizado')
+      this.$store.commit('resetCustosRel')
+      this.$store.commit('resetClassificacoes')
+      this.$store.commit('resetCustos2')
+      // this.$store.commit('resetMesLabel')
+      // this.$store.commit('resetValProc')
+      // this.$store.commit('resetMediaVal')
+      //só para facilitar os testes
+      this.dtini = new Date().toISOString().split('T')[0]
+      this.dtfim = new Date().addDays(90).toISOString().split('T')[0]
       this.showTable = false
       this.showData = false
     },
@@ -360,7 +406,6 @@ export default {
               this.chartData2.labels = this.$store.getters.getMeses
               this.chartData2.datasets[0].data = this.$store.getters.getValMesRealizado
               this.chartData2.datasets[1].data = this.$store.getters.getValMesNaoRalizado
-
               this.showTable2 = true
             }else if(res === 'Não há dados para o período pesquisado.'){
               this.mensagem = res
@@ -382,6 +427,7 @@ export default {
         this.$store.dispatch('getRelatorioCustos',{dataIni:dataTSIni,dataFim:dataTSFim})
           .then(res => {
             if (res === 'ok'){
+              console.log(this.$store.getters.getMesCustosLabel)
               this.chartData3.labels = this.$store.getters.getMesCustosLabel
               this.chartData3.datasets[0].data = this.$store.getters.getCustosRel
               this.chartData3.datasets[1].data = this.$store.getters.getMediaCustoMeses
@@ -398,7 +444,32 @@ export default {
               this.$refs['modal-err'].show()
               this.loading = false
             })
-      } else if (this.relatorio === 4){
+      } else if(this.relatorio === 4){
+        this.loading = true
+        //zerando os dados da tabela caso nova pesquisa
+        this.resetRelatorios()
+        //quarto relatório
+        this.$store.dispatch('getRelatorioCustos2',{dataIni:dataTSIni,dataFim:dataTSFim})
+            .then(res => {
+              if (res === 'ok'){
+                this.chartData4.labels = this.$store.getters.getCustoMeses2
+                this.chartData4.datasets[0].data = this.$store.getters.getCustoMensal2
+                this.chartData4.datasets[1].data = this.$store.getters.getMediaCustoMeses2
+                this.showTable4 = true
+              } else if(res === 'Não há dados para o período pesquisado.'){
+                this.mensagem = res
+                this.$refs['modal-err'].show()
+                this.loading = false
+              }
+              this.loading = false
+            })
+            .catch(err => {
+              this.mensagem = err
+              this.$refs['modal-err'].show()
+              this.loading = false
+            })
+      }
+      else if (this.relatorio === 5){
         this.loading = true
         //zerando os dados da tabela caso nova pesquisa
         this.resetRelatorios()
@@ -414,8 +485,8 @@ export default {
                     labels.push(i.classificacao)
                   }
                 }
-                this.chartData4.datasets[0].data = values
-                this.chartData4.labels = labels
+                this.chartData5.datasets[0].data = values
+                this.chartData5.labels = labels
                 this.showTable4 = true
                 this.loading = false
               } else if (res === 'Não há dados para o período pesquisado.'){
@@ -442,6 +513,8 @@ export default {
       this.showTable3 = false
       this.$store.commit('resetCustosRel')
       this.showTable4 = false
+      this.$store.commit('resetCustos2')
+      this.showTable5 = false
       this.$store.commit('resetClassificacoes')
     }
   },
