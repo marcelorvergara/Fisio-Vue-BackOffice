@@ -22,6 +22,7 @@
               <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Evolucao`}" replace>Evolução Diária</b-dropdown-item>
               <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Presenca`}" replace>Presença</b-dropdown-item>
               <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Relatorio`}" replace>Relatório</b-dropdown-item>
+              <b-dropdown-item :to="{path: `/Home/${$route.params.id}/Comissao`}" replace>Comissão</b-dropdown-item>
             </b-nav-item-dropdown>
 
           <b-nav-item-dropdown class="m-1" text="Financeiro" right v-if="$store.getters.getFuncao === 'Financeiro' || $store.getters.getFuncao === 'Admin'">

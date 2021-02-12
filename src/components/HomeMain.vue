@@ -2,7 +2,7 @@
   <div>
     <b-container class="mt-3">
       <b-row>
-        <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
+        <b-col sm="12" lg="6">
           <div class="text-left">
           <p class="mt-3">Perfis de acesso</p>
             <div class="mt-2 border border-dark p-2">
@@ -25,6 +25,15 @@
               todas as sessões cadastradas na ferramenta. Também consegue enxergar o relatório completo (com todos os pacientes)
               de presença.
               Evolução diária pode ser feita para qualquer paciente com sessão agendada.
+            </div>
+          </div>
+        </b-col>
+        <b-col class="mt-5" sm="12" lg="6">
+          <div>
+            <div class="mt-2 border border-dark p-2">
+              <li>A funcionalidade Comissão apresenta os valores relativos as sessões em que o parceiro, profissional ou administrador foi
+              o responsável pelo atendimento.
+              </li>
             </div>
           </div>
         </b-col>

@@ -84,7 +84,6 @@ const actions = {
                             }
                         }
                         //preencher meses vazios com R$ 0,00
-                        // eslint-disable-next-line no-unused-vars
                         const mesArr = ['jan.','fev.','mar.','abr.','mai.','jun.','jul.','ago.','set.','out.','nov.','dez.']
                         let idx = mesArr.indexOf(context.getters.getCustoMeses2[0].split(' ')[0])
                         const newMeses = []
@@ -131,9 +130,10 @@ const actions = {
                         const tableLine = []
                         for (let i=0; i< context.getters.getCustoMensal2.length; i++){
                             const linha = {
-                                mes:context.getters.getCustoMeses2[i],
-                                valor:context.getters.getCustoMensal2[i]
+                                mes: context.getters.getCustoMeses2[i],
+                                valor: context.getters.getCustoMensal2[i].toFixed(2).toString().replace('.', ',')
                             }
+
                             tableLine.push(linha)
                         }
                         context.commit('setCustoTabela2',tableLine)

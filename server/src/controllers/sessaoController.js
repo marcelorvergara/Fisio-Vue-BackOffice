@@ -188,6 +188,6 @@ function getSessoesShare(querySnapshot){
             .then(() => {
                 console.warn('tamanho enviado',listSessoes.length)
                 resolve(listSessoes)
-            }) .catch( err => reject(new functions.https.HttpsError('failed-precondition', err.message || 'Internal Server Error')))
+            }) .catch(err => reject(err))
     })
 }

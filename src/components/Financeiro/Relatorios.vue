@@ -340,7 +340,7 @@ export default {
   },
   methods:{
     limparTela(){
-      this.relatorio = ''
+      this.relatorio = null
       //zerando os dados da tabela
       this.$store.commit('resetRelFinTotal')
       this.$store.commit('resetRealizado')
@@ -355,6 +355,15 @@ export default {
       this.dtfim = new Date().addDays(90).toISOString().split('T')[0]
       this.showTable = false
       this.showData = false
+      this.showTable2 = false
+      this.showData2 = false
+      this.showTable3 = false
+      this.showData3 = false
+      this.showTable4 = false
+      this.showData4 = false
+      this.showTable5 = false
+      this.showData5 = false
+
     },
     getRandomInt() {
       return Math.floor(Math.random() * (50 - 5 + 1)) + 5;
@@ -487,7 +496,7 @@ export default {
                 }
                 this.chartData5.datasets[0].data = values
                 this.chartData5.labels = labels
-                this.showTable4 = true
+                this.showTable5 = true
                 this.loading = false
               } else if (res === 'Não há dados para o período pesquisado.'){
                 this.mensagem = res
@@ -521,11 +530,9 @@ export default {
   created() {
     //só para facilitar os testes
     this.dtini = new Date().toISOString().split('T')[0]
-    this.dtfim = new Date().addDays(3).toISOString().split('T')[0]
-    //zerando os dados da tabela
-    this.$store.commit('resetRelFinTotal')
-    //zerando relatório 2 (realizado)
-    this.$store.commit('resetRealizado')
+    this.dtfim = new Date().addDays(90).toISOString().split('T')[0]
+    //zerando os dados das tabelas e relatórios
+    this.resetRelatorios()
   }
 }
 </script>

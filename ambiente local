@@ -3,6 +3,7 @@ sudo apt-get install openjdk-8-jre
 //sdk firebase
 export FIRESTORE_EMULATOR_HOST="localhost:8090"
 export FIREBASE_AUTH_EMULATOR_HOST="localhost:9099"
+sudo killall -9 node //para problemas com nodemon
 
 export GOOGLE_APPLICATION_CREDENTIALS=
 

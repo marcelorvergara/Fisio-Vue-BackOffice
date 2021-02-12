@@ -9,11 +9,13 @@ import realizado from "./modules/relatorios/realizado";
 import custos from "./modules/relatorios/custos";
 import custosII from "./modules/relatorios/custosII"
 import classificacaoCustos from "./modules/relatorios/classificacaoCustos";
+import comissaoPacientes from "@/store/modules/relatorios/comissaoPacientes";
 
 Vue.use(Vuex);
 
 export const store = new Vuex.Store({
     modules:{
+        comissaoPacientes,
         relatorioFinTotal,
         classificacaoCustos,
         custos,

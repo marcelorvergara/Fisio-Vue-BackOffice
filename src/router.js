@@ -15,6 +15,7 @@ import Evolucao from "@/components/Pacientes/Evolucao";
 import Relatorios from "@/components/Financeiro/Relatorios";
 import Custos from "@/components/Financeiro/Custos";
 import TrocaSenha from "@/components/TrocaSenha";
+import Comissao from "@/components/Pacientes/Comissao";
 
 export const routes = [
     {
@@ -47,6 +48,7 @@ export const routes = [
             { path: 'Evolucao', component: Evolucao, meta: { breadcrumb: [ { text: 'Evolução Diária dos Pacientes'}]} },
             { path: 'Relatorios', component: Relatorios, meta: { breadcrumb: [ { text: 'Relatórios Financeiros'}]} },
             { path: 'Custos', component: Custos, meta: { breadcrumb: [ { text: 'Custos Operacionais'}]} },
+            { path: 'Comissao', component: Comissao, meta: { breadcrumb: [ { text: 'Comissão'}]} },
         ]
     }
     ]

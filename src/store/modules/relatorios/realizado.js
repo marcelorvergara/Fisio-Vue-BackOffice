@@ -55,7 +55,7 @@ const actions = {
                     .orderBy('dataFS', 'desc')
                     .get()
                     .then(function(querySnapshot) {
-                        console.log(querySnapshot.docs.length)
+                        // console.log(querySnapshot.docs.length)
                         querySnapshot.forEach(function(doc) {
                             const proc = doc.get('procedimento').id
                             const prof = doc.get('profissional').id

@@ -18,6 +18,7 @@ const users = require('./routes/usersRoute')
 const sessao = require('./routes/sessoesRoute')
 const zap = require('./routes/zapRoute')
 const relatorio = require('./routes/relatorioRoute')
+const comissao = require('./routes/comissaoRoute')
 
 app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
@@ -27,6 +28,7 @@ app.use('/person', personRoute);
 app.use('/users', users)
 app.use('/sessao', sessao)
 app.use('/zap', zap)
-app.use('/relatorio',relatorio)
+app.use('/relatorio', relatorio)
+app.use('/comissao', comissao)
 
 module.exports = app;

@@ -3,7 +3,7 @@ const router = express.Router()
 
 router.get('/', function (req,res,next){
     res.status(200).send({
-        title:'Node server API',
+        title:'API System',
         version: '0.1'
     })
 })
