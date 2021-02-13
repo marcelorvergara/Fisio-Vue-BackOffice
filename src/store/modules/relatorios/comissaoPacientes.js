@@ -7,12 +7,18 @@ import axios from "axios";
 
 const state = {
     datas: [],
-    valores: []
+    valores: [],
+    media:[],
+    tabela:[],
+    total: 0
 }
 
 const getters = {
     getDatas: state => state.datas,
-    getValores: state => state.valores
+    getValores: state => state.valores,
+    getMedia: state => state.media,
+    getTabela: state => state.tabela,
+    getTotal: state => state.total
 }
 
 const mutations = {
@@ -22,9 +28,21 @@ const mutations = {
     setValores(state,payload){
         state.valores.push(payload)
     },
+    setMedia(state,payload){
+      state.media.push(payload)
+    },
+    setTabela(state,payload){
+        state.tabela = payload
+    },
+    setTotal(state,payload){
+      state.total = payload
+    },
     resetDados(state){
         state.datas = []
         state.valores = []
+        state.media = []
+        state.tabela = []
+        state.total = 0
     }
 }
 
@@ -58,9 +76,17 @@ const actions = {
                       const newDataSess = dataSess.toLocaleDateString('pt-BR', options)
                       //encontrar o valor da sessão
                       const proc = context.getters.getProcedimentos.find(f => f.uuid === sessao.proc)
-                      diaVal.push({dia:newDataSess,valor:proc.valor})
+                      //cálculo comissão
+                      //cálculo da comissão é valor comissão/100 * valor da sessão
+                      const comissao = new Decimal(proc.comissao).div(100)
+                      const valorSessao = new Decimal(proc.valor.toString().replace(',','.'))
+                      const valComissaoInt = comissao.times(valorSessao)
+                      const valComissao = valComissaoInt.toFixed(2)
+
+                      diaVal.push({dia:newDataSess,valor:valComissao})
                   }
                   for (let i = 0; i< diasArr.length; i++){
+                      //inserindo os dias no state e abaixo realizando a soma de cada dia
                       context.commit('setDatas',diasArr[i].data)
                       for (let j = 0; j<diaVal.length; j++){
                           let val = new Decimal(0)
@@ -70,9 +96,31 @@ const actions = {
                           }
                       }
                   }
+                  //média e inserção do state de valores
+                  let dias = new Decimal(diasArr.length)
+                  let valorTot = new Decimal(0.0)
                   for (let item of diasArr){
-                      context.commit('setValores',parseFloat(item.valor))
+                      //colocando os valores em cada dia no state
+                      const valor = parseFloat(item.valor)
+                      const valorDecimal = new Decimal(valor)
+                      valorTot = valorTot.add(valorDecimal)
+                      context.commit('setValores',valor)
                   }
+                  const media = valorTot.div(dias)
+                  //total para mostrar na tela
+                  context.commit('setTotal',valorTot.toFixed(2).toString().replace('.', ','))
+
+                  //criando a tabela para mostrar os valores e inserindo a média a cada dia
+                  const tabela = []
+                  for (let i=0; i<context.getters.getValores.length; i++){
+                      const objDia = {
+                          dia: context.getters.getDatas[i],
+                          valor:context.getters.getValores[i].toFixed(2).toString().replace('.', ',')
+                      }
+                      tabela.push(objDia)
+                      context.commit('setMedia',media.toDP(2,Decimal.ROUND_UP))
+                  }
+                  context.commit('setTabela', tabela)
                   resolve('ok')
               })
       })
@@ -83,15 +131,41 @@ const actions = {
             axios.post(process.env.VUE_APP_SEVER + '/comissao', payload)
                 .then(result => {
                     context.commit('resetDados')
+                    let totVal = new Decimal(0.0)
+                    const tabela = []
                     for (let item of result.data){
                         const proc = context.getters.getProcedimentos.find(f => f.uuid === item.proc)
-                        const valor = parseFloat(proc.valor).toFixed(2)
-                        context.commit('setValores', valor)
+                        //cálculo da comissão é valor comissão/100 * valor da sessão
+                        const comissao = new Decimal(proc.comissao).div(100)
+                        const valorSessao = new Decimal(proc.valor.toString().replace(',','.'))
+                        const valComissaoInt = comissao.times(valorSessao)
+                        const valComissao = valComissaoInt.toFixed(2)
+                        context.commit('setValores', valComissao)
+
+                        //cálculo do total
+                        totVal = totVal.add(valComissao)
 
                         const data = item.sortData.split('-')
                         const dataBr = data[2]+'-'+data[1]+'-'+data[0]
                         context.commit('setDatas', dataBr)
+
+                        //tabela abaixo do gráfico
+                        const objComissao = {
+                            dia:dataBr,
+                            valor:valComissao.toString().replace('.',',')
+                        }
+                        tabela.push(objComissao)
                     }
+                    //cálculo da média
+                    const dias = new Decimal(result.data.length)
+                    const media = totVal.div(dias)
+                    // eslint-disable-next-line no-unused-vars
+                    for (let item of context.getters.getValores){
+                        context.commit('setMedia',parseFloat(media).toFixed(2))
+                    }
+
+                    context.commit('setTabela',tabela)
+                    context.commit('setTotal',totVal)
                     resolve('ok')
                 })
                 .catch(err => reject(err))

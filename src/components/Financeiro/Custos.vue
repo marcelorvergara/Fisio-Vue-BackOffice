@@ -266,7 +266,7 @@ export default {
         //cadastrando custo para cada mês
         if (this.form.parcelas > 1){
           //calcular o valor das parcelas
-          const valTot = new Decimal(this.form.valor)
+          const valTot = new Decimal(this.form.valor.toString().replace(',','.'))
           const qtdParcela = new Decimal(this.form.parcelas).toDP(0,Decimal.ROUND_UP)
           const parcela = valTot.div(qtdParcela)
           //atribuindo esse valor fora do loop para incrementar um mês dentro do loop

@@ -44,11 +44,16 @@
             <chart :options="options" :chartdata="chartData" ></chart>
           </div>
           <div class="tabela mb-5">
-<!--            <b-table small caption-top-->
-<!--                     striped hover :items="$store.getters.getRelProcTable"-->
-<!--                     :fields="fields">-->
+            <div class="text-right mb-3">
+              <span>Total no período R$ {{ $store.getters.getTotal }}</span>
+              <br>
+              <span>Média no período R$ {{ $store.getters.getMedia[0] }}</span>
+            </div>
+            <b-table small caption-top
+                     striped hover :items="$store.getters.getTabela"
+                     :fields="fields">
 <!--              <template #table-caption> <span style="color: black" v-html="mediaPeriodo"></span></template>-->
-<!--            </b-table>-->
+            </b-table>
           </div>
         </b-container>
       </b-row>
@@ -78,13 +83,11 @@ export default {
       relList:[
         {value: null, text: 'Selecione um relatório'},
         {value: 1,    text: 'Comissão Total' },
-        {value: 2,    text: 'Comissão por Dia' },
-        {value: 3,    text: 'Comissão por Procedimento' }
+        {value: 2,    text: 'Comissão por Dia' }
       ],
       fields: [
-        {key: 'mes',sortable:true,label: 'Mês'},
-        {key: 'valTab' ,sortable:true,label:'Valor/Sessão em R$'},
-        {key: 'procedimento',sortable:true,label:'Procedimento'}
+        {key: 'dia',sortable:true,label: 'Dia'},
+        {key: 'valor' ,sortable:true,label:'Valor/Sessão em R$'},
       ],
       options: { //Chart.js options
         scales: {
@@ -120,14 +123,14 @@ export default {
             label:' R$',
             backgroundColor:'#42b395',
             data: null,
-            order:2,
+            order:1,
             type:'line'
           },
           {
-            label: 'Média mensal',
+            label: 'Média diária',
             data:null,
             type:'line',
-            order: 1
+            order: 2
           }
         ],
       },
@@ -152,11 +155,10 @@ export default {
           dataFim: dataTSFim,
           uid:this.$store.getters.user.data.uid})
             .then(res => {
-                console.log(res)
                 if (res === 'ok'){
                   this.chartData.labels = this.$store.getters.getDatas
                   this.chartData.datasets[0].data = this.$store.getters.getValores
-                  console.log(this.chartData.datasets[0].data)
+                  this.chartData.datasets[1].data = this.$store.getters.getMedia
                   this.showTable = true
                 }
               this.loading = false
@@ -171,7 +173,7 @@ export default {
             if (res === 'ok'){
               this.chartData.labels = this.$store.getters.getDatas
               this.chartData.datasets[0].data = this.$store.getters.getValores
-              console.log(this.chartData.datasets[0].data)
+              this.chartData.datasets[1].data = this.$store.getters.getMedia
               this.showTable = true
             }
             this.loading = false
