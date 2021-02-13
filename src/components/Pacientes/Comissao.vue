@@ -78,8 +78,8 @@ export default {
       relList:[
         {value: null, text: 'Selecione um relatório'},
         {value: 1,    text: 'Comissão Total' },
-        {value: 2,    text: 'Comissão por Procedimento' },
-        {value: 3,    text: 'Comissão por Dia' }
+        {value: 2,    text: 'Comissão por Dia' },
+        {value: 3,    text: 'Comissão por Procedimento' }
       ],
       fields: [
         {key: 'mes',sortable:true,label: 'Mês'},
@@ -117,7 +117,7 @@ export default {
             barThickness: 10,
             maxBarThickness: 14,
             minBarLength: 5,
-            label:' R$ por Sessão',
+            label:' R$',
             backgroundColor:'#42b395',
             data: null,
             order:2,
@@ -138,7 +138,7 @@ export default {
       this.showData = true
     },
     limparTela() {
-      console.log('lima tela')
+      this.resetRelatorios()
     },
     buscarDados() {
       const dataIni = new Date(this.dtini);
@@ -148,7 +148,6 @@ export default {
       if (this.relatorio === 1) {
         this.loading = true
         this.resetRelatorios()
-        console.log()
         this.$store.dispatch('getComissaoPacientes',{dataIni:dataTSIni,
           dataFim: dataTSFim,
           uid:this.$store.getters.user.data.uid})
@@ -160,17 +159,28 @@ export default {
                   console.log(this.chartData.datasets[0].data)
                   this.showTable = true
                 }
-
-
-
-
-
               this.loading = false
             })
+      }else if(this.relatorio === 2){
+        this.loading = true
+        this.resetRelatorios()
+        this.$store.dispatch('getComissaoPacientesDia',{dataIni:dataTSIni,
+        dataFim: dataTSFim,
+        uid:this.$store.getters.user.data.uid})
+          .then(res => {
+            if (res === 'ok'){
+              this.chartData.labels = this.$store.getters.getDatas
+              this.chartData.datasets[0].data = this.$store.getters.getValores
+              console.log(this.chartData.datasets[0].data)
+              this.showTable = true
+            }
+            this.loading = false
+          })
       }
     },
     resetRelatorios(){
       this.showTable = false
+      this.$store.commit('resetDados')
     }
   },
   created() {
