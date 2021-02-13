@@ -17,20 +17,24 @@ exports.post = (req, res, next) => {
                 .then((userRec) => {
                     if (!userRec.disabled){
                         getUuid(data.uid).then(resp => {
-                            const profDocRef = admin.firestore()
-                                .collection('profissionais')
-                                .doc(resp.uuid);
-                            const db = admin.firestore()
-                            db.collection('sessoes')
-                                .where('profissional', "==", profDocRef)
-                                .orderBy('data')
-                                .get()
-                                .then(function(querySnapshot) {
-                                    getSessoesShare(querySnapshot).then(r => {
-                                        console.log(r)
-                                        res.status(200).send(r)
+                            if (!resp){
+                                res.status(500).send('Problema na verivicação do profissional.')
+                            }else{
+                                const profDocRef = admin.firestore()
+                                    .collection('profissionais')
+                                    .doc(resp.uuid);
+                                const db = admin.firestore()
+                                db.collection('sessoes')
+                                    .where('profissional', "==", profDocRef)
+                                    .orderBy('data')
+                                    .get()
+                                    .then(function(querySnapshot) {
+                                        getSessoesShare(querySnapshot).then(r => {
+                                            console.log(r)
+                                            res.status(200).send(r)
+                                        }).catch(err => res.status(500).send(err))
                                     }).catch(err => res.status(500).send(err))
-                                }).catch(err => res.status(500).send(err))
+                            }
                         }).catch(err => res.status(500).send(err))
                     }
                 }).catch(err => res.status(500).send(err))
@@ -44,7 +48,7 @@ async function getUuid(uuid){
     const profRef = db.collection('profissionais');
     const snapshot = await profRef.where('admUid', '==', uuid).get();
     if (snapshot.empty) {
-        return ('Profissional não cadastrado.');
+        return false;
     }else {
         snapshot.forEach(doc => {
             prof = doc.data()

@@ -58,6 +58,23 @@
         </b-container>
       </b-row>
     </b-container>
+
+    <!--    modal para alerta erro-->
+    <b-modal ref="modal-err" ok-only>
+      <template #modal-title>
+        <b-icon icon="x-circle" scale="2" variant="danger"></b-icon>
+        <span class="m-3">Relatórios</span>
+      </template>
+      <p v-html="mensagem"></p>
+    </b-modal>
+    <!--    modal para ok ok -->
+    <b-modal ref="modal-ok" ok-only>
+      <template #modal-title>
+        <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
+        <span class="m-3">Relatórios</span>
+      </template>
+      <p v-html="mensagem"></p>
+    </b-modal>
   </div>
 </template>
 
@@ -74,6 +91,7 @@ export default {
   },
   data(){
     return{
+      mensagem: '',
       showTable:false,
       showData:false,
       loading:false,
@@ -162,6 +180,10 @@ export default {
                   this.showTable = true
                 }
               this.loading = false
+            }).catch(err => {
+              this.mensagem = err
+              this.$refs['modal-err'].show()
+              this.loading = false
             })
       }else if(this.relatorio === 2){
         this.loading = true
@@ -176,6 +198,10 @@ export default {
               this.chartData.datasets[1].data = this.$store.getters.getMedia
               this.showTable = true
             }
+            this.loading = false
+          }).catch(err => {
+            this.mensagem = err
+            this.$refs['modal-err'].show()
             this.loading = false
           })
       }

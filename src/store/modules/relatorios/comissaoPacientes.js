@@ -79,7 +79,11 @@ const actions = {
                       //cálculo comissão
                       //cálculo da comissão é valor comissão/100 * valor da sessão
                       const comissao = new Decimal(proc.comissao).div(100)
-                      const valorSessao = new Decimal(proc.valor.toString().replace(',','.'))
+                      let valorSessao = new Decimal(proc.valor.toString().replace(',','.'))
+                      if (proc.qtdSessoes > 1){
+                          const qtdSess = new Decimal(proc.qtdSessoes)
+                          valorSessao = valorSessao.div(qtdSess)
+                      }
                       const valComissaoInt = comissao.times(valorSessao)
                       const valComissao = valComissaoInt.toFixed(2)
 
@@ -122,7 +126,9 @@ const actions = {
                   }
                   context.commit('setTabela', tabela)
                   resolve('ok')
-              })
+              }).catch(err => {
+                  reject(err.response.data)
+          })
       })
     },
     async getComissaoPacientes(context, payload){
@@ -130,6 +136,7 @@ const actions = {
         return new Promise((resolve,reject) => {
             axios.post(process.env.VUE_APP_SEVER + '/comissao', payload)
                 .then(result => {
+                    console.log(result)
                     context.commit('resetDados')
                     let totVal = new Decimal(0.0)
                     const tabela = []
@@ -137,7 +144,11 @@ const actions = {
                         const proc = context.getters.getProcedimentos.find(f => f.uuid === item.proc)
                         //cálculo da comissão é valor comissão/100 * valor da sessão
                         const comissao = new Decimal(proc.comissao).div(100)
-                        const valorSessao = new Decimal(proc.valor.toString().replace(',','.'))
+                        let valorSessao = new Decimal(proc.valor.toString().replace(',','.'))
+                        if (proc.qtdSessoes > 1){
+                            const qtdSess = new Decimal(proc.qtdSessoes)
+                            valorSessao = valorSessao.div(qtdSess)
+                        }
                         const valComissaoInt = comissao.times(valorSessao)
                         const valComissao = valComissaoInt.toFixed(2)
                         context.commit('setValores', valComissao)
@@ -168,7 +179,9 @@ const actions = {
                     context.commit('setTotal',totVal)
                     resolve('ok')
                 })
-                .catch(err => reject(err))
+                .catch(err => {
+                    reject(err.response.data)
+                })
         })
     }
 }
