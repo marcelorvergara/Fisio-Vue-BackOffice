@@ -5,7 +5,7 @@
         <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
           <b-card header="Cadastro de Procedimentos" header-bg-variant="dark" header-text-variant="white">
             <b-tooltip placement="topright" target="grp-nome" v-if="$store.getters.getSatusTooltip">
-              Para editar os dados de um procedimento, selecione seu nome na lista que aparece em "Nome do Procedimento ou Pacote:" ao digitar seu nome
+              Para editar os dados de um procedimento, selecione seu nome na lista que aparece em "Nome do Procedimento ou Pacote:" ao digitar seu nome.
             </b-tooltip>
             <b-form-group id="grp-nome" label="Nome do Procedimento ou Pacote:" label-for="nome">
               <vue-typeahead-bootstrap
@@ -53,6 +53,12 @@
               </b-row>
               <div class="text-right mt-3">
                 <b-button type="reset" variant="outline-danger">Resetar</b-button>
+                <b-button id="desabilitaBtn" v-if="btnStatus" @click="desabilita" variant="outline-primary" class="ml-2">
+                  <b-tooltip placement="auto" target="desabilitaBtn" v-if="$store.getters.getSatusTooltip">
+                    Esse procedimento não será mais exibido para futuros agendamentos de pacientes.
+                  </b-tooltip>
+                  <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+                  Desabilitar</b-button>
                 <b-button type="submit" :variant="variante" class="ml-2">
                   <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
                   {{ submitBtn}}</b-button>
@@ -82,7 +88,7 @@
 </template>
 
 <script>
-import { CurrencyDirective } from 'vue-currency-input'
+import {CurrencyDirective} from 'vue-currency-input'
 
 export default {
   name: "Procedimentos",
@@ -112,7 +118,12 @@ export default {
     nomesProcs() {
       var nomes = [];
       for (let i = 0; i < this.$store.getters.getProcedimentos.length; i++) {
-        nomes.push(this.$store.getters.getProcedimentos[i].nomeProcedimento.trim())
+        if (this.$store.getters.getProcedimentos[i].habilitado){
+          //testa se o proc está habilitado (não teve o preço reajustado)
+          //procs que tiveram o preço reajustado ficam no histõrico para relatórios
+          //e não serão utilizados para edição
+          nomes.push(this.$store.getters.getProcedimentos[i].nomeProcedimento.trim())
+        }
       }
       return nomes.sort(function (a, b) {
         return a.localeCompare(b);
@@ -120,6 +131,20 @@ export default {
     }
   },
   methods:{
+    async desabilita(){
+      await this.$store.dispatch('desabilitaProcedimentoDb', this.uuid)
+          .then((retorno) => {
+            this.mensagem = retorno
+            this.loading = false
+            this.$refs['modal-ok'].show()
+            this.resetar()
+          })
+          .catch(error => {
+            this.mensagem = error
+            this.loading = false
+            this.$refs['modal-err'].show()
+          })
+    },
     preencheVal(nome){
       this.btnStatus = true
       const dados = this.$store.getters.getProcedimentos.find( f => f.nomeProcedimento.trim() === nome)
@@ -127,7 +152,6 @@ export default {
       this.form.qtdSessoes = dados.qtdSessoes
       this.form.comissao = dados.comissao
       this.form.valor = `R$ ${dados.valor}`
-
       this.submitBtn = 'Atualizar'
       this.variante = 'outline-warning'
       this.uuid = dados.uuid
@@ -135,6 +159,9 @@ export default {
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
+      this.form.habilitado = true
+      //removendo o R$
+      this.form.valor = this.form.valor.replace('R$ ','')
       if(this.form.qtdPacientes === '' || this.nomeProcedimento === ''){
         this.mensagem = 'É necessário preencher todos os campos.'
         this.loading = false
@@ -143,20 +170,66 @@ export default {
         this.form.nomeProcedimento = this.nomeProcedimento.trim()
         //vamos testar se é para cadastrar ou atualizar
         if (this.submitBtn === 'Atualizar') {
-          this.form.uuid = this.uuid
+          //testar se há atualização de preço
+          const proc = this.$store.getters.getProcedimentos.find(f => f.uuid === this.uuid)
+          if (proc.valor !== this.form.valor.replace('R$ ','')){
+            //iremos desabilitar o proc. atual e criar um novo proc. para que
+            //somente novas consultar tenham o novo valor. O nome continuará o mesmo
+            // e na hora de carregar em agendamentos, será testado o campo 'habilitado'
+            await this.$store.dispatch('desabilitaProcedimentoDb', this.uuid).then(res => {
+              if (res === 'Procedimento desabilitado com sucesso'){
+                //para chegar na action e atribuir um novo uuid e criar um novo proc.
+                this.form.uuid = undefined
+                this.$store.dispatch('setProcedimentoDb', this.form)
+                    .then((retorno) => {
+                      //como a atualização de preço é igual a criar um novo proc., temos que
+                      //editar a mensagem de retorno
+                      this.mensagem = retorno.replace('cadastrado', 'atualizado')
+                      this.loading = false
+                      this.$refs['modal-ok'].show()
+                      this.resetar()
+                    })
+                    .catch(error => {
+                      this.mensagem = error
+                      this.loading = false
+                      this.$refs['modal-err'].show()
+                    })
+              }
+            })
+          }else{
+            //somente atualizar, sem atualização de preço
+            this.form.uuid = this.uuid
+            await this.$store.dispatch('setProcedimentoDb', this.form)
+                .then((retorno) => {
+                  this.mensagem = retorno
+                  this.loading = false
+                  this.$refs['modal-ok'].show()
+                  this.resetar()
+                })
+                .catch(error => {
+                  this.mensagem = error
+                  this.loading = false
+                  this.$refs['modal-err'].show()
+                })
+          }
+
+        } else{
+          //para chegar na action e atribuir um novo uuid e criar um novo proc.
+          this.form.uuid = undefined
+          await this.$store.dispatch('setProcedimentoDb', this.form)
+              .then((retorno) => {
+                this.mensagem = retorno
+                this.loading = false
+                this.$refs['modal-ok'].show()
+                this.resetar()
+              })
+              .catch(error => {
+                this.mensagem = error
+                this.loading = false
+                this.$refs['modal-err'].show()
+              })
         }
-        await this.$store.dispatch('setProcedimentoDb', this.form)
-            .then((retorno) => {
-              this.mensagem = retorno
-              this.loading = false
-              this.$refs['modal-ok'].show()
-              this.resetar()
-            })
-            .catch(error => {
-              this.mensagem = error
-              this.loading = false
-              this.$refs['modal-err'].show()
-            })
+
       }
     },
     resetar(){

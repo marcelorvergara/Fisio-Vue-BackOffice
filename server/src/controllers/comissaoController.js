@@ -30,7 +30,6 @@ exports.post = (req, res, next) => {
                                     .get()
                                     .then(function(querySnapshot) {
                                         getSessoesShare(querySnapshot).then(r => {
-                                            console.log(r)
                                             res.status(200).send(r)
                                         }).catch(err => res.status(500).send(err))
                                     }).catch(err => res.status(500).send(err))
@@ -105,7 +104,7 @@ function getSessoesShare(querySnapshot){
         // tem que aguardar na disciplina II
         return Promise.all([listSessoes])
             .then(() => {
-                console.warn('tamanho enviado',listSessoes.length)
+                // console.warn('tamanho enviado',listSessoes.length)
                 resolve(listSessoes)
             }) .catch(err => reject(err))
     })

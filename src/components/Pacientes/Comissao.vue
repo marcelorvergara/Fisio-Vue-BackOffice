@@ -63,7 +63,7 @@
     <b-modal ref="modal-err" ok-only>
       <template #modal-title>
         <b-icon icon="x-circle" scale="2" variant="danger"></b-icon>
-        <span class="m-3">Relatórios</span>
+        <span class="m-3">Comissão</span>
       </template>
       <p v-html="mensagem"></p>
     </b-modal>
@@ -71,7 +71,7 @@
     <b-modal ref="modal-ok" ok-only>
       <template #modal-title>
         <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
-        <span class="m-3">Relatórios</span>
+        <span class="m-3">Comissão</span>
       </template>
       <p v-html="mensagem"></p>
     </b-modal>

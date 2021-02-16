@@ -1109,8 +1109,10 @@ export default {
       }
     },
     getNomeProcedimentos(){
-      for (let i=0; i< this.$store.getters.getProcedimentos.length;i++){
-        this.procedimentos.push(this.$store.getters.getProcedimentos[i].nomeProcedimento)
+      for (let i=0; i< this.$store.getters.getProcedimentos.length; i++){
+        if (this.$store.getters.getProcedimentos[i].habilitado){
+          this.procedimentos.push(this.$store.getters.getProcedimentos[i].nomeProcedimento)
+        }
       }
     },
     getSessoesDb(){

@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-unused-vars
-import { connDb } from "../connDb";
+import {connDb} from "../connDb";
 import axios from 'axios'
+
 const state = {
     procedimentos:[],
     profissionais: [],
@@ -98,6 +99,22 @@ const actions = {
                     reject(err)
                 })
         })
+    },
+    desabilitaProcedimentoDb(context,payload){
+        return new Promise((resolve,reject) => {
+            connDb.methods.connDbFirestore().collection('procedimentos')
+                .doc(payload)
+                .set({habilitado:false},{merge:true})
+                .then(() => {
+                    console.log(payload)
+                    context.dispatch('getProcedimentosDB')
+                    resolve('Procedimento desabilitado com sucesso')
+                })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+
     },
     setProcedimentoDb(context, payload) {
         const data = payload
