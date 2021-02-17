@@ -54,8 +54,8 @@
                      ref="vuecal"
                      :time-from="7 * 60" :time-to="22 * 60" :time-step="60"
                      :hide-weekdays="[7]"
-                     events-on-month-view="short"
-                     show-all-day-events="true"
+                     events-on-month-view="false"
+                     show-all-day-events="false"
                      :events="$store.getters.getEvents"
                      :disable-views="['years', 'year']"
                      :editable-events="{ title: false, drag: false, resize: false, delete: false, create: true }"
@@ -309,7 +309,8 @@
       <b-card>
         <b-card-text>
           <ul>
-            <li>Profissional: {{ selectedEvent.content }}</li>
+            <li v-if="!feriado">Profissional: {{ selectedEvent.content }}</li>
+            <li v-else> Feriado {{ selectedEvent.content}}</li>
             <li>Início: {{ selectedEvent.start && selectedEvent.start.formatTime() }}</li>
             <li>Fim: {{ selectedEvent.end && selectedEvent.end.formatTime() }}</li>
           </ul>
@@ -319,11 +320,11 @@
       </b-card>
       <div class="text-right mt-3">
         <!--  //cancelar sessão pelo uuid da sessão-->
-        <b-button variant="outline-danger" @click="cancel(selectedEvent)">
+        <b-button v-if="!feriado" variant="outline-danger" @click="cancel(selectedEvent)">
           Desmarcar
           <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
         </b-button>
-        <b-button id="confirmar" class="ml-2" variant="outline-info" @click="confirmar(selectedEvent)">
+        <b-button v-if="!feriado" id="confirmar" class="ml-2" variant="outline-info" @click="confirmar(selectedEvent)">
           Confirmar
           <b-spinner v-if="loadingConfirmar" small label="Carregando..."></b-spinner>
           <b-tooltip placement="auto" target="confirmar" v-if="$store.getters.getSatusTooltip">
@@ -355,6 +356,7 @@ export default {
   },
   data(){
     return{
+      feriado:false,
       loadingConflito: false,
       flag:0,
       loadingConfirmar: false,
@@ -640,6 +642,12 @@ export default {
     },
     sessaoInfo(event){
       //mostra o modal da sessão selecionada
+      console.log(event)
+      if (event.title === 'Feriado'){
+        this.feriado = true
+      }else{
+        this.feriado = false
+      }
       this.imagem = ''
       this.selectedEvent = event
       this.$refs['info-modal'].show()
@@ -1105,7 +1113,9 @@ export default {
     },
     getNomeSalas(){
       for (let i=0; i< this.$store.getters.getSalas.length; i++) {
-        this.salas.push(this.$store.getters.getSalas[i].nomeSala)
+        if (this.$store.getters.getSalas[i].habilitado){
+          this.salas.push(this.$store.getters.getSalas[i].nomeSala)
+        }
       }
     },
     getNomeProcedimentos(){
@@ -1120,7 +1130,6 @@ export default {
         this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao}).then(res => {
           //cuidado para quando não tiver sessão nenhuma, o loading do vue-cal ficar eterno
           //e não deixar marcar nenhuma sessão
-
           if (res === 'ok'){
             this.loading = false
             const salas = []
@@ -1169,6 +1178,9 @@ export default {
             })
     }
   },
+  mounted() {
+
+  },
   created() {
     this.loading = true
     this.getSessoesDb()
@@ -1204,6 +1216,10 @@ export default {
   border: 4px white solid;
   font-size: 0.8em;
 }
+.vuecal__event.corFeriado {
+  background-color: rgba(134, 134, 134, 0.5);
+  border: 3px solid var(--corFeriado);
+  color: var(--corFeriado);}
 .vuecal__event.corDes {
   background-color: rgba(196, 193, 193, 0.5);
   border: 3px solid var(--corDes);

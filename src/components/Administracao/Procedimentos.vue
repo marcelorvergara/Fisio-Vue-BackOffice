@@ -229,7 +229,6 @@ export default {
                 this.$refs['modal-err'].show()
               })
         }
-
       }
     },
     resetar(){

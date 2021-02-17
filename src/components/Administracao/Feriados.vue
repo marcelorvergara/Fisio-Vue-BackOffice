@@ -2,8 +2,8 @@
 <div>
   <b-container class="mt-3">
     <b-row align-h="center">
-      <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3 d-flex justify-content-center">
-        <b-tooltip placement="topright" target="grp-nome" v-if="$store.getters.getSatusTooltip">
+      <b-col class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-6 col-md-offset-3">
+        <b-tooltip placement="auto" target="grp-nome" v-if="$store.getters.getSatusTooltip">
           Para editar um feriado, selecione seu nome na lista que aparece em "Feriado:" ao digitar seu nome
         </b-tooltip>
         <b-card header="Cadastro de Feriados" header-bg-variant="dark" header-text-variant="white">
@@ -24,7 +24,13 @@
               <b-form-input id="feriado" v-model="form.dtFeriado" type="date"></b-form-input>
             </b-form-group>
             <div class="text-right mt-3">
-              <b-button type="reset" variant="outline-danger" class="ml-2 mt-2">Resetar</b-button>
+              <b-button type="reset" variant="outline-danger" class="mt-2">Resetar</b-button>
+              <b-button id="desabilitaBtn" v-if="btnStatus" @click="desabilita" variant="outline-primary" class="ml-2 mt-2">
+                <b-tooltip placement="auto" target="desabilitaBtn" v-if="$store.getters.getSatusTooltip">
+                  Feriado não será mais considerado pela ferramenta e agendamentos poderão ser feitos nessa data.
+                </b-tooltip>
+                <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+                Desabilitar</b-button>
               <b-button type="submit" :variant="variante" class="ml-2 mt-2"> {{ submitBtn }}
                 <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
               </b-button>
@@ -58,6 +64,7 @@ export default {
   name: "Feriados",
   data (){
     return{
+      btnStatus:false,
       variante:'outline-success',
       uuid:null,
       mensagem:'',
@@ -82,7 +89,22 @@ export default {
     }
   },
   methods:{
+    async desabilita(){
+      await this.$store.dispatch('desabilitaFeriado',this.uuid)
+          .then((retorno) => {
+            this.mensagem = retorno
+            this.loading = false
+            this.$refs['modal-ok'].show()
+            this.resetar()
+          })
+          .catch(error => {
+            this.mensagem = error
+            this.loading = false
+            this.$refs['modal-err'].show()
+          })
+    },
     preencheVal(nome){
+      this.btnStatus = true
       const dados = this.$store.getters.getFeriados.find( f => f.nomeFeriado.trim() === nome)
       this.form.dtFeriado = dados.dtFeriado
       this.submitBtn = 'Atualizar'
@@ -92,6 +114,7 @@ export default {
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
+      this.form.habilitado = true
       this.form.nomeFeriado = this.nomeFeriado.trim()
       //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {
@@ -111,6 +134,11 @@ export default {
           })
     },
     resetar(){
+      this.btnStatus = false
+      //quando setar dois friados seguidos, deve ser gerado um novo
+      //uuid na actions
+      this.form.uuid = undefined
+      this.uuid = undefined
       this.submitBtn = 'Cadastrar'
       this.variante = 'outline-success'
       this.nomeFeriado = ''

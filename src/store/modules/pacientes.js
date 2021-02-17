@@ -385,6 +385,21 @@ const actions = {
                         dataHoraSessao: dados.horaInicio
                     })
             }
+            //pegando os feriados
+            for (let feriado of context.getters.getFeriados) {
+                if (feriado.habilitado) {
+                    context.commit('setEvents',
+                        {
+                            start: `${feriado.dtFeriado} 00:00:01`,
+                            end: `${feriado.dtFeriado} 23:59:59`,
+                            class: 'corFeriado',
+                            title: 'Feriado',
+                            content: feriado.nomeFeriado,
+                            allDay: false,
+                            background: true
+                        })
+                }
+            }
             return('ok')
         }
     },

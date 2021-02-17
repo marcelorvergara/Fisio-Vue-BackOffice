@@ -61,6 +61,20 @@ const actions = {
             }
         })
     },
+    desabilitaFeriado(context,payload){
+        return new Promise((resolve,reject) => {
+            connDb.methods.connDbFirestore().collection('feriados')
+                .doc(payload)
+                .set({habilitado:false},{merge:true})
+                .then(() => {
+                    context.dispatch('getFeriadosDB')
+                    resolve('Feriado desabilitado com sucesso')
+                })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+    },
     setFeriadoDb(context, payload) {
         const data = payload
         let msg = 'atualizado';
@@ -91,7 +105,9 @@ const actions = {
                 .then(function(querySnapshot){
                     context.commit('resetFeriados')
                     querySnapshot.forEach(function(doc) {
-                        context.commit('setFeriados', doc.data())
+                        if (doc.data().habilitado){
+                            context.commit('setFeriados', doc.data())
+                        }
                     });
                     resolve('ok')
                 })
@@ -106,7 +122,6 @@ const actions = {
                 .doc(payload)
                 .set({habilitado:false},{merge:true})
                 .then(() => {
-                    console.log(payload)
                     context.dispatch('getProcedimentosDB')
                     resolve('Procedimento desabilitado com sucesso')
                 })
@@ -114,7 +129,6 @@ const actions = {
                     reject(err)
                 })
         })
-
     },
     setProcedimentoDb(context, payload) {
         const data = payload
@@ -212,6 +226,20 @@ const actions = {
                         context.commit('setProfissionais',doc.data())
                     })
                     resolve('ok')
+                })
+                .catch(err => {
+                    reject(err)
+                })
+        })
+    },
+    desabilitaSalaDb(context,payload) {
+        return new Promise((resolve, reject) => {
+            connDb.methods.connDbFirestore().collection('salas')
+                .doc(payload)
+                .set({habilitado: false}, {merge: true})
+                .then(() => {
+                    context.dispatch('getSalasDb')
+                    resolve('Sala desabilitada com sucesso')
                 })
                 .catch(err => {
                     reject(err)

@@ -26,6 +26,12 @@
               </b-form-group>
               <div class="text-right mt-3">
                 <b-button type="reset" variant="outline-danger">Resetar</b-button>
+                <b-button id="desabilitaBtn" v-if="btnStatus" @click="desabilita" variant="outline-primary" class="ml-2">
+                  <b-tooltip placement="auto" target="desabilitaBtn" v-if="$store.getters.getSatusTooltip">
+                    Essa sala não será mais exibida para futuros agendamentos de pacientes.
+                  </b-tooltip>
+                  <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
+                  Desabilitar</b-button>
                 <b-button type="submit" :variant="variante" class="ml-2">
                   <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
                   {{ submitBtn}}</b-button>
@@ -79,7 +85,9 @@ export default {
     nomesSalas(){
       var nomes = []
       for (let i=0; i < this.$store.getters.getSalas.length; i++){
-        nomes.push(this.$store.getters.getSalas[i].nomeSala.trim())
+        if (this.$store.getters.getSalas[i].habilitado){
+          nomes.push(this.$store.getters.getSalas[i].nomeSala.trim())
+        }
       }
       return nomes.sort(function (a, b) {
         return a.localeCompare(b);
@@ -87,6 +95,20 @@ export default {
     }
   },
   methods:{
+    async desabilita(){
+      await this.$store.dispatch('desabilitaSalaDb',this.uuid)
+          .then((retorno) => {
+            this.mensagem = retorno
+            this.loading = false
+            this.$refs['modal-ok'].show()
+            this.resetar()
+          })
+          .catch(error => {
+            this.mensagem = error
+            this.loading = false
+            this.$refs['modal-err'].show()
+          })
+    },
     preencheVal(nome){
       this.btnStatus = true
       const dados = this.$store.getters.getSalas.find( f => f.nomeSala.trim() === nome)
@@ -98,6 +120,7 @@ export default {
     async cadastrar(event){
       event.preventDefault()
       this.loading = true
+      this.form.habilitado = true
       this.form.nomeSala = this.nomeSala.trim()
       //vamos testar se é para cadastrar ou atualizar
       if (this.submitBtn === 'Atualizar') {
@@ -117,6 +140,9 @@ export default {
           })
     },
     resetar(){
+      //quando é inserido duas salas em sequencia, precisa criar um novo uuid na action
+      this.uuid = undefined
+      this.form.uuid = undefined
       this.btnStatus = false
       this.submitBtn = 'Cadastrar'
       this.variante = 'outline-success'

@@ -25,6 +25,7 @@ body{
   font-family: 'Work Sans', sans-serif;
 }
 :root{
+  --corFeriado: #c10c0c;
   --corDes:#000000;
   --corOk: #ffffff;
   --corFa: #ff0000;
