@@ -67,6 +67,29 @@ const actions = {
                 })
         })
     },
+    sendMsgBatch(context,dadosSessao){
+        return new Promise((resolve, reject) => {
+            dadosSessao.func = 'sendMsgBatch'
+            axios.post(process.env.VUE_APP_SEVER + '/zap', dadosSessao)
+                .then(res => {
+                    if (res.data === 'notLogged'){
+                        context.dispatch('logarWP',dadosSessao).then(resp => {
+                            const respObj = {
+                                img: resp.data,
+                                status: 'notLogged'
+                            }
+                            resolve(respObj)
+                        })
+                    } else {
+                        resolve(res)
+                    }
+            })
+                .catch(err => {
+                    console.error(err)
+                    reject(err)
+                })
+        })
+    },
     sendMsg(context, dadosSessao){
         return new Promise((resolve, reject) => {
             const uuidSessao = dadosSessao.sessaoId
@@ -75,7 +98,7 @@ const actions = {
                 if (res === 'ok'){
                     //pegar o token para enviar no create()
                     getToken(dadosSessao.nomeSessao).then(token => {
-                        //timeout de 2 minutos por causa do net::ERR_EMPTY_RESPONSE
+                        //timeout de 2 a 4 minutos por causa do net::ERR_EMPTY_RESPONSE
                         dadosSessao.token = token || 'sem token'
                         axios.post(process.env.VUE_APP_SEVER + '/zap', dadosSessao)
                             .then(res => {
@@ -101,8 +124,6 @@ const actions = {
                             console.error(err)
                             reject(err)
                         })
-
-
                 }
             })
                 .catch(err => {

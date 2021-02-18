@@ -9,7 +9,6 @@ exports.get = (req, res, next) => {
 // eslint-disable-next-line no-unused-vars
 exports.post = (req, res, next) => {
     const data = req.body
-    console.log(data)
     if (data.func === 'sendMsg'){
         const venom = require('venom-bot')
         venom
@@ -89,8 +88,104 @@ exports.post = (req, res, next) => {
                     res.status(500).send(err)
                 })
         })
-    }else{
+    } else if (data.func === 'sendMsgBatch'){
+        getTokenDb(data.sessao).then(token => {
+            //timeout de 2 a 4 minutos por causa do net::ERR_EMPTY_RESPONSE
+            const tokenData = token || 'sem token'
+            const venom = require('venom-bot')
+            venom
+                .create(
+                    //session
+                    data.sessao, //Pass the name of the client you want to start the bot
+                    undefined,
+                    // statusFind
+                    (statusSession, session) => {
+                        console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
+                        //Create session wss return "serverClose" case server for close
+                        console.log('Session name: ', session);
+                        if (statusSession === 'notLogged'){
+                            res.status(200).send(statusSession)
+                        }
+                    },
+                    {
+                        folderNameToken: '/tmp/', //folder name when saving tokens
+                        mkdirFolderToken:'',
+                        puppeteerOptions: {
+                            args: [
+                                '--no-sandbox',
+                                '--disable-setuid-sandbox'
+                            ]
+                        },
+                        disableWelcome: true,
+                        logQR: false,
+                        autoClose: 0},
+                    tokenData)
+                .then((client) => {
+                        let time = 0;
+                        client.onStreamChange((state) => {
+                            console.log('Connection status: ', state);
+                            clearTimeout(time);
+                            if(state === 'CONNECTED'){
+                                    start(client,data.sessArr).then(resp => {
+                                        res.status(200).send(resp)
+                                    })
+                            }
+                            //  DISCONNECTED when the mobile device is disconnected
+                            if (state === 'DISCONNECTED' || state === 'SYNCING') {
+                                time = setTimeout(() => {
+                                    client.close();
+                                    // process.exit(); //optional function if you work with only one session
+                                }, 80000);
+                            }
+                        })
+                })
+        })
+    }
+    else{
         res.status(200).send('Erro no sistema.')
+    }
+
+    async function start(client,sessoes) {
+        const messagesArr = []
+        let inchat = await client.isInsideChat(); //wait until the page is in whatsapp chat
+        if (inchat) {
+            for (let sessao of sessoes){
+                console.log(sessao)
+                //update db setando aguardando
+                setAguardando(sessao.uuid).then(async function (resp) {
+                    if (resp === 'ok') {
+                        //enviar mensagem whatsapp
+                        await sendMsg(client, sessao.phone, sessao.uuid, sessao.dataMsg, sessao.nomePaciente).then(resp => {
+                            console.log('*** reposta enviada para o app ***', resp)
+                            res.status(200).send(resp)
+                        })
+                    }
+                })
+
+
+                messagesArr.push(await client.getAllMessagesInChat(sessao.phone + '@c.us',true,false))
+
+                // sendMsg(client,sessao.phone,sessao.uuid,sessao.dataMsg,sessao.nomePaciente).then(resp => {
+                //     console.log('*** reposta enviada para o app ***', resp)
+                //     res.status(200).send(resp)
+                // })
+
+            }
+            return messagesArr
+        }
+    }
+
+    function setAguardando(id){
+        return new Promise((resolve, reject) => {
+            const dadoSessao = {
+                presenca: 'aguardando',
+                uuid: id
+            }
+            updateSessaoConf(dadoSessao).then(() => {
+                resolve(`ok`)
+            })
+                .catch( err => reject(err))
+        })
     }
 
     async function setTokenDb(token){
@@ -103,17 +198,19 @@ exports.post = (req, res, next) => {
     }
 
     function sendMsg(client,phone,sessao,dataMsg,paciente){
+        const idSessao = sessao.split('-')[1]
         return new Promise((resolve, reject) => {
-            client.sendText(phone + '@c.us',` 
+            client.sendText(phone + '@c.us',`
 \`\`\`Mensagem Automática:\`\`\`
 
     ${dataMsg}
 
 Por favor, responda *sim* ou *ok* para confirmar.
 Se deseja desmarcar, responda *não* ou *no*.
- 
+
 Atenciosamente,
-    _Equipe CFRA_`).then(res => {
+    _Equipe CFRA_
+    ---${idSessao}`).then(res => {
                 if (!res){
                     reject('Erro ao enviar mensagem. Verifique o número do whatsapp.')
                 }
@@ -186,5 +283,16 @@ Atenciosamente,
             })
                 .catch( err => reject(err))
         })
+    }
+}
+
+async function getTokenDb(sessao){
+    const tokenRef = admin.firestore().collection('tokens').doc(sessao);
+    const doc = await tokenRef.get();
+    if (!doc.exists) {
+        console.log('Sem tokens');
+        return false
+    } else {
+        return doc.data()
     }
 }

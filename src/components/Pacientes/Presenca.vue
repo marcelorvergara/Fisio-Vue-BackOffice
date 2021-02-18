@@ -4,11 +4,57 @@
     <b-row>
       <b-col>
           <div>
-            <div class="text-right mb-2">
-              <b-button class="m-1" size="sm" @click="selectAllRows">Selecionar Todas</b-button>
-              <b-button class="m-1" size="sm" @click="clearSelected">Desmarcar Todas</b-button>
-            </div>
+            <b-row>
+              <b-col lg="4" sm="12" class="my-1">
+                <b-form-group
+                    label="Filtro"
+                    label-for="filter-input"
+                    label-cols-sm="3"
+                    label-align-sm="right"
+                    label-size="sm"
+                    class="mb-0">
+                  <b-input-group size="sm">
+                    <b-form-input
+                        id="filter-input"
+                        v-model="filter"
+                        type="search"
+                        placeholder="Pesquise aqui">
+                    </b-form-input>
+                    <b-input-group-append>
+                      <b-button :disabled="!filter" @click="filter = ''">Limpar</b-button>
+                    </b-input-group-append>
+                  </b-input-group>
+                </b-form-group>
+              </b-col>
+              <b-col lg="4" sm="12">
+                <b-form-group
+                    v-model="sortDirection"
+                    description="Deixe desmarcado para filtrar todas as colunas"
+                    label-cols-sm="3"
+                    label-align-sm="right"
+                    label-size="sm"
+                    v-slot="{ ariaDescribedby }">
+                  <b-form-checkbox-group
+                      v-model="filterOn"
+                      :aria-describedby="ariaDescribedby">
+                    <b-form-checkbox value="data">Status</b-form-checkbox>
+                    <b-form-checkbox value="paciente">Paciente</b-form-checkbox>
+                    <b-form-checkbox value="procedimento">Data</b-form-checkbox>
+                  </b-form-checkbox-group>
+                </b-form-group>
+              </b-col>
+              <b-col lg="4" sm="12">
+                <div class="text-right mb-2">
+                  <b-button class="m-1" size="sm" @click="selectAllRows">Selecionar Todas</b-button>
+                  <b-button class="m-1" size="sm" @click="clearSelected">Desmarcar Todas</b-button>
+                </div>
+              </b-col>
+            </b-row>
             <b-table
+                :sort-direction="sortDirection"
+                @filtered="onFiltered"
+                :filter="filter"
+                :filter-included-fields="filterOn"
                 table-variant="secondary"
                 class="text-center"
                 ref="selectableTable"
@@ -27,7 +73,7 @@
                 empty-filtered-text="Sem dados"
                 caption-top
                 caption-html="
-                Quando uma sessão é clicada, outra(s) são desmarcadas.
+                Quando uma sessão é clicada, outra(s) é(são) desmarcada(s).
                 Shift + click seleciona um intervalo contínuo de sessões.
                 Ctrl + click alterna a seleção da sessão clicada."
                 :busy="isBusy">
@@ -92,6 +138,9 @@
               <b-button class="m-1" variant="outline-danger" @click="marcarFalta()">
                 Marcar Falta
               </b-button>
+              <b-button class="m-1" variant="outline-primary" @click="solicitarConfirm()">
+                Solicitar Confirmação
+              </b-button>
               <b-button class="m-1" variant="outline-success" @click="confirmarPresenca()">
                 Confirmar Presença
                 <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
@@ -110,7 +159,6 @@
     <p v-if="mensagem">Presença confirmada. <b-icon icon='check2-square' variant="success"></b-icon></p>
     <p v-else> Falta marcada para o paciente. <b-icon icon='check2-square' variant="danger"></b-icon></p>
   </b-modal>
-  <!--    modal para ERRO-->
   <!--    modal para alerta erro-->
   <b-modal ref="modal-err" ok-only>
     <template #modal-title>
@@ -118,6 +166,34 @@
       <span class="m-3">Marcação de Presença</span>
     </template>
     <p v-html="mensagemErro"></p>
+  </b-modal>
+  <!--    modal para ok ok -->
+  <b-modal ref="modal-ok" ok-only>
+    <template #modal-title>
+      <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
+      <span class="m-3">Agendamento</span>
+    </template>
+    <p v-html="mensagem"></p>
+  </b-modal>
+  <!--    modal para logar no whatsapp-->
+  <b-modal ref="modal-logar" ok-only>
+    <template #modal-title>
+      <b-icon icon="check2-circle" scale="2" variant="success"></b-icon>
+      <span class="m-3">Logar no Whatsapp</span>
+    </template>
+    <div v-if="imagem" class="mt-2">
+      <span> Se logue uma vez para enviar os pedidos de confirmação. </span>
+      <span> Mantenha o celular conectado à rede para enviar os pedidos de confirmação pelo sistema. </span>
+      <span >Essa janela se fechará em: </span>{{ segundos }}
+      <b-row class="justify-content-center mt-2">
+        <span> Whatsapp </span>
+
+      </b-row>
+      <b-row class="justify-content-center">
+
+        <img  v-bind:src="imagem" alt="qrCode do whatsapp">
+      </b-row>
+    </div>
   </b-modal>
 </div>
 </template>
@@ -129,6 +205,13 @@ export default {
   name: "Presenca",
   data(){
     return{
+      segundos: 20,
+      imagem:'',
+      sortDirection:'asc',
+      filter: null,
+      totalRows:1,
+      currentPage:1,
+      filterOn: [],
       isBusy:false,
       mensagemErro:null,
       mensagem:null,
@@ -153,6 +236,111 @@ export default {
     })
   },
   methods:{
+    closeModal(){
+      this.$refs['modal-logar'].hide()
+    },
+    countDownTimer(){
+      if (this.segundos > 0){
+        setTimeout(() => {
+          this.segundos -= 1
+          this.countDownTimer()
+        }, 1000)
+      }
+    },
+    solicitarConfirm(){
+      this.segundos = 20 // para fechar  o qr code do whattsapp
+      const waSessao = this.$store.getters.user.data.email.split('@')[0]
+      const confirmaArr = []
+      //limitar o número de pedidos
+      if(this.selected.length > 5){
+        console.log('Limite de Pedidos Alcançado')
+      }
+      for (let sessao of this.selected){
+        const day = sessao.data.split('-')[0]
+        const mes = sessao.data.split('-')[1]
+        const ano = sessao.data.split('-')[2]
+        const dataStr = new Date(ano,mes-1,day)
+        const dataAtual = new Date()
+        const dataLimite = dataAtual.addDays(3)
+
+        if (dataStr.getTime() < dataAtual.getTime() ){
+          console.log('data da sessão anterior ao limite de confirmação')
+        }else if (dataLimite.getTime() < dataStr.getTime() ){
+          console.log('data posterior ao limite de 3 dias')
+        }else{
+          const nomePaciente = sessao.paciente
+          const paciente = this.$store.getters.getPacientes.find(f => f.nome === nomePaciente)
+          const phone = paciente.phone
+          const dataMsg = 'Confirmação da sessão dia: ' + day+'-'+mes+'-'+ano + ' às '+sessao.inicio+'h'
+          //criar um objeto que será inserido em um array de confirmações (batch)
+          const confObj ={
+            phone,
+            uuid:sessao.uuid,
+            dataMsg,
+            nomePaciente
+          }
+          confirmaArr.push(confObj)
+          // enviando msg
+          this.mensagem = 'Pedido de confirmação de sessão enviado.'
+          this.$refs['modal-ok'].show()
+          this.loadingConfirmar = false
+
+        }
+      }
+      this.enviaMsg({sessao:waSessao,sessArr:confirmaArr})
+    },
+    async enviaMsg(dados){
+      this.$store.dispatch('sendMsgBatch',
+          dados)
+          .then((res) => {
+            //logando na tela por não estar logado
+            if (res.status === 'notLogged'){
+              this.loadingConfirmar = false
+              this.imagem = res.img
+              //temporizador para fechar a janela, visto que não há retorno para função logar no whatsapp web
+              this.$refs['modal-logar'].show()
+              this.countDownTimer()
+              var me = this
+              setTimeout(function(){
+                me.closeModal()
+              }, this.segundos * 1000)
+            }
+            //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
+            else {
+              //já enviou a mensagem e recebeu o akc
+              const respList = []
+              for (let i of res.data){
+                for (let j=0; j<i.length;j++){
+                  var date = new Date(i[j].t * 1000);
+                  // console.log(i[j].body)
+                  const resp = i[j].body.toLowerCase()
+                  if(resp === 'não' || resp === 'no' || resp === 'n' || resp === 'sim' || resp === 'ok' || resp === 's'){
+                    const respListObj = {
+                      resposta: i[j].body,
+                      uuid: i[j-1].body.split('---')[1],
+                      data: date
+                    }
+                    respList.push(respListObj)
+                  }
+                }
+              }
+              console.log(respList)
+
+              this.loadingConfirmar = false
+              this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
+            }
+          })
+          .catch((err) => {
+            console.log('Erro: ', err)
+            this.mensagemErro = err
+            this.$refs['modal-err'].show()
+          })
+    },
+    onFiltered(filteredItems){
+      this.totalRows = filteredItems.length
+      this.currentPage = 1
+      this.somaValFiltro(filteredItems)
+    },
     marcarFalta(){
       this.loading = true
       var upSessaoList = []

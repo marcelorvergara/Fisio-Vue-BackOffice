@@ -5,7 +5,7 @@
         <b-col lg="4">
           <b-form-group label="Filtro" label-for="filtro-input" label-cols-sm="3" label-align-sm="right" label-size="sm">
             <b-input-group size="sm">
-              <b-form-input autocomplete="off" id="filtro-input" v-model="filter" type="search" placeholder="pesquise aqui">
+              <b-form-input autocomplete="off" id="filtro-input" v-model="filter" type="search" placeholder="Pesquise aqui">
               </b-form-input>
               <b-input-group-append>
                 <b-button :disabled="!filter" @click="filter = ''">Limpar</b-button>
@@ -16,7 +16,7 @@
         <b-col lg="6">
           <b-form-group
               v-model="sortDirection"
-              description="Filtro de colunas. Deixe desmarcado para filtrar todos os dados"
+              description="Deixe desmarcado para filtrar todas as colunas"
               label-cols-sm="3"
               label-align-sm="right"
               label-size="sm"

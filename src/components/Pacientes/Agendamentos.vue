@@ -325,7 +325,7 @@
           <b-spinner v-show="loading" small label="Carregando..."></b-spinner>
         </b-button>
         <b-button v-if="!feriado" id="confirmar" class="ml-2" variant="outline-info" @click="confirmar(selectedEvent)">
-          Confirmar
+          WhatsApp Msg.
           <b-spinner v-if="loadingConfirmar" small label="Carregando..."></b-spinner>
           <b-tooltip placement="auto" target="confirmar" v-if="$store.getters.getSatusTooltip">
             Envio de mensagem para o Whatsapp do paciente pedindo confirmação da sessão.
@@ -1217,7 +1217,7 @@ export default {
   font-size: 0.8em;
 }
 .vuecal__event.corFeriado {
-  background-color: rgba(134, 134, 134, 0.5);
+  background-color: rgba(167, 167, 167, 0.5);
   border: 3px solid var(--corFeriado);
   color: var(--corFeriado);}
 .vuecal__event.corDes {
