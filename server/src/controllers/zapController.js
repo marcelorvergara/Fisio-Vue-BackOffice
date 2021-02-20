@@ -40,12 +40,27 @@ exports.post = (req, res, next) => {
                 data.token
             )
             .then(async (client) => {
-                await sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(resp => {
-                    console.log('*** reposta enviada para o app ***', resp)
-                    res.status(200).send(resp)
+                let time = 0, started = false;
+                client.onStreamChange((state) => {
+                    console.log('Connection status: ', state);
+                    clearTimeout(time);
+                    if (state === 'CONNECTED' && !started) {
+                        sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(resp => {
+                            console.log('*** reposta enviada para o app ***', resp)
+                            res.status(200).send(resp)
+                        })
+                    }
+                    //  DISCONNECTED when the mobile device is disconnected
+                    if (state === 'DISCONNECTED' || state === 'SYNCING') {
+                        time = setTimeout(() => {
+                            retornaDisconn();
+                            client.close();
+                            // process.exit(); //optional function if you work with only one session
+                        }, 5000);
+                    }
                 })
                     .catch(err => {
-                        console.log(err)
+                        console.err(err)
                         res.status(500).send(err)
                     })
             })
@@ -78,7 +93,6 @@ exports.post = (req, res, next) => {
                     data.token
                 ).then((cli) => {
                     getToken(cli).then(resp => {
-                        console.log(resp)
                         setTokenDb(resp)
                     })
                     console.log('Logando user whatsapp...')
@@ -89,6 +103,7 @@ exports.post = (req, res, next) => {
                 })
         })
     } else if (data.func === 'sendMsgBatch'){
+
         getTokenDb(data.sessao).then(token => {
             //timeout de 2 a 4 minutos por causa do net::ERR_EMPTY_RESPONSE
             const tokenData = token || 'sem token'
@@ -121,23 +136,81 @@ exports.post = (req, res, next) => {
                         autoClose: 0},
                     tokenData)
                 .then((client) => {
-                        let time = 0;
+                        let time = 0, started = false;
                         client.onStreamChange((state) => {
                             console.log('Connection status: ', state);
                             clearTimeout(time);
-                            if(state === 'CONNECTED'){
-                                    start(client,data.sessArr).then(resp => {
-                                        res.status(200).send(resp)
-                                    })
+                            if(state === 'CONNECTED' && !started){
+                                started = true;
+                                start(client,data.sessArr).then(resp => {
+                                    res.status(200).send(resp)
+                                })
                             }
                             //  DISCONNECTED when the mobile device is disconnected
+
                             if (state === 'DISCONNECTED' || state === 'SYNCING') {
                                 time = setTimeout(() => {
+                                    retornaDisconn();
                                     client.close();
                                     // process.exit(); //optional function if you work with only one session
-                                }, 80000);
+                                }, 5000);
                             }
                         })
+                }).catch(err => res.status(500).send(err))
+        })
+    }
+    //checa as confirmações assincronamente
+    else if (data.func === 'chkConfirm') {
+        getTokenDb(data.sessao).then(token => {
+            //timeout de 2 a 4 minutos por causa do net::ERR_EMPTY_RESPONSE
+            const tokenData = token || 'sem token'
+            const venom = require('venom-bot')
+            venom
+                .create(
+                    //session
+                    data.sessao, //Pass the name of the client you want to start the bot
+                    undefined,
+                    // statusFind
+                    (statusSession, session) => {
+                        console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
+                        //Create session wss return "serverClose" case server for close
+                        console.log('Session name: ', session);
+                        if (statusSession === 'notLogged') {
+                            res.status(200).send(statusSession)
+                        }
+                    },
+                    {
+                        folderNameToken: '/tmp/', //folder name when saving tokens
+                        mkdirFolderToken: '',
+                        puppeteerOptions: {
+                            args: [
+                                '--no-sandbox',
+                                '--disable-setuid-sandbox'
+                            ]
+                        },
+                        disableWelcome: true,
+                        logQR: false,
+                        autoClose: 0
+                    },
+                    tokenData)
+                .then((client) => {
+                    let time = 0;
+                    client.onStreamChange((state) => {
+                        console.log('Connection status: ', state);
+                        clearTimeout(time);
+                        if (state === 'CONNECTED') {
+                            startChk(client).then(resp => {
+                                res.status(200).send(resp)
+                            })
+                        }
+                        //  DISCONNECTED when the mobile device is disconnected
+                        if (state === 'DISCONNECTED' || state === 'SYNCING') {
+                            time = setTimeout(() => {
+                                client.close();
+                                // process.exit(); //optional function if you work with only one session
+                            }, 80000);
+                        }
+                    })
                 })
         })
     }
@@ -145,12 +218,112 @@ exports.post = (req, res, next) => {
         res.status(200).send('Erro no sistema.')
     }
 
-    async function start(client,sessoes) {
+    function retornaDisconn(){
+        res.status(200).send('Celular com whatsapp desconectado. Verifique a internet do celular.')
+    }
+
+    //função para pegar o telefone. Posteriormente o phone será usado
+    // para pegar as mensagens e verificar as respostas
+    function getPhoneList(){
+        return new Promise((resolve,reject) => {
+            const sessoesLst = []
+            const dataAtual = new Date()
+            const dataLimite = dataAtual.addDays(3)
+            const dataTSIni = firebase.firestore.Timestamp.fromDate(dataAtual);
+            const dataTSFim = firebase.firestore.Timestamp.fromDate(dataLimite);
+            const db = admin.firestore()
+            db.collection('sessoes')
+                .where('dataFS','>' ,dataTSIni)
+                .where('dataFS','<=', dataTSFim)
+                .orderBy('dataFS', 'desc')
+                .get()
+                .then(function(querySnapshot) {
+                    // console.log(querySnapshot.docs.length)
+                    querySnapshot.forEach(function (doc) {
+                        if (doc.data().presenca === 'aguardando'){
+                            console.log(doc.data().uuid)
+                            const pac = context.getters.getPacientes.find(f => f.uuid === doc.get('paciente').id)
+                            sessoesLst.push({pacPhone:pac.phone,sessUuid:doc.data().uuid})
+                        }
+                    })
+                    resolve (sessoesLst)
+                })
+                .catch(err => reject(err))
+        })
+    }
+
+    async function startChk(client) {
+        getPhoneList().then(phones => {
+            checkConfirm(client, phones)
+        })
+    }
+
+    async function checkConfirm(client,phones){
         const messagesArr = []
+        const listUuid = []
+        let inchat = await client.isInsideChat(); //wait until the page is in whatsapp chat
+        if (inchat) {
+            for (let phone of phones) {
+                listUuid.push({uuid:phone.sessUuid,tel:phone.pacPhone})
+                messagesArr.push(await client.getAllMessagesInChat(phone.pacPhone + '@c.us', true, true))
+            }
+        }
+
+        for (let i of messagesArr) {
+            for (let j = 0; j < i.length; j++) {
+                var uuidResp;
+                var date = new Date(i[j].t * 1000);
+                const resp = i[j].body.toLowerCase()
+                if (resp === 'não' || resp === 'no' || resp === 'n' || resp === 'sim' || resp === 'ok' || resp === 's') {
+                    if (j === 0){
+                        uuidResp = 'nulo'
+                    }else{
+                        uuidResp = i[j - 1].body.split('---')[1]
+                    }
+
+                    for (let uuid of listUuid){
+                        const uuidSent = uuid.uuid.split('-')[1]
+                        if (uuidSent === uuidResp){
+                            const resposta = i[j].body.toLowerCase()
+                            //setar resosta no db sessão
+                            if (resposta === 'sim' || resposta === 'ok' || resposta === 's'){
+                                console.log('confirmar presença')
+                                client.sendText(uuid.tel + '@c.us', 'Obrigado, aguardamos sua presença.')
+                                    .then(() => {
+                                        const dadoSessao = {
+                                            presenca: 'esperada',
+                                            uuid: uuid.uuid
+                                        }
+                                        updateSessaoConf(dadoSessao).then(() => {
+                                            client.close()
+                                        })
+                                    })
+                            }else if(resposta === 'não' || resposta === 'no' || resposta === 'n') {
+                                console.log('desmarcar sessão')
+                                client.sendText(uuid.tel + '@c.us', 'Obrigado. A sessão será desmarcada.')
+                                    .then(() => {
+                                        const dadoSessao = {
+                                            presenca: 'desmarcada',
+                                            uuid: uuid.uuid
+                                        }
+                                        updateSessaoConf(dadoSessao).then(() => {
+                                            client.close()
+                                        })
+                                    })
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //envio de pedidos de confirmação em batch
+    async function start(client,sessoes) {
         let inchat = await client.isInsideChat(); //wait until the page is in whatsapp chat
         if (inchat) {
             for (let sessao of sessoes){
-                console.log(sessao)
+
                 //update db setando aguardando
                 setAguardando(sessao.uuid).then(async function (resp) {
                     if (resp === 'ok') {
@@ -161,17 +334,7 @@ exports.post = (req, res, next) => {
                         })
                     }
                 })
-
-
-                messagesArr.push(await client.getAllMessagesInChat(sessao.phone + '@c.us',true,false))
-
-                // sendMsg(client,sessao.phone,sessao.uuid,sessao.dataMsg,sessao.nomePaciente).then(resp => {
-                //     console.log('*** reposta enviada para o app ***', resp)
-                //     res.status(200).send(resp)
-                // })
-
             }
-            return messagesArr
         }
     }
 
@@ -198,6 +361,7 @@ exports.post = (req, res, next) => {
     }
 
     function sendMsg(client,phone,sessao,dataMsg,paciente){
+        console.log(dataMsg)
         const idSessao = sessao.split('-')[1]
         return new Promise((resolve, reject) => {
             client.sendText(phone + '@c.us',`
@@ -205,8 +369,8 @@ exports.post = (req, res, next) => {
 
     ${dataMsg}
 
-Por favor, responda *sim* ou *ok* para confirmar.
-Se deseja desmarcar, responda *não* ou *no*.
+Por favor, responda apenas com *sim* ou *ok* para confirmar.
+Se deseja desmarcar, responda somente com *não* ou *no*.
 
 Atenciosamente,
     _Equipe CFRA_
@@ -261,7 +425,7 @@ Atenciosamente,
                     console.log(message.body)
                     console.log(message.from)
                     console.log(message.to)
-                    console.log(message.chat.contact.pushname)
+                    console.log(message.chat.contact)
                     console.log(message.isGroupMsg)
                     console.log('**** logs da resposta paciente fim ***')
                 }

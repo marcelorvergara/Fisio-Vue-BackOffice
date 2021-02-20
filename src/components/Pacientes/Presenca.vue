@@ -305,27 +305,14 @@ export default {
                 me.closeModal()
               }, this.segundos * 1000)
             }
+            else if (res === 'Celular com whatsapp desconectado. Verifique a internet do celular.'){
+              console.log(res)
+              this.mensagemErro = res + ' Tente novamente.'
+              this.$refs['modal-err'].show()
+            }
             //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
             else {
               //já enviou a mensagem e recebeu o akc
-              const respList = []
-              for (let i of res.data){
-                for (let j=0; j<i.length;j++){
-                  var date = new Date(i[j].t * 1000);
-                  // console.log(i[j].body)
-                  const resp = i[j].body.toLowerCase()
-                  if(resp === 'não' || resp === 'no' || resp === 'n' || resp === 'sim' || resp === 'ok' || resp === 's'){
-                    const respListObj = {
-                      resposta: i[j].body,
-                      uuid: i[j-1].body.split('---')[1],
-                      data: date
-                    }
-                    respList.push(respListObj)
-                  }
-                }
-              }
-              console.log(respList)
-
               this.loadingConfirmar = false
               this.$store.dispatch('getSessoesDb',{funcao:this.$store.getters.getFuncao})
             }

@@ -55,7 +55,6 @@
                      :time-from="7 * 60" :time-to="22 * 60" :time-step="60"
                      :hide-weekdays="[7]"
                      events-on-month-view="false"
-                     show-all-day-events="false"
                      :events="$store.getters.getEvents"
                      :disable-views="['years', 'year']"
                      :editable-events="{ title: false, drag: false, resize: false, delete: false, create: true }"
@@ -642,7 +641,6 @@ export default {
     },
     sessaoInfo(event){
       //mostra o modal da sessão selecionada
-      console.log(event)
       if (event.title === 'Feriado'){
         this.feriado = true
       }else{

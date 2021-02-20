@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-unused-vars
 import {connDb} from "@/store/connDb";
 import axios from "axios";
 
@@ -55,6 +54,43 @@ const mutations = {
 }
 
 const actions = {
+    checkConfirmacoes(context){
+        return new Promise((resolve, reject) => {
+            //realizar consulta de sessões que:
+            // 1 - estão com status 'aguardando'
+            // 2 - data não > dia atual
+            // 3 - data < 3 dias futuros
+                axios.post(process.env.VUE_APP_SEVER + '/zap', {
+                    func:'chkConfirm',
+                    sessao:context.getters.user.data.email.split('@')[0],
+                    // phonesSessoes: res
+
+                })
+                    .then(res => {
+                        if (res.data === 'notLogged'){
+                            context.dispatch('logarWP',{func:'logarWA',
+                                token:'adefinir',
+                                nomeSessao:context.getters.user.data.email.split('@')[0]})
+                                .then(resp => {
+                                    const respObj = {
+                                        img: resp.data,
+                                        status: 'notLogged'
+                                    }
+                                    resolve(respObj)
+                                })
+                        } else {
+                            resolve(res)
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err)
+                        reject(err)
+                    })
+
+        })
+
+
+    },
     logarWP(context, payload){
         // eslint-disable-next-line no-unused-vars
         return new Promise ((resolve,reject) => {
@@ -72,6 +108,7 @@ const actions = {
             dadosSessao.func = 'sendMsgBatch'
             axios.post(process.env.VUE_APP_SEVER + '/zap', dadosSessao)
                 .then(res => {
+                    console.log(res)
                     if (res.data === 'notLogged'){
                         context.dispatch('logarWP',dadosSessao).then(resp => {
                             const respObj = {
@@ -80,7 +117,10 @@ const actions = {
                             }
                             resolve(respObj)
                         })
-                    } else {
+                    }else if (res.data === 'Celular com whatsapp desconectado. Verifique a internet do celular.'){
+                        resolve(res.data)
+                    }
+                    else {
                         resolve(res)
                     }
             })
@@ -113,13 +153,12 @@ const actions = {
                                 }else {
                                     resolve(res)
                                 }
-
                             })
                             .catch(err => {
                                 console.error(err.response)
                                 reject(err.response.data)
                             })
-                    })
+                        })
                         .catch(err => {
                             console.error(err)
                             reject(err)
