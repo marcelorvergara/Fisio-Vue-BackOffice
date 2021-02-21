@@ -58,6 +58,7 @@ exports.post = (req, res, next) => {
                             // process.exit(); //optional function if you work with only one session
                         }, 5000);
                     }
+
                 })
                     .catch(err => {
                         console.err(err)
@@ -194,21 +195,50 @@ exports.post = (req, res, next) => {
                     },
                     tokenData)
                 .then((client) => {
-                    let time = 0;
+                    let time = 0, started = false;
                     client.onStreamChange((state) => {
                         console.log('Connection status: ', state);
                         clearTimeout(time);
-                        if (state === 'CONNECTED') {
-                            startChk(client).then(resp => {
-                                res.status(200).send(resp)
-                            })
+                        if(state === 'CONNECTED' && !started){
+                            started = true;
+                            const sessoesLst = []
+                            const dataTSIni = admin.firestore.Timestamp.now();
+                            const dataTSFim = new admin.firestore.Timestamp(dataTSIni.seconds + 432000,0);
+                            const db = admin.firestore()
+                            db.collection('sessoes')
+                                .where('dataFS','>' ,dataTSIni)
+                                .where('dataFS','<=', dataTSFim)
+                                .orderBy('dataFS', 'desc')
+                                .get()
+                                .then(function(querySnapshot) {
+                                    // console.log(querySnapshot.docs.length)
+                                    querySnapshot.forEach(function (doc) {
+                                        if (doc.data().presenca === 'aguardando'){
+                                            console.log('uuid sessão',doc.data().uuid)
+                                            const pacId = doc.get('paciente').id
+                                            sessoesLst.push({pacUuid:pacId,sessUuid:doc.data().uuid})
+                                        }
+                                    })
+                                    if (sessoesLst.length === 0){
+                                        time = setTimeout(() => {
+                                            res.status(200).send('Nenhuma sessão pendente de verificação.')
+                                            client.close();
+                                            // process.exit(); //optional function if you work with only one session
+                                        }, 3000);
+                                    }
+                                    //pegar os phones pelo uuid pac e seguir em frente
+                                    //envia junto o uuid das sessões a serem verificads ('aguardando')
+                                    goAhead(client,sessoesLst)
+
+                                }) .catch(err => res.status(500).send(err))
                         }
                         //  DISCONNECTED when the mobile device is disconnected
                         if (state === 'DISCONNECTED' || state === 'SYNCING') {
                             time = setTimeout(() => {
+                                retornaDisconn();
                                 client.close();
                                 // process.exit(); //optional function if you work with only one session
-                            }, 80000);
+                            }, 7000);
                         }
                     })
                 })
@@ -222,65 +252,46 @@ exports.post = (req, res, next) => {
         res.status(200).send('Celular com whatsapp desconectado. Verifique a internet do celular.')
     }
 
-    //função para pegar o telefone. Posteriormente o phone será usado
-    // para pegar as mensagens e verificar as respostas
-    function getPhoneList(){
-        return new Promise((resolve,reject) => {
-            const sessoesLst = []
-            const dataAtual = new Date()
-            const dataLimite = dataAtual.addDays(3)
-            const dataTSIni = firebase.firestore.Timestamp.fromDate(dataAtual);
-            const dataTSFim = firebase.firestore.Timestamp.fromDate(dataLimite);
-            const db = admin.firestore()
-            db.collection('sessoes')
-                .where('dataFS','>' ,dataTSIni)
-                .where('dataFS','<=', dataTSFim)
-                .orderBy('dataFS', 'desc')
-                .get()
-                .then(function(querySnapshot) {
-                    // console.log(querySnapshot.docs.length)
-                    querySnapshot.forEach(function (doc) {
-                        if (doc.data().presenca === 'aguardando'){
-                            console.log(doc.data().uuid)
-                            const pac = context.getters.getPacientes.find(f => f.uuid === doc.get('paciente').id)
-                            sessoesLst.push({pacPhone:pac.phone,sessUuid:doc.data().uuid})
-                        }
-                    })
-                    resolve (sessoesLst)
-                })
-                .catch(err => reject(err))
-        })
-    }
-
-    async function startChk(client) {
-        getPhoneList().then(phones => {
-            checkConfirm(client, phones)
-        })
-    }
-
-    async function checkConfirm(client,phones){
+    async function goAhead(client, itemList){
+        const sessList = []
+        //pegando o tel dos pacientes
+        for (let item of itemList){
+            const pacRef = admin.firestore().collection('pacientes').doc(item.pacUuid)
+            const doc = await pacRef.get()
+            const sessoesList = {
+                pacPhone:doc.data().phone,
+                sessUuid:item.sessUuid
+            }
+            sessList.push(sessoesList)
+        }
+        //pegando as mensagens relativas ao tel (getAllMessagesInChat)
         const messagesArr = []
         const listUuid = []
         let inchat = await client.isInsideChat(); //wait until the page is in whatsapp chat
         if (inchat) {
-            for (let phone of phones) {
+            for (let phone of sessList) {
+                console.log('phone', phone)
                 listUuid.push({uuid:phone.sessUuid,tel:phone.pacPhone})
                 messagesArr.push(await client.getAllMessagesInChat(phone.pacPhone + '@c.us', true, true))
             }
         }
-
+        //cada lista de mensagens de cada tel de paciente será listada para pegar respostas
         for (let i of messagesArr) {
+            //correr cada mensagem das mensagens por telefone
             for (let j = 0; j < i.length; j++) {
+                console.log('########################################')
+                console.log(i[j].body)
                 var uuidResp;
                 var date = new Date(i[j].t * 1000);
                 const resp = i[j].body.toLowerCase()
                 if (resp === 'não' || resp === 'no' || resp === 'n' || resp === 'sim' || resp === 'ok' || resp === 's') {
                     if (j === 0){
+                        //se a primeira mensagem da lista de msgs. for a resposta, não será possível pegar a mensagem anterior
                         uuidResp = 'nulo'
                     }else{
                         uuidResp = i[j - 1].body.split('---')[1]
                     }
-
+                    //cada tel possui uma lista de uuid de sessões para ser verificada
                     for (let uuid of listUuid){
                         const uuidSent = uuid.uuid.split('-')[1]
                         if (uuidSent === uuidResp){
@@ -316,6 +327,10 @@ exports.post = (req, res, next) => {
                 }
             }
         }
+    }
+
+    async function checkConfirm(client,phones){
+
     }
 
     //envio de pedidos de confirmação em batch

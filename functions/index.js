@@ -20,8 +20,8 @@ exports.backupFirestore = functions.pubsub
 
         const { v4: uuidv4 } = require('uuid');
         const uuid = uuidv4().split("-")[1];
-        var moment = require('moment');
-        var created = moment().format('DD_MM_YYYY');
+        const moment = require('moment');
+        const created = moment().format('DD_MM_YYYY');
         return client.exportDocuments({
             name: databaseName,
             outputUriPrefix: bucket + created + '-' +uuid,
