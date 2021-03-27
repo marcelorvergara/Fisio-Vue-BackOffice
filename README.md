@@ -1,7 +1,7 @@
 	
 ## Fisio Vue - Backoffice de uma Clínica
 
-<iframe src="https://drive.google.com/file/d/1X74MiuIV2y0RdzEqOqI3OVB0XtaQ74Em/preview" width="64" height="48"></iframe> <img src="https://drive.google.com/file/d/1X74MiuIV2y0RdzEqOqI3OVB0XtaQ74Em">
+<img src="https://drive.google.com/file/d/1X74MiuIV2y0RdzEqOqI3OVB0XtaQ74Em/preview">  <img src="https://drive.google.com/file/d/1X74MiuIV2y0RdzEqOqI3OVB0XtaQ74Em">
 
 ### Disponível em <href src="https://fisio-app-ae.rj.r.appspot.com/"></href>
 #### Login: resume@user.com / 123123
