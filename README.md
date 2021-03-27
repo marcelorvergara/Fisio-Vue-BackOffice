@@ -28,7 +28,7 @@
 - Melhoria na modelagem das confirmações por Whatsapp.
 - Testes de funcionalidade e de carga para testar o desempenho do banco de dados com muitas informações.
 - Melhorar o design do layout.
-- Em <href src="https://github.com/marcelorvergara/fisio-vue/projects">Projects</href> há uma lista de "to do".
+- Em <a href="https://github.com/marcelorvergara/fisio-vue/projects">Projects</a> há uma lista de "to do".
 
 ## Project setup
 ```
