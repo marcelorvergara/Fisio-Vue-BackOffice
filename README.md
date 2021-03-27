@@ -1,4 +1,23 @@
-# fisiovue
+## Fisio Vue - Backoffice de uma Clínica
+
+<img src="https://drive.google.com/file/d/1C8ZAE8ClyW2hoOGHy-UglIx9YGXCASwS/view?usp=sharing">  <img src="https://drive.google.com/file/d/1X74MiuIV2y0RdzEqOqI3OVB0XtaQ74Em/view?usp=sharing">
+
+### Disponível em <href src="https://fisio-app-ae.rj.r.appspot.com/"></href>
+#### Login: resume@user.com / 123123
+
+#### O que esse app faz?
+
+- É um backoffice de uma clínica fisioterápica para funções diversas que vão desde agendamento de pacientes até relatórios financeiros. Possui funcionalidade multi role e confirmação de sessão através de Whatsapp.
+
+#### Como foi desenvolvido?
+
+- Feito com Vue.js, Node.js e banco de dados NoSQL Firebase Firestore. Hospedado no App Engine da Google Cloud. A autenticação é realizada através do Firebase Auth e possui backup de dados realizados automaticamente atraés de código desenvolvido no Firebase Functions.
+
+#### O que falta?
+
+- Melhoria na modelagem das confirmações por Whatsapp.
+- Testes de funcionalidade e de carga para testar o desempenho do banco de dados com muitas informações.
+- Melhorar o design do layout.
 
 ## Project setup
 ```
