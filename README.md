@@ -1,7 +1,7 @@
 	
 ## Fisio Vue - Backoffice de uma Clínica
 
-![alt text](https://drive.google.com/file/d/1X74MiuIV2y0RdzEqOqI3OVB0XtaQ74Em/preview)
+
 
 ### Disponível em <href src="https://fisio-app-ae.rj.r.appspot.com/"></href>
 #### Login: resume@user.com / 123123
