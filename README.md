@@ -32,7 +32,7 @@
 
 #### Licença
 
-Esse sistema é licenciado através de uma licença MIT. Veja <a href=https://github.com/marcelorvergara/fisio-vue/blob/main/LICENSE> aqui </a> para detalhes.
+- Esse sistema é licenciado através de uma licença MIT. Veja <a href=https://github.com/marcelorvergara/fisio-vue/blob/main/LICENSE> aqui </a> para detalhes.
 
 ## Project setup
 ```
