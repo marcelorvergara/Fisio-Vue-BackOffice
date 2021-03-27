@@ -39,12 +39,14 @@ exports.post = (req, res, next) => {
                     autoClose: 0},
                 data.token
             )
+            //******** cliente whatsapp *************
             .then(async (client) => {
                 let time = 0, started = false;
                 client.onStreamChange((state) => {
                     console.log('Connection status: ', state);
                     clearTimeout(time);
                     if (state === 'CONNECTED' && !started) {
+                        started = true;
                         sendMsg(client,data.phone,data.sessaoId,data.dataMsg,data.paciente).then(resp => {
                             console.log('*** reposta enviada para o app ***', resp)
                             res.status(200).send(resp)
@@ -284,7 +286,7 @@ exports.post = (req, res, next) => {
                 var uuidResp;
                 var date = new Date(i[j].t * 1000);
                 const resp = i[j].body.toLowerCase()
-                if (resp === 'não' || resp === 'no' || resp === 'n' || resp === 'sim' || resp === 'ok' || resp === 's') {
+                if (resp === 'não' || resp=== 'nao' || resp === 'no' || resp === 'n' || resp === 'sim' || resp === 'ok' || resp === 's') {
                     if (j === 0){
                         //se a primeira mensagem da lista de msgs. for a resposta, não será possível pegar a mensagem anterior
                         uuidResp = 'nulo'
@@ -309,7 +311,7 @@ exports.post = (req, res, next) => {
                                             client.close()
                                         })
                                     })
-                            }else if(resposta === 'não' || resposta === 'no' || resposta === 'n') {
+                            }else if(resposta === 'não' || resposta === 'no' || resposta === 'n' || resp=== 'nao') {
                                 console.log('desmarcar sessão')
                                 client.sendText(uuid.tel + '@c.us', 'Obrigado. A sessão será desmarcada.')
                                     .then(() => {

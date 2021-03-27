@@ -26,7 +26,7 @@ pnpm-debug.log*
 
 src/initBackend.js
 backupData/
-priAcesso
+MiscFiles/priAcesso
 .firebase/
 functions/out.png
 functions/tokens/

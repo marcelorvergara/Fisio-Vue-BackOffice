@@ -579,6 +579,9 @@ export default {
                           setTimeout(function(){
                             me.closeModal()
                           }, this.segundos * 1000)
+                      } else if (res.data === 'Celular com whatsapp desconectado. Verifique a internet do celular.'){
+                        this.mensagemErro = res.data
+                        this.$refs['modal-err'].show()
                       }
                       //problema com timeout de 2 a 4 segundos. Functions segura até 8 segundos, mas...
                       else {

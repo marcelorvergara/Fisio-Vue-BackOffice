@@ -151,6 +151,7 @@ const actions = {
                                         resolve(respObj)
                                     })
                                 }else {
+                                    console.log(res)
                                     resolve(res)
                                 }
                             })
