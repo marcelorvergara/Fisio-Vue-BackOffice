@@ -10,10 +10,15 @@
 		<td>
 			<img src="https://github.com/marcelorvergara/fisio-vue/blob/main/functions/relatorio.png">
 		</td>
-		<td>
-			(MiscFiles/recording.gif)
-		</td>
 	</tr>
+	<tr>
+		<td>
+			<img src="https://github.com/marcelorvergara/Fisio-Vue-BackOffice/blob/main/MiscFiles/recording.gif">
+		</td>
+		<td>
+			<img src="https://github.com/marcelorvergara/Fisio-Vue-BackOffice/blob/main/MiscFiles/recording_2.gif">
+		</td>
+	</td>
 </table>	
 
 ## Disponível em <a href="https://fisio-app-ae.rj.r.appspot.com/">Nesse Link</a>
