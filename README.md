@@ -5,20 +5,20 @@
 <table>
 	<tr>
 		<td>
-			<img src="https://github.com/marcelorvergara/fisio-vue/blob/main/functions/calend%C3%A1rio.png"> 
-		</td>
-		<td>
-			<img src="https://github.com/marcelorvergara/fisio-vue/blob/main/functions/relatorio.png">
-		</td>
-	</tr>
-	<tr>
-		<td>
 			<img src="https://github.com/marcelorvergara/Fisio-Vue-BackOffice/blob/main/MiscFiles/recording.gif">
 		</td>
 		<td>
 			<img src="https://github.com/marcelorvergara/Fisio-Vue-BackOffice/blob/main/MiscFiles/recording_2.gif">
 		</td>
 	</td>
+		<tr>
+		<td>
+			<img src="https://github.com/marcelorvergara/fisio-vue/blob/main/functions/calend%C3%A1rio.png"> 
+		</td>
+		<td>
+			<img src="https://github.com/marcelorvergara/fisio-vue/blob/main/functions/relatorio.png">
+		</td>
+	</tr>
 </table>	
 
 ## Disponível em <a href="https://fisio-app-ae.rj.r.appspot.com/">Nesse Link</a>
