@@ -11,7 +11,7 @@
 			<img src="https://github.com/marcelorvergara/fisio-vue/blob/main/functions/relatorio.png">
 		</td>
 		<td>
-			![](MiscFiles/recording.gif)
+			(MiscFiles/recording.gif)
 		</td>
 	</tr>
 </table>	
